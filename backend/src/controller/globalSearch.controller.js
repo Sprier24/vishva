@@ -5,7 +5,7 @@ const Invoice = require("../model/invoiceSchema.model");
 const Lead = require("../model/leadSchema.model");
 const Scheduled = require("../model/scheduledSchema.model");
 const Task = require("../model/taskSchema.model");
-const Complaint = require('../model/complaintSchema.model');
+const Complaint = require("../model/complaintSchema.model");
 
 const Search = async (req, res) => {
   try {
@@ -13,16 +13,102 @@ const Search = async (req, res) => {
     if (!query) return res.status(400).json({ message: "Query is required" });
 
     const regex = new RegExp(query, "i");
+    const isNumeric = !isNaN(query); // Check if query is a number
 
     // Search queries for each model
-    const accounts = await Account.find({ $or: [ {accountName:regex} ,{ contactName: regex }, { emailAddress: regex }, { contactNumber: regex }, { accountType1: regex } , {industry : regex} , {status: regex} , {accountManager : regex} , {address:regex} , {companyName : regex} , {bankDetails : regex}] }).limit(5);
-    const complaint = await Complaint.find({$or: [{ complainerName: regex },{companyName:regex} , { contactNumber: regex }, { emailAddress: regex } ,{subject:regex} , {caseStatus : regex} , {caaseOrigin : regex}] }).limit(5);
-    const contacts = await Contact.find({ $or: [{ companyName: regex },{ customerName: regex }, { emailAddress: regex }, { contactNumber: regex }, { address: regex } , {gstNumber : regex}] }).limit(5);
-    const deals = await Deal.find({ $or: [{ companyName: regex }, { emailAddress: regex }, { contactNumber: regex }, { address: regex }] }).limit(5);
-    const invoices = await Invoice.find({ $or: [{ companyName: regex },{ customerName: regex }, { emailAddress: regex }, { contactNumber: regex }, { address: regex } , {gstNumber : regex} , {customerName: regex} , {productName: regex} , {amount : regex} , {status : regex}] }).limit(5);
-    const leads = await Lead.find({ $or: [{ companyName: regex },{ customerName: regex }, { emailAddress: regex }, { contactNumber: regex }, { address: regex } , {productName : regex} , {amount:regex} , {gstNumber:regex},{status: regex}] }).limit(5);
-    const schedules = await Scheduled.find({ $or: [{ subject: regex }, { assignedUser: regex }, { customer: regex }, { address: regex }] }).limit(5);
-    const tasks = await Task.find({ $or: [{ name: regex },{ subject: regex }, { assigned: regex } , {notes: regex} ] }).limit(5);
+    const accounts = await Account.find({ 
+      $or: [
+        { accountName: regex },
+        { contactName: regex },
+        { emailAddress: regex },
+        { contactNumber: regex },
+        { accountType1: regex },
+        { industry: regex },
+        { status: regex },
+        { accountManager: regex },
+        { address: regex },
+        { companyName: regex },
+        { bankDetails: regex }
+      ] 
+    }).limit(5);
+
+    const complaint = await Complaint.find({
+      $or: [
+        { complainerName: regex },
+        { companyName: regex },
+        { contactNumber: regex },
+        { emailAddress: regex },
+        { subject: regex },
+        { caseStatus: regex },
+        { caseOrigin: regex } // Fixed typo
+      ]
+    }).limit(5);
+
+    const contacts = await Contact.find({
+      $or: [
+        { companyName: regex },
+        { customerName: regex },
+        { emailAddress: regex },
+        { contactNumber: regex },
+        { address: regex },
+        { gstNumber: regex }
+      ]
+    }).limit(5);
+
+    const deals = await Deal.find({
+      $or: [
+        { companyName: regex },
+        { emailAddress: regex },
+        { contactNumber: regex },
+        { address: regex }
+      ]
+    }).limit(5);
+
+    const invoices = await Invoice.find({
+      $or: [
+        { companyName: regex },
+        { customerName: regex },
+        { emailAddress: regex },
+        { contactNumber: regex },
+        { address: regex },
+        { gstNumber: regex },
+        { productName: regex },
+        { status: regex },
+        ...(isNumeric ? [{ amount: Number(query) }] : []) // Only add if query is a number
+      ]
+    }).limit(5);
+
+    const leads = await Lead.find({
+      $or: [
+        { companyName: regex },
+        { customerName: regex },
+        { emailAddress: regex },
+        { contactNumber: regex },
+        { address: regex },
+        { productName: regex },
+        { gstNumber: regex },
+        { status: regex },
+        ...(isNumeric ? [{ amount: Number(query) }] : []) // Only add if query is a number
+      ]
+    }).limit(5);
+
+    const schedules = await Scheduled.find({
+      $or: [
+        { subject: regex },
+        { assignedUser: regex },
+        { customer: regex },
+        { address: regex }
+      ]
+    }).limit(5);
+
+    const tasks = await Task.find({
+      $or: [
+        { name: regex },
+        { subject: regex },
+        { assigned: regex },
+        { notes: regex }
+      ]
+    }).limit(5);
 
     let suggestions = [];
     if (accounts.length > 0) suggestions.push({ page: "Accounts", path: "/Account" });
@@ -34,10 +120,10 @@ const Search = async (req, res) => {
     if (schedules.length > 0) suggestions.push({ page: "Schedules", path: "/Scheduled" });
     if (tasks.length > 0) suggestions.push({ page: "Tasks", path: "/task" });
 
-    res.json({  deals, contacts, accounts, invoices, leads, schedules, tasks, complaint, suggestions });
+    res.json({ deals, contacts, accounts, invoices, leads, schedules, tasks, complaint, suggestions });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("Search Error:", error);
+    res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
 
