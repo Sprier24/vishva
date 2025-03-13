@@ -14,7 +14,10 @@ const invoiceSchema = new mongoose.Schema(
     amount: { type: Number},  
     discount: { type: Number},
     gstRate: { type: Number},
-    status: { type: String },
+    status: { 
+      type: String,
+      enum: ['Unpaid','Paid','Pending'],
+    },
     date: { type: Date},
     endDate:{type:Date},
     totalWithoutGst: { type: Number},

@@ -323,48 +323,37 @@ const getPaidInvoices = async (req, res) => {
 const transporter = nodemailer.createTransport({
     service: "gmail",  // Or another service like SendGrid
     auth: {
-        user: "purvagalani@gmail.com",  // Replace with your Gmail ID
-        pass: "tefl tsvl dxuo toch",  // Replace with your Gmail App Password
+        user: process.env.EMAIL_USER,  // Get email from .env
+        pass: process.env.EMAIL_PASS,  // Get password from .env
     },
 });
 
-const sendEmailReminder = async (req, res) => {
-    const { id } = req.params; // Extract the contact ID from the request parameters
-    const { message } = req.body; // Extract the message from the request body
 
-    // Validate the message field
-    if (!message) {
+const sendEmailReminder = async (req, res) => {
+    const { to, subject = "(No Subject)", message = "(No Message)" } = req.body; // Provide default values
+    const attachments = req.files; // Get uploaded files
+  
+    if (!to) {
         return res.status(400).json({
             success: false,
-            message: "Message content is required",
+            message: "The recipient's email (to) is required.",
         });
     }
-
+  
     try {
-        // Find the invoice by ID
-        const invoice = await Invoice.findById(id);
-
-        if (!invoice) {
-            return res.status(404).json({ success: false, message: "Invoice not found" });
-        }
-
-        // Validate the email address
-        if (!invoice.emailAddress) {
-            return res.status(400).json({
-                success: false,
-                message: "Email address not available for this invoice",
-            });
-        }
-
-        // Define the email options
         const mailOptions = {
-            from: "your-email@gmail.com", // Your email address
-            to: invoice.emailAddress, // Recipient's email address from the database
-            subject: `Payment Reminder for Invoice #${invoice.id}`, // Subject of the email
-            text: message, // The message the user wrote
+            from: "purvagalani@gmail.com",
+            to: to,
+            subject: subject || "(No Subject)", // Use default if empty
+            html: message || "(No Message)", // Use default if empty
+            attachments: attachments
+                ? attachments.map(file => ({
+                      filename: file.originalname,
+                      path: file.path,
+                  }))
+                : [], // Handle case where there are no attachments
         };
-
-        // Send the email using Nodemailer
+  
         transporter.sendMail(mailOptions, (error, info) => {
             if (error) {
                 console.error("Error sending email:", error.message);
@@ -373,12 +362,12 @@ const sendEmailReminder = async (req, res) => {
                     message: "Error sending email: " + error.message,
                 });
             }
-
+  
             console.log("Email sent successfully: " + info.response);
             res.status(200).json({
                 success: true,
-                message: `Email sent successfully to ${invoice.emailAddress}`,
-                data: info.response, // Return the email info (optional)
+                message: `Email sent successfully to ${to}`,
+                data: info.response,
             });
         });
     } catch (error) {
@@ -388,7 +377,7 @@ const sendEmailReminder = async (req, res) => {
             message: "Internal server error: " + error.message,
         });
     }
-};
+  };
 
 
 const sendWhatsAppReminder = async (req, res) => {
@@ -450,6 +439,21 @@ const updateCustomMessage = async(req,res)=>{
 }
 
 const getInvoicesByStatus = async (req, res) => {
+    const { status } = req.query;
+  
+    try {
+      const invoices = await Invoice.find({ status }, 'Name email amount');
+      res.status(200).json({
+        success: true,
+        data: invoices
+      });
+    } catch (error) {
+      console.error(`Error fetching ${status} invoices:`, error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error: " + error.message,
+      });
+    }
 };
 
 const updateStatus = async (req, res) => {
