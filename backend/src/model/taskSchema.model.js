@@ -21,8 +21,6 @@ const taskSchema = new mongoose.Schema({
     default: "Medium",
   },
   assigned: { type: String },
-  // lastReminderDate: { type: Date },
-  // lastReminder: { type: String },
   notes: {
     type: String,
     default: "",

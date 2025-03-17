@@ -15,7 +15,6 @@ router.get('/discussion',DealController.getDiscussionLeads);
 router.get('/demo', DealController.getDemoLeads);
 router.get('/proposal', DealController.getProposalLeads);
 router.get('/decided', DealController.getDecidedLeads);
-
 router.post('/updateDealStatus',DealController.updateStatus);
 router.get('/getDealsByStatus', DealController.getDealsByStatus);
 

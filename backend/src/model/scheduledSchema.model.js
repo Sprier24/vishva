@@ -2,24 +2,19 @@ const mongoose = require("mongoose");
 const scheduledEventSchema = new mongoose.Schema({
   subject: {
     type: String,
-    // required: true,
   },
   assignedUser: {
     type: String,
-    // required: true,
   },
   customer: {
     type: String,
-    // required: true,
   },
   location: {
     type: String,
-    // required: true,
   },
   status: {
     type: String,
     enum: ["Scheduled", "Completed", "Cancelled", "Postpone"],
-    // required: true,
   },
   eventType: {
     type: String,
@@ -33,13 +28,10 @@ const scheduledEventSchema = new mongoose.Schema({
       "Follow-Up",
       "follow-up",
     ],
-    // required: true,
-    // default: "call",
   },
   priority: {
     type: String,
     enum: ["Low", "low", "Medium", "medium", "High", "high"],
-    // required: true,
   },
   date: {
     type: Date,

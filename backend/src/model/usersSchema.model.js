@@ -17,7 +17,6 @@ const usersSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            // required: true,
             trim: true
         },
         isVerified :{
@@ -32,25 +31,6 @@ const usersSchema = new mongoose.Schema(
             type:Boolean,
             default:true
         },
-      
-
-        // isProfileComplete: { type: Boolean, default: false } // New field
-
-        // role: {
-        //     type: String,
-        //     required: true,
-        //     trim: true,
-        //     lowercase: true
-        // },
-        // refresh_token: {
-        //     type: String,
-        //     trim: true
-        // },
-        // isActive: {
-        //     type: Boolean,
-        //     default: true
-        // },
-
     },
     {
         timestamps: true,

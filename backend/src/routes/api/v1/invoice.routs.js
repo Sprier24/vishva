@@ -12,7 +12,6 @@ router.get("/getInvoice/:id", InvoiceController.getInvoiceById);
 router.get("/getUnpaidInvoices", InvoiceController.getUnpaidInvoices);
 router.get("/getPaidInvoices", InvoiceController.getPaidInvoices);
 router.post("/sendEmailReminder", upload.array('attachments[]'), InvoiceController.sendEmailReminder); 
-router.put("/updateCustomMessage/:id",InvoiceController.updateCustomMessage);
 router.get("/getInvoicesByStatus", InvoiceController.getInvoicesByStatus);
 router.post('/updateInvoiceStatus',InvoiceController.updateStatus);
 

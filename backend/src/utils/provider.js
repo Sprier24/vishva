@@ -1,8 +1,9 @@
 require("dotenv").config();
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-const GoogleUser = require("../model/googleuserSchema.model");
-const jwt = require("jsonwebtoken");
+const Users = require("../model/usersSchema.model");
+const jwt = require('jsonwebtoken');
+
 passport.use(
   new GoogleStrategy(
     {
@@ -13,31 +14,34 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await GoogleUser.findOne({ googleId: profile.id });
+        let user = await Users.findOne({ googleId: profile.id });
 
         if (!user) {
-          // Create new user on first login
-          user = await GoogleUser.create({
-            googleId: profile.id,
+          user = await Users.create({
             name: profile.displayName,
-            email: profile.emails?.[0]?.value, // Ensure email is included
+            email: profile.emails?.[0]?.value,
             image: profile.photos?.[0]?.value,
             password: null,
-            isFirstLogin: true,
+            isFirstLogin: true, 
           });
         }
 
-        // Generate a JWT token
+        const isFirstLogin = user.isFirstLogin;
+
+        if (isFirstLogin) {
+          user.isFirstLogin = false; 
+          await user.save();
+        }
         const createToken = (id) => {
-          return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+          return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         };
+
         const newToken = createToken(user._id);
 
-        // Attach additional data to the user object
         const userWithToken = {
           ...user.toObject(),
           token: newToken,
-          isFirstLogin: user.isFirstLogin,
+          isFirstLogin,
         };
 
         return done(null, userWithToken);
@@ -47,13 +51,11 @@ passport.use(
     }
   )
 );
-/// Serialize user into the session
-// Serialize user into the session
+
 passport.serializeUser((user, done) => {
-  done(null, user); // Store the entire user object in the session
+  done(null, user);
 });
-// Deserialize user from the session
-// Deserialize user from the session
+
 passport.deserializeUser((user, done) => {
-  done(null, user); // Retrieve the entire user object from the session
+  done(null, user);
 });

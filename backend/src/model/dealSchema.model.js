@@ -19,7 +19,7 @@ const dealSchema = new mongoose.Schema(
 
       validate: {
         validator: function (v) {
-          return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v); // Email validation
+          return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v); 
         },
         message: (props) => `${props.value} is not a valid email!`,
       },
@@ -38,11 +38,10 @@ const dealSchema = new mongoose.Schema(
     },
     gstNumber: {
       type: String,
-      // required: true,
     },
     status: {
       type: String,
-      enum: ["New", "Discussion", "Demo", "Proposal", "Decided"], // Add your statuses here
+      enum: ["New", "Discussion", "Demo", "Proposal", "Decided"],
     },
     date: {
       type: Date,

@@ -1,7 +1,5 @@
 const Notification = require('../model/notificationSchema.model');
 
-
-// Store a notification
 const storeNotification = async (notificationData) => {
   try {
     await Notification.create(notificationData);
@@ -11,7 +9,6 @@ const storeNotification = async (notificationData) => {
   }
 };
 
-// Fetch all notifications
 const getAllNotifications = async (req, res) => {
   try {
     const notifications = await Notification.find({});
@@ -28,7 +25,6 @@ const getAllNotifications = async (req, res) => {
   }
 };
 
-// Delete a notification by ID
 const deleteNotification = async (req, res) => {
   const { id } = req.params;
 
@@ -57,7 +53,7 @@ const deleteNotification = async (req, res) => {
 
 const deleteAllNotifications = async (req, res) => {
   try {
-    await Notification.deleteMany({}); // Deletes all notifications
+    await Notification.deleteMany({});
     res.status(200).json({
       success: true,
       message: 'All notifications deleted successfully',
@@ -71,12 +67,9 @@ const deleteAllNotifications = async (req, res) => {
   }
 };
 
-
-
 module.exports = {
-  storeNotification, // For automatic storage
+  storeNotification, 
   getAllNotifications,
   deleteNotification,
   deleteAllNotifications,
 };
-

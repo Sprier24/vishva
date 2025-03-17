@@ -8,22 +8,20 @@ const createDeal = async (req, res) => {
         const dealData = new Deal({
             companyName,
             customerName,
-            contactNumber: req.body.contactNumber,  // Contact number is optional
-            emailAddress,
+            contactNumber: req.body.contactNumber,  
             address,
             productName,
             amount,
-            gstNumber: req.body.gstNumber,  // GST number is optional
-            status: status || 'New',  // Default status is 'New' if not provided
+            gstNumber: req.body.gstNumber,  
+            status: status || 'New',  
             date,
-            endDate: req.body.endDate,  // EndDate is optional
-            notes: req.body.notes || '',  // Notes are optional
-            isActive: req.body.isActive ?? true,  // Default isActive to true if not provided
+            endDate: req.body.endDate,  
+            notes: req.body.notes || '',  
+            isActive: req.body.isActive ?? true, 
         });
 
-        await dealData.save();  // Save to the database
+        await dealData.save();  
 
-        // Respond with a success message
         res.status(201).json({
             success: true,
             message: "Deal created successfully",
@@ -62,7 +60,6 @@ const getAllDeals = async (req, res) => {
     }
 };
 
-// Get a lead by ID
 const getLeadById = async (req, res) => {
     const { id } = req.params;
 
@@ -90,11 +87,10 @@ const getLeadById = async (req, res) => {
 };
 
 const updateLead = async (req, res) => {
-    const { id } = req.params;  // Extract leadId from the request params
-    const updates = req.body;   // Get the updated data from the request body
+    const { id } = req.params;  
+    const updates = req.body;   
 
     try {
-        // Check if the leadId is a valid MongoDB ObjectId
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
                 success: false,
@@ -102,7 +98,6 @@ const updateLead = async (req, res) => {
             });
         }
 
-        // Check if any updates are provided
         if (Object.keys(updates).length === 0) {
             return res.status(400).json({
                 success: false,
@@ -110,17 +105,15 @@ const updateLead = async (req, res) => {
             });
         }
 
-        // Update the lead with the new data
         const updatedLead = await Lead.findByIdAndUpdate(
             id,
             updates,
             {
-                new: true,  // Return the updated lead after the update
-                runValidators: true  // Ensure validators are triggered
+                new: true,  
+                runValidators: true  
             }
         );
 
-        // Check if the lead was found and updated
         if (!updatedLead) {
             return res.status(404).json({
                 success: false,
@@ -128,7 +121,6 @@ const updateLead = async (req, res) => {
             });
         }
 
-        // Return the updated lead
         res.status(200).json({
             success: true,
             message: "Lead updated successfully",
@@ -143,8 +135,6 @@ const updateLead = async (req, res) => {
     }
 };
 
-
-// Delete a lead by ID
 const deleteLead = async (req, res) => {
     const { id } = req.params;
 
@@ -172,7 +162,6 @@ const deleteLead = async (req, res) => {
     }
 };
 
-// Function to get New leads
 const getNewLeads = async (req, res) => {
     try {
         const leads = await Lead.find({ status: 'New' }, 'Name email amount');
@@ -189,7 +178,6 @@ const getNewLeads = async (req, res) => {
     }
 };
 
-// Function to get Discussion leads
 const getDiscussionLeads = async (req, res) => {
     try {
         const leads = await Lead.find({ status: 'Discussion' }, 'Name email amount');
@@ -206,7 +194,6 @@ const getDiscussionLeads = async (req, res) => {
     }
 };
 
-// Function to get Demo leads
 const getDemoLeads = async (req, res) => {
     try {
         const leads = await Lead.find({ status: 'Demo' }, ' email amount');
@@ -223,7 +210,6 @@ const getDemoLeads = async (req, res) => {
     }
 };
 
-// Function to get Proposal leads
 const getProposalLeads = async (req, res) => {
     try {
         const leads = await Lead.find({ status: 'Proposal' }, 'Name email amount');
@@ -240,7 +226,6 @@ const getProposalLeads = async (req, res) => {
     }
 };
 
-// Function to get Decided leads
 const getDecidedLeads = async (req, res) => {
     try {
         const leads = await Lead.find({ status: 'Decided' });
@@ -257,7 +242,6 @@ const getDecidedLeads = async (req, res) => {
     }
 };
 
-// Search leads by month
 const searchByMonth = async (req, res) => {
     const { month, year } = req.query;
 
@@ -274,7 +258,6 @@ const searchByMonth = async (req, res) => {
     }
 };
 
-// Search leads by year
 const searchByYear = async (req, res) => {
     const { year } = req.query;
 
@@ -291,7 +274,6 @@ const searchByYear = async (req, res) => {
     }
 };
 
-// Search leads by date
 const searchByDate = async (req, res) => {
     const { date } = req.query;
 
@@ -356,7 +338,6 @@ module.exports = {
     getDemoLeads,
     getProposalLeads,
     getDecidedLeads,
-
     updateStatus,
     searchByMonth,
     searchByYear,
