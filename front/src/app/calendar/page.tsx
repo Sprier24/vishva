@@ -10,11 +10,12 @@ import {
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import SearchBar from '@/components/globalSearch';
+import Notification from '@/components/notification';
 
-// Define Event and Calendar types
 interface Event {
-  _id: string; // Updated to match backend
-  event: string; // Changed from `title` to `event`
+  _id: string;
+  event: string;
   date: string;
   calendarId: number;
 }
@@ -27,13 +28,11 @@ interface Calendar {
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [events, setEvents] = useState<Event[]>([]); // Define state type
+  const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showEventModal, setShowEventModal] = useState<boolean>(false);
-
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
-
   const calendars: Calendar[] = [
     { id: 1, name: 'High', color: 'bg-blue-500' },
     { id: 2, name: 'Medium', color: 'bg-green-500' },
@@ -197,11 +196,19 @@ export default function CalendarPage() {
                   <BreadcrumbLink href="/invoice"></BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Calendar</BreadcrumbPage>
-                </BreadcrumbItem>
+                <span>
+                  Calendar
+                </span>
               </BreadcrumbList>
             </Breadcrumb>
+            <div className="flex items-center space-x-4 ml-auto mr-4">
+              <div  >
+                <SearchBar />
+              </div>
+              <div>
+                <Notification />
+              </div>
+            </div>
           </div>
         </header>
         <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15">

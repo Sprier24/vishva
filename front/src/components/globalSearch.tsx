@@ -32,7 +32,7 @@ const SearchBar = () => {
     <div className="relative w-full max-w-lg lg:max-w-md">
       <Input
         type="text"
-        placeholder="Search..."
+        placeholder="Search"
         value={query}
         onChange={handleSearch}
         className="w-full p-2 border rounded-md shadow-sm focus:ring focus:ring-blue-300"

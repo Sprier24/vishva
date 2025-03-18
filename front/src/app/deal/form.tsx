@@ -66,17 +66,17 @@ export default function DealForm() {
             })
             const data = await response.json()
             if (!response.ok) {
-                throw new Error(data.error || "Failed to submit the lead")
+                throw new Error(data.error || "Failed to submit the deal")
             }
             toast({
-                title: "Lead Submitted",
-                description: `Your lead has been successfully submitted. ID: ${data.id}`,
+                title: "Deal Submitted",
+                description: `Your Deal has been successfully submitted. `,
             })
             router.push("/deal/table")
         } catch (error) {
             toast({
                 title: "Error",
-                description: error instanceof Error ? error.message : "There was an error submitting the lead.",
+                description: error instanceof Error ? error.message : "There was an error submitting the deal.",
                 variant: "destructive",
             })
         } finally {

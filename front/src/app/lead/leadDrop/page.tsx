@@ -174,7 +174,7 @@ const formatDate = (dateString: string): string => {
       </header>
         <div className="p-6">
           {error && <p className="text-red-500 text-center">{error}</p>}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
             {Object.keys(statusColors).map((status) => {
               const leadsInStatus = groupedLeads[status] || [];
               const totalAmount = leadsInStatus.reduce((sum, lead) => sum + lead.amount, 0);
@@ -182,7 +182,6 @@ const formatDate = (dateString: string): string => {
               return (
                 <div
                   key={status}
-                  className={`p-4 rounded-lg  min-h-[530px] transition-all ${draggedOver === status}`}
                   onDrop={(e) => handleDrop(e, status)}
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -190,37 +189,28 @@ const formatDate = (dateString: string): string => {
                   }}
                   onDragLeave={() => setDraggedOver(null)}
                 >
-                  <h2 className={`text-sm font-bold mb-4 px-5 py-2 rounded-lg ${statusColors[status]}`}>{status}</h2>
-                  <div className="p-3  border-2 border-black  rounded-md shadow">
-                    <p className="text-sm font-semibold text-gray-500">Total Leads: {leadsInStatus.length}</p>
-                    <p className="text-sm font-semibold text-gray-500">Total Amount: ₹{totalAmount}</p>
+                  <h2 className={`text-base font-bold mb-4 px-5 py-2 rounded-lg ${statusColors[status]}`}>{status}</h2>
+                  <div className="p-4 rounded-lg shadow-sm border border-black mb-4">
+                    <p className="text-sm font-semibold text-gray-800">Total Leads: {leadsInStatus.length}</p>
+                    <p className="text-sm font-semibold text-gray-800">Total Amount: ₹{totalAmount}</p>
                   </div>
-                  <div
-                    className="scrollable"
-                  >
+                  <div  className="mt-4 flex flex-col gap-3 min-h-[250px] max-h-[500px] h-[350px] overflow-y-auto scrollbar-hide">
                     {leadsInStatus.length === 0 ? (
                       <p className="text-gray-500 text-center">No leads available</p>
                     ) : (
                       leadsInStatus.map((lead) => (
                         <div
                           key={lead._id}
-                          className="card-container  mt-4"
-                        >
-                          <div
-                            className="card"
+                          className="p-3 border border-black rounded-lg bg-white shadow-sm cursor-grab"
                             draggable
                             onDragStart={(e) => handleDragStart(e, lead, status)}
                             onClick={() => handleLeadClick(lead)}
-                          >
-
-                            <p>Company Name: <span>{lead.companyName}</span></p>
-                            <p>Product: <span>{lead.productName}</span></p>
-                            <p>Amount: <span>₹{lead.amount}</span></p>
-                            <p>Next Date: <span>{formatDate(lead.endDate)}</span></p>
-
-                          </div>
+                            >
+                            <p className="text-sm font-semibold text-gray-800">Company Name: <span>{lead.companyName}</span></p>
+                            <p className="text-sm font-semibold text-gray-800">Product: <span>{lead.productName}</span></p>
+                            <p className="text-sm font-semibold text-gray-800">Amount: <span>₹{lead.amount}</span></p>
+                            <p className="text-sm font-semibold text-gray-800">Next Date: <span>{formatDate(lead.endDate)}</span></p>                       
                         </div>
-
                       ))
                     )}
                   </div>

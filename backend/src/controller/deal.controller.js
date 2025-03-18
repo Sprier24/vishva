@@ -9,6 +9,7 @@ const createDeal = async (req, res) => {
             companyName,
             customerName,
             contactNumber: req.body.contactNumber,  
+            emailAddress,
             address,
             productName,
             amount,

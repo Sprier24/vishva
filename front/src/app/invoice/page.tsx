@@ -25,9 +25,9 @@ export default function CertificatePage() {
                                         Invocie
                                     </BreadcrumbLink>
                                     <BreadcrumbSeparator className="hidden md:block" />
-                                    <BreadcrumbLink href="">
-                                        Create
-                                    </BreadcrumbLink>
+                                    <span>
+                                        Create Invoice
+                                    </span>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>

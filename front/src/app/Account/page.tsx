@@ -6,6 +6,9 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import SearchBar from "@/components/globalSearch"
+import { Calendar1 } from "lucide-react"
+import Notification from '@/components/notification';
 
 export default function CertificatePage() {
     return (
@@ -18,22 +21,35 @@ export default function CertificatePage() {
                         <Separator orientation="vertical" className="mr-2 h-4" />
                         <Breadcrumb className="flex items-center space-x-2">
                             <BreadcrumbList className="flex items-center space-x-2">
-                                <BreadcrumbItem className="flex items-center">
+                                <BreadcrumbItem className="hidden sm:block md:block">
                                     <BreadcrumbLink href="/dashboard">
                                         Dashboard
                                     </BreadcrumbLink>
-                                    <BreadcrumbSeparator className="hidden md:block" />
+                                    <BreadcrumbSeparator className="hidden sm:block md:block" />
                                     <BreadcrumbLink href="/Account/table">
                                         Account
                                     </BreadcrumbLink>
-                                    <BreadcrumbSeparator className="hidden md:block" />
-                                    <BreadcrumbLink href="">
-                                        Create
-                                    </BreadcrumbLink>
+                                    <BreadcrumbSeparator className="hidden sm:block md:block" />
+                                    <span className="hidden sm:block md:block">
+                                        Create Account
+                                    </span>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>
+                     <div className="flex items-center space-x-4 ml-auto mr-4">
+                                            <div  >
+                                                <SearchBar />
+                                            </div>
+                                            <a href="/calendar">
+                                                <div>
+                                                    <Calendar1 />
+                                                </div>
+                                            </a>
+                                            <div>
+                                                <Notification />
+                                            </div>
+                                        </div>
                 </header>
                 <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15">
                     <Card className="max-w-8xl mx-auto border-none">

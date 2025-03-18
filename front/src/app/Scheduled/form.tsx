@@ -98,12 +98,12 @@ export default function ScheduledEventForm() {
           />
           <FormField
             control={form.control}
-            name="assignedUser"
+            name="location"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Hosted By</FormLabel>
+                <FormLabel>Event or Meeting Location</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter event or meeting, host name or host company name" {...field} />
+                  <Input placeholder="Enter event or meeting location" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -114,12 +114,12 @@ export default function ScheduledEventForm() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             control={form.control}
-            name="location"
+            name="assignedUser"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Event or Meeting Location</FormLabel>
+                <FormLabel>Hosted By</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter event or meeting location" {...field} />
+                  <Input placeholder="Enter event or meeting, host name or host company name" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -236,7 +236,7 @@ export default function ScheduledEventForm() {
             name="date"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Date</FormLabel>
+                <FormLabel>Event Date</FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -292,7 +292,7 @@ export default function ScheduledEventForm() {
                 Submitting...
               </>
             ) : (
-              "Create"
+              "Create Event or Meeting"
             )}
           </Button>
         </div>

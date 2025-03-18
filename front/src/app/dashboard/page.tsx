@@ -1,7 +1,7 @@
 "use client"
 
 import { AppSidebar } from "@/components/app-sidebar"
-import { ModeToggle } from "@/components/ModeToggle"
+// import { ModeToggle } from "@/components/ModeToggle"
 import { Breadcrumb, BreadcrumbSeparator, BreadcrumbPage, BreadcrumbList, BreadcrumbLink, BreadcrumbItem } from "@/components/ui/breadcrumb"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
@@ -9,7 +9,6 @@ import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
 import { Selection } from "@nextui-org/react";
 import { Separator } from "@/components/ui/separator";
-import { SortDescriptor } from "@nextui-org/react"
 
 import {
   SidebarInset,
@@ -34,7 +33,7 @@ import {
   styled,
 } from "@mui/material";
 import { Button, Pagination, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Chip, Tooltip, ChipProps, Input } from "@heroui/react"
-import { Pencil, Trash2, Search } from "lucide-react";
+import { Pencil, Trash2, Search, Calendar1 } from "lucide-react";
 
 //Lead//
 const chartConfig = {
@@ -567,7 +566,7 @@ export default function Page() {
         };
 
         return Object.values(searchableFields).some(value =>
-          String(value || '').toLowerCase().includes(filterValue.toLowerCase())
+          String(value || '').toLowerCase().includes(filterValueReminder.toLowerCase())
         );
       });
     }
@@ -579,7 +578,7 @@ export default function Page() {
     }
 
     return filteredReminder;
-  }, [leads, filterValue, statusFilter]);
+  }, [leads, filterValueReminder, statusFilter]);
 
 
   const filteredItemsSchedule = React.useMemo(() => {
@@ -597,7 +596,7 @@ export default function Page() {
         };
 
         return Object.values(searchableFields).some(value =>
-          String(value || '').toLowerCase().includes(filterValue.toLowerCase())
+          String(value || '').toLowerCase().includes(filterValueSchedule.toLowerCase())
         );
       });
     }
@@ -609,7 +608,7 @@ export default function Page() {
     }
 
     return filteredSchedule;
-  }, [schedule, filterValue, statusFilter]);
+  }, [schedule, filterValueSchedule, statusFilter]);
 
 
   // Add this near the top of your file, where other constants are defined
@@ -862,14 +861,14 @@ export default function Page() {
       try {
         const response = await fetch('http://localhost:8000/api/v1/task/getAllTasks');
         const result = await response.json();
-  
+
         if (!result || !Array.isArray(result.data)) {
           console.error('Invalid data format received:', result);
           return;
         }
-  
+
         setTasks(result.data);
-  
+
         const categorized = result.data.reduce((acc: CategorizedTasks, task: Task) => {
           if (!acc[task.status]) {
             acc[task.status] = [];
@@ -877,13 +876,13 @@ export default function Page() {
           acc[task.status].push(task);
           return acc;
         }, {} as CategorizedTasks);
-  
+
         setCategorizedTasks(categorized);
       } catch (error) {
         console.error('Error fetching tasks:', error);
       }
     };
-  
+
     fetchTasks();
   }, []);
 
@@ -1508,9 +1507,9 @@ export default function Page() {
           <CardContent>
             <ChartContainer
               config={chartConfigDeal}
-              style={{  padding: "10px", borderRadius: "8px" }}
+              style={{ backgroundColor: "black", padding: "10px", borderRadius: "8px" }}
             >
-              <BarChart width={width} height={height} data={dynamicChartDataDeal} >
+              <BarChart width={width} height={height} data={dynamicChartDataDeal} style={{ backgroundColor: "black" }}>
                 <CartesianGrid stroke="rgba(255, 255, 255, 0.2)" vertical={false} />
                 <XAxis
                   dataKey="browser"
@@ -1527,7 +1526,7 @@ export default function Page() {
                   content={
                     <ChartTooltipContent
                       hideLabel
-                      style={{  color: "white", border: "1px solid white" }}
+                      style={{ backgroundColor: "black", color: "white", border: "1px solid white" }}
                     />
                   }
                 />
@@ -2016,18 +2015,14 @@ export default function Page() {
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
-            <ModeToggle />
+            {/* <ModeToggle /> */}
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">
+                  <span>
                     Dashboard
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data</BreadcrumbPage>
+                  </span>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -2036,16 +2031,20 @@ export default function Page() {
             <div  >
               <SearchBar />
             </div>
+            <a href="/calendar">
+              <div>
+                <Calendar1 />
+              </div>
+            </a>
             <div>
               <Notification />
             </div>
           </div>
         </header>
         <Box sx={{ width: '100%' }}>
-          <h1 className="text-2xl font-semibold mb-8 mt-4" style={{ textAlign: "center" }}>Charts</h1>
+          <h1 className="text-2xl font-semibold mb-8 mt-4" style={{ textAlign: "center" }}>S P R I E R S</h1>
           <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
 
-            {/* Lead */}
             <Grid item xs={12} md={6} lg={4}>
               <Item>
                 <div>
@@ -2063,14 +2062,11 @@ export default function Page() {
                     </Select>
                   </FormControl>
 
-                  {/* Render Selected Chart */}
                   <div className="mt-4">{renderChartLead()}</div>
                 </div>
               </Item>
             </Grid>
-            {/* End Lead */}
 
-            {/* Invoice */}
             <Grid item xs={12} md={6} lg={4}>
               <Item>
                 <div>
@@ -2087,15 +2083,11 @@ export default function Page() {
                       <MenuItem value="Bar Chart">Bar Chart</MenuItem>
                     </Select>
                   </FormControl>
-
-                  {/* Render Selected Chart */}
                   <div className="mt-4">{renderChartInvoice()}</div>
                 </div>
               </Item>
             </Grid>
-            {/* End Invoice */}
 
-            {/* Deal */}
             <Grid item xs={12} md={6} lg={4}>
               <Item>
                 <div>
@@ -2112,23 +2104,19 @@ export default function Page() {
                       <MenuItem value="Bar Chart">Bar Chart</MenuItem>
                     </Select>
                   </FormControl>
-
-                  {/* Render Selected Chart */}
                   <div className="mt-4">{renderChartDeal()}</div>
                 </div>
               </Item>
             </Grid>
-            {/* End Deal */}
 
-            {/* Lead Table */}
-            <Grid item xs={12} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Lead Table</h1>
+            <Grid item xs={12} sm={6} md={6} lg={6}>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Lead Record</h1>
               <Item>
                 <div className="flex justify-between items-center gap-3">
                   <Input
                     isClearable
-                    className="w-full sm:max-w-[44%]"
-                    placeholder="Search by name, email, product..."
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
                     startContent={<Search size={20} />}
                     value={filterValue}
                     onClear={() => setFilterValue("")}
@@ -2171,64 +2159,14 @@ export default function Page() {
               </Item>
             </Grid>
 
-            {/* Invoice Table */}
             <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Invoice Table</h1>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Deal Record</h1>
               <Item>
                 <div className="flex justify-between items-center gap-3">
                   <Input
                     isClearable
-                    className="w-full sm:max-w-[44%]"
-                    placeholder="Search by name, email, product..."
-                    startContent={<Search size={20} />}
-                    value={filterValueInvoice}
-                    onClear={() => setFilterValueInvoice("")}
-                    onValueChange={setFilterValueInvoice}
-                  />
-                </div>
-                <Table
-                  isHeaderSticky
-                  aria-label="Invoices table with custom cells, pagination and sorting"
-                  bottomContent={bottomContentInvoice}
-                  bottomContentPlacement="outside"
-                  classNames={{
-                    wrapper: "max-h-[382px]",
-                  }}
-                  selectedKeys={selectedKeysInvoice}
-                  selectionMode="none"
-                  topContentPlacement="outside"
-                >
-                  <TableHeader columns={columnsInvoice}>
-                    {(column) => (
-                      <TableColumn
-                        key={column.uid}
-                        align={column.uid === "actions" ? "center" : "start"}
-                        allowsSorting={column.sortable}
-                      >
-                        {column.name}
-                      </TableColumn>
-                    )}
-                  </TableHeader>
-                  <TableBody emptyContent={"No invoices found"} items={itemsInvoice}>
-                    {(item) => (
-                      <TableRow key={item._id}>
-                        {(columnKey) => <TableCell>{renderCellInvoice(item, columnKey)}</TableCell>}
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </Item>
-            </Grid>
-
-            {/* Deal Table */}
-            <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Deal Table</h1>
-              <Item>
-                <div className="flex justify-between items-center gap-3">
-                  <Input
-                    isClearable
-                    className="w-full sm:max-w-[44%]"
-                    placeholder="Search by name, email, product..."
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
                     startContent={<Search size={20} />}
                     value={filterValueDeal}
                     onClear={() => setFilterValueDeal("")}
@@ -2271,62 +2209,68 @@ export default function Page() {
               </Item>
             </Grid>
 
-            {/* Task Table */}
             <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Task Table</h1>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Invoice Record</h1>
               <Item>
                 <div className="flex justify-between items-center gap-3">
                   <Input
                     isClearable
-                    className="w-full sm:max-w-[44%]"
-                    placeholder="Search by name, email, product..."
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
                     startContent={<Search size={20} />}
-                    value={filterValueTask}
-                    onClear={() => setFilterValueTask("")}
-                    onValueChange={setFilterValueTask}
+                    value={filterValueInvoice}
+                    onClear={() => setFilterValueInvoice("")}
+                    onValueChange={setFilterValueInvoice}
                   />
                 </div>
                 <Table
-  isHeaderSticky
-  aria-label="Tasks table with custom cells, pagination and sorting"
-  bottomContent={bottomContentTask}
-  bottomContentPlacement="outside"
-  classNames={{
-    wrapper: "max-h-[382px]",
-  }}
-  selectedKeys={selectedKeysTask}
-  selectionMode="none"
-  sortDescriptor={sortDescriptorTask}
-  onSelectionChange={setSelectedKeysTask}
-  onSortChange={setSortDescriptorTask}
->
-  <TableHeader columns={columnsTask}>
-    {(column) => (
-      <TableColumn
-        key={column.uid}
-        align={column.uid === "actions" ? "center" : "start"}
-        allowsSorting={column.sortable}
-      >
-        {column.name}
-      </TableColumn>
-    )}
-  </TableHeader>
-  <TableBody emptyContent={"No tasks found"} items={sortedTasks}>
-    {(item) => (
-      <TableRow key={item._id}>
-        {(columnKey) => <TableCell>{renderCellTask(item, columnKey)}</TableCell>}
-      </TableRow>
-    )}
-  </TableBody>
-</Table>    
+                  isHeaderSticky
+                  aria-label="Invoices table with custom cells, pagination and sorting"
+                  bottomContent={bottomContentInvoice}
+                  bottomContentPlacement="outside"
+                  classNames={{
+                    wrapper: "max-h-[382px]",
+                  }}
+                  selectedKeys={selectedKeysInvoice}
+                  selectionMode="none"
+                  topContentPlacement="outside"
+                >
+                  <TableHeader columns={columnsInvoice}>
+                    {(column) => (
+                      <TableColumn
+                        key={column.uid}
+                        align={column.uid === "actions" ? "center" : "start"}
+                        allowsSorting={column.sortable}
+                      >
+                        {column.name}
+                      </TableColumn>
+                    )}
+                  </TableHeader>
+                  <TableBody emptyContent={"No invoices found"} items={itemsInvoice}>
+                    {(item) => (
+                      <TableRow key={item._id}>
+                        {(columnKey) => <TableCell>{renderCellInvoice(item, columnKey)}</TableCell>}
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </Item>
-
             </Grid>
 
-            {/* Remainder Table */}
             <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Remainder Table</h1>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Remainder Record</h1>
               <Item>
+                <div className="flex justify-between items-center gap-3">
+                  <Input
+                    isClearable
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
+                    startContent={<Search size={20} />}
+                    value={filterValueReminder}
+                    onClear={() => setFilterValueReminder("")}
+                    onValueChange={setFilterValueReminder}
+                  />
+                </div>
                 <Item>
                   <Table
                     isHeaderSticky
@@ -2364,10 +2308,71 @@ export default function Page() {
               </Item>
             </Grid>
 
-            {/* Scedule Table */}
             <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Schedule Table</h1>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Task Record</h1>
               <Item>
+                <div className="flex justify-between items-center gap-3">
+                  <Input
+                    isClearable
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
+                    startContent={<Search size={20} />}
+                    value={filterValueTask}
+                    onClear={() => setFilterValueTask("")}
+                    onValueChange={setFilterValueTask}
+                  />
+                </div>
+                <Table
+                  isHeaderSticky
+                  aria-label="Tasks table with custom cells, pagination and sorting"
+                  bottomContent={bottomContentTask}
+                  bottomContentPlacement="outside"
+                  classNames={{
+                    wrapper: "max-h-[382px]",
+                  }}
+                  selectedKeys={selectedKeysTask}
+                  selectionMode="none"
+                  sortDescriptor={sortDescriptorTask}
+                  onSelectionChange={setSelectedKeysTask}
+                  onSortChange={setSortDescriptorTask}
+                >
+                  <TableHeader columns={columnsTask}>
+                    {(column) => (
+                      <TableColumn
+                        key={column.uid}
+                        align={column.uid === "actions" ? "center" : "start"}
+                        allowsSorting={column.sortable}
+                      >
+                        {column.name}
+                      </TableColumn>
+                    )}
+                  </TableHeader>
+                  <TableBody emptyContent={"No tasks found"} items={sortedTasks}>
+                    {(item) => (
+                      <TableRow key={item._id}>
+                        {(columnKey) => <TableCell>{renderCellTask(item, columnKey)}</TableCell>}
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </Item>
+
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={6} lg={6}>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Event or Meeting Record</h1>
+              <Item>
+                <div className="flex justify-between items-center gap-3">
+                  <Input
+                    isClearable
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
+                    startContent={<Search size={20} />}
+                    value={filterValueSchedule}
+                    onClear={() => setFilterValueSchedule("")}
+                    onValueChange={setFilterValueSchedule}
+                  />
+                </div>
                 <Item>
                   <Table
                     isHeaderSticky
@@ -2405,6 +2410,7 @@ export default function Page() {
                 </Item>
               </Item>
             </Grid>
+
           </Grid>
         </Box>
       </SidebarInset>

@@ -15,7 +15,7 @@ import axios from "axios";
 import { format } from "date-fns"
 import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useRouter } from "next/navigation"; 
+import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar"
 
 interface Invoice {
@@ -75,36 +75,33 @@ const formatDate = (date: any) => {
 };
 
 const columns = [
-    { name: "COMPANY", uid: "companyName", sortable: true },
-    { name: "CUSTOMER", uid: "customerName", sortable: true },
-    { name: "CONTACT", uid: "contactNumber", sortable: true },
-    { name: "EMAIL", uid: "emailAddress", sortable: true },
-    { name: "ADDRESS", uid: "address", sortable: true },
-    { name: "GST NUMBER", uid: "gstNumber", sortable: true },
-    { name: "PRODUCT", uid: "productName", sortable: true },
-    { name: "AMOUNT", uid: "amount", sortable: true },
-    { name: "DISCOUNT", uid: "discount", sortable: true },
-    { name: "GST RATE", uid: "gstRate", sortable: true },
-    { name: "STATUS", uid: "status", sortable: true },
+    { name: "Company Name", uid: "companyName", sortable: true },
+    { name: "Client / Customer Name", uid: "customerName", sortable: true },
+    { name: "Contact Number", uid: "contactNumber", sortable: true },
+    { name: "Email Address", uid: "emailAddress", sortable: true },
+    { name: "Company Address", uid: "address", sortable: true },
+    { name: "GST Number", uid: "gstNumber", sortable: true },
+    { name: "Product Name", uid: "productName", sortable: true },
+    { name: "Product Amount", uid: "amount", sortable: true },
+    { name: "Discount", uid: "discount", sortable: true },
+    { name: "GST Rate", uid: "gstRate", sortable: true },
+    { name: "Before GST", uid: "totalWithoutGst", sortable: true },
+    { name: "After GST", uid: "totalWithGst", sortable: true },
     {
-        name: "DATE",
+        name: "Invoice Date",
         uid: "date",
         sortable: true,
-        render: (row: any) => formatDate(row.date) // Ensure only date is shown
+        render: (row: any) => formatDate(row.date)
     },
-
-    { name: "TOTAL (WITHOUT GST)", uid: "totalWithoutGst", sortable: true },
-    { name: "TOTAL (WITH GST)", uid: "totalWithGst", sortable: true },
-    { name: "PAID AMOUNT", uid: "paidAmount", sortable: true },
-    { name: "REMAINING AMOUNT", uid: "remainingAmount", sortable: true },
-    { name: "ACTION", uid: "actions", sortable: true }
+    { name: "Paid Amount", uid: "paidAmount", sortable: true },
+    { name: "Remaining Amount", uid: "remainingAmount", sortable: true },
+    { name: "Status", uid: "status", sortable: true },
+    // { name: "Action", uid: "actions", sortable: true }
 ];
 
-const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "contactNumber", "emailAddress", "address", "gstNumber", "productName", "amount", "discount", "gstRate", "status", "date", "endDate", "totalWithoutGst", "totalWithGst", "paidAmount", "remainingAmount", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "contactNumber", "emailAddress", "address", "gstNumber", "productName", "amount", "discount", "gstRate", "status", "date", "endDate", "totalWithoutGst", "totalWithGst", "paidAmount", "remainingAmount"];
 
 const formSchema = invoiceSchema;
-
-
 
 export default function InvoiceTable() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -113,7 +110,7 @@ export default function InvoiceTable() {
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const router = useRouter(); 
+    const router = useRouter();
 
     const fetchInvoices = async () => {
         setIsLoading(true);
@@ -132,7 +129,6 @@ export default function InvoiceTable() {
             setIsLoading(false);
         }
     };
-
 
     useEffect(() => {
         fetchInvoices();
@@ -360,9 +356,9 @@ export default function InvoiceTable() {
                     </div>
                 );
             case "date":
-                return formatDate(cellValue); // Format the endDate
+                return formatDate(cellValue);
             case "endDate":
-                return formatDate(cellValue); // Format the endDate
+                return formatDate(cellValue);
             default:
                 return cellValue;
         }
@@ -403,22 +399,25 @@ export default function InvoiceTable() {
     const topContent = React.useMemo(() => {
         return (
             <div className="flex flex-col gap-4">
-                <div className="flex justify-between gap-3 items-end">
-                    <Input
-                        isClearable
-                        className="w-full sm:max-w-[80%]" // Full width on small screens, 44% on larger screens
-                        placeholder="Search by name..."
-                        startContent={<SearchIcon className="h-4 w-10 text-muted-foreground" />}
-                        value={filterValue}
-                        onChange={(e) => setFilterValue(e.target.value)}
-                        onClear={() => setFilterValue("")}
-                    />
-
+                <div className="flex flex-col sm:flex-row justify-between gap-3 items-end">
+                    <div className="relative w-full sm:max-w-[20%]">
+                        <Input
+                            isClearable
+                            className="w-full pr-12 sm:pr-14 pl-12"
+                            startContent={
+                                <SearchIcon className="h-4 w-5 text-muted-foreground absolute left-3 top-1/2 transform -translate-y-1/2" />
+                            }
+                            placeholder="Search"
+                            value={filterValue}
+                            onChange={(e) => setFilterValue(e.target.value)}
+                            onClear={() => setFilterValue("")}
+                        />
+                    </div>
                     <div className="flex gap-3">
                         <Dropdown>
-                            <DropdownTrigger className="hidden sm:flex">
-                                <Button endContent={<ChevronDownIcon className="text-small" />} variant="default">
-                                    Columns
+                            <DropdownTrigger className="flex">
+                                <Button endContent={<ChevronDownIcon className="text-small" />} variant="default" className="px-3 py-2 text-sm sm:text-base">
+                                    Hide Column
                                 </Button>
                             </DropdownTrigger>
                             <DropdownMenu
@@ -431,7 +430,14 @@ export default function InvoiceTable() {
                                     const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
                                     setVisibleColumns(newKeys);
                                 }}
-                                style={{ backgroundColor: "#f0f0f0", color: "#000000" }}  // Set background and font color
+                                style={{
+                                    backgroundColor: "#f0f0f0",
+                                    color: "#000000",
+                                    height: "400px",
+                                    overflowY: "scroll",
+                                    scrollbarWidth: "none",
+                                    msOverflowStyle: "none"
+                                }}
                             >
                                 {columns.map((column) => (
                                     <DropdownItem key={column.uid} className="capitalize" style={{ color: "#000000" }}>
@@ -440,61 +446,50 @@ export default function InvoiceTable() {
                                 ))}
                             </DropdownMenu>
                         </Dropdown>
-
                     </div>
                 </div>
                 <div className="flex justify-between items-center">
-                    <span className="text-default-400 text-small">Total {invoices.length} leads</span>
-                    <label className="flex items-center text-default-400 text-small">
-                        Rows per page:
-                        <select
-                            className="bg-transparent dark:bg-gray-800 outline-none text-default-400 text-small"
-                            onChange={onRowsPerPageChange}
-                        >
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                            <option value="15">15</option>
-                        </select>
+                    <span className="text-default-400 text-small">Total {invoices.length} reminder</span>
+                    <label className="flex items-center text-default-400 text-small gap-2">
+                        Rows per page
+                        <div className="relative">
+                            <select
+                                className="border border-gray-300 dark:border-gray-600 bg-transparent rounded-md px-3 py-1 text-default-400 text-sm cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-ring transition-all"
+                                onChange={onRowsPerPageChange}
+                            >
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="15">15</option>
+                            </select>
+                        </div>
                     </label>
                 </div>
             </div>
         );
-    }, [
-        filterValue,
-        statusFilter,
-        visibleColumns,
-        onRowsPerPageChange,
-        invoices.length,
-        onSearchChange,
-    ]);
+    }, [filterValue, visibleColumns, onRowsPerPageChange, invoices.length, onSearchChange]);
 
     const bottomContent = React.useMemo(() => {
         return (
             <div className="py-2 px-2 flex justify-between items-center">
-                <span className="w-[30%] text-small text-default-400">
-
-                </span>
+                <span className="w-[30%] text-small text-default-400"></span>
                 <Pagination
                     isCompact
-                    // showControls
                     showShadow
                     color="success"
                     page={page}
                     total={pages}
                     onChange={setPage}
                     classNames={{
-                        // base: "gap-2 rounded-2xl shadow-lg p-2 dark:bg-default-100",
                         cursor: "bg-[hsl(339.92deg_91.04%_52.35%)] shadow-md",
                         item: "data-[active=true]:bg-[hsl(339.92deg_91.04%_52.35%)] data-[active=true]:text-white rounded-lg",
                     }}
                 />
-
                 <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
                     <Button
                         className="bg-[hsl(339.92deg_91.04%_52.35%)]"
                         variant="default"
                         size="sm"
-                        disabled={pages === 1} // Use the `disabled` prop
+                        disabled={pages === 1}
                         onClick={onPreviousPage}
                     >
                         Previous
@@ -503,37 +498,27 @@ export default function InvoiceTable() {
                         className="bg-[hsl(339.92deg_91.04%_52.35%)]"
                         variant="default"
                         size="sm"
-                        onClick={onNextPage} // Use `onClick` instead of `onPress`
+                        onClick={onNextPage}
                     >
                         Next
                     </Button>
-
                 </div>
             </div>
         );
     }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
 
-
     const { watch, setValue } = form;
-
-
     const amount = watch("amount") ?? 0;
     const discount = watch("discount") ?? 0;
     const gstRate = watch("gstRate") ?? 0;
     const paidAmount = watch("paidAmount") ?? 0;
 
-
     useEffect(() => {
-
         const { totalWithoutGst, totalWithGst, remainingAmount } = calculateGST(amount, discount, gstRate, paidAmount);
-
-
         setValue("totalWithoutGst", totalWithoutGst);
         setValue("totalWithGst", totalWithGst);
         setValue("remainingAmount", remainingAmount);
     }, [amount, discount, gstRate, paidAmount, setValue]);
-
-
 
     const calculateGST = (
         amount: number,
@@ -541,13 +526,11 @@ export default function InvoiceTable() {
         gstRate: number,
         paidAmount: number
     ) => {
-
         const discountedAmount = amount - amount * (discount / 100);
         const gstAmount = discountedAmount * (gstRate / 100);
         const totalWithoutGst = discountedAmount;
         const totalWithGst = discountedAmount + gstAmount;
         const remainingAmount = totalWithGst - paidAmount;
-
         return {
             totalWithoutGst,
             totalWithGst,
@@ -557,53 +540,54 @@ export default function InvoiceTable() {
 
     return (
         <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 max-w-screen-xl">
-            <Table
-                isHeaderSticky
-                aria-label="Leads table with custom cells, pagination and sorting"
-                bottomContent={bottomContent}
-                bottomContentPlacement="outside"
-                classNames={{
-                    wrapper: "max-h-[382px] ower-flow-y-auto",
-                }}
-                selectedKeys={selectedKeys}
-                sortDescriptor={sortDescriptor}
-                topContent={topContent}
-                topContentPlacement="outside"
-                onSelectionChange={setSelectedKeys}
-                onSortChange={(descriptor) => {
-                    setSortDescriptor({
-                        column: descriptor.column as string,
-                        direction: descriptor.direction as "ascending" | "descending",
-                    });
-                }}
-            >
-                <TableHeader columns={headerColumns}>
-                    {(column) => (
-                        <TableColumn
-                            key={column.uid}
-                            align={column.uid === "actions" ? "center" : "start"}
-                            allowsSorting={column.sortable}
-                        >
-                            {column.name}
-                        </TableColumn>
-                    )}
-                </TableHeader>
-                <TableBody emptyContent={"No lead found"} items={sortedItems}>
-                    {(item) => (
-                        <TableRow key={item._id}>
-                            {(columnKey) => <TableCell style={{ fontSize: "12px", padding: "8px" }}>{renderCell(item, columnKey as string)}</TableCell>}
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
+            <div className="rounded-xl border bg-card text-card-foreground shadow">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="lg:col-span-12">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                            <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Reminder Record</h1>
+                            <Table
+                                isHeaderSticky
+                                aria-label="Leads table with custom cells, pagination and sorting"
+                                bottomContent={bottomContent}
+                                bottomContentPlacement="outside"
+                                classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
+                                topContent={topContent}
+                                topContentPlacement="outside"
+                                onSelectionChange={setSelectedKeys}
+                                onSortChange={setSortDescriptor}
+                            >
+                                <TableHeader columns={headerColumns}>
+                                    {(column) => (
+                                        <TableColumn
+                                            key={column.uid}
+                                            align={column.uid === "actions" ? "center" : "start"}
+                                            allowsSorting={column.sortable}
+                                        >
+                                            {column.name}
+                                        </TableColumn>
+                                    )}
+                                </TableHeader>
+                                <TableBody emptyContent={"No reminder available"} items={sortedItems}>
+                                    {(item) => (
+                                        <TableRow key={item._id}>
+                                            {(columnKey) => (
+                                                <TableCell style={{ fontSize: "12px", padding: "8px" }}>
+                                                    {renderCell(item, columnKey)}
+                                                </TableCell>
+                                            )}
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
-                        <DialogTitle>Edit Invoice</DialogTitle>
-                        <DialogDescription>
-                            Update the invoice details.
-                        </DialogDescription>
+                        <DialogTitle>Update Reminder</DialogTitle>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onEdit)} className="space-y-6">
@@ -775,24 +759,24 @@ export default function InvoiceTable() {
                                 />
 
                                 <FormField
-                                control={form.control}
-                                name="date"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Invoice Date</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                        type="date"
-                                        value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
-                                        onChange={(e) => {
-                                            const selectedDate = e.target.value ? new Date(e.target.value) : null;
-                                            field.onChange(selectedDate);
-                                        }}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
+                                    control={form.control}
+                                    name="date"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Invoice Date</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    type="date"
+                                                    value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                                    onChange={(e) => {
+                                                        const selectedDate = e.target.value ? new Date(e.target.value) : null;
+                                                        field.onChange(selectedDate);
+                                                    }}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
                                 />
                             </div>
 

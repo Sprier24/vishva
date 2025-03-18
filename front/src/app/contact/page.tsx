@@ -25,9 +25,9 @@ export default function CertificatePage() {
                                         Contact
                                     </BreadcrumbLink>
                                     <BreadcrumbSeparator className="hidden md:block" />
-                                    <BreadcrumbLink href="">
-                                        Create
-                                    </BreadcrumbLink>
+                                    <span>
+                                        Create Contact
+                                    </span>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>

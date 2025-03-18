@@ -25,9 +25,9 @@ export default function CertificatePage() {
                                         Complaint
                                     </BreadcrumbLink>
                                     <BreadcrumbSeparator className="hidden md:block" />
-                                    <BreadcrumbLink href="">
-                                        Create
-                                    </BreadcrumbLink>
+                                    <span>
+                                        Create Complaint
+                                    </span>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>

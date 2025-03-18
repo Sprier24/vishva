@@ -5,21 +5,21 @@ const { storeNotification } = require('./notification.controller');
 const cron = require('node-cron');
 
 const remindEvent = async () => {
-    const io = require('../index'); 
+    const io = require('../index');
     const now = new Date();
-    const nowIST = new Date(now.getTime() + (5 * 60 + 30) * 60000); 
-    const todayIST = nowIST.toISOString().split('T')[0]; 
+    const nowIST = new Date(now.getTime() + (5 * 60 + 30) * 60000);
+    const todayIST = nowIST.toISOString().split('T')[0];
     console.log('Cron job running at (IST):', nowIST.toISOString());
 
     try {
-        const owner = await Owner.findOne(); 
+        const owner = await Owner.findOne();
 
         if (!owner) {
             console.error("Owner details not found!");
             return;
         }
         const invoices = await Invoice.find({
-            status: "Unpaid", 
+            status: "Unpaid",
         });
 
         if (!invoices.length) {
@@ -31,7 +31,7 @@ const remindEvent = async () => {
             const dueDate = new Date(invoice.date);
             if (isNaN(dueDate.getTime())) {
                 console.error(`Invalid due date for invoice: ${invoice._id}`);
-                continue; 
+                continue;
             }
 
             const threeDaysBefore = new Date(dueDate);
@@ -43,10 +43,10 @@ const remindEvent = async () => {
             const reminderDateType = todayIST === threeDaysBefore.toISOString().split('T')[0]
                 ? "3 Days Before"
                 : todayIST === oneDayBefore.toISOString().split('T')[0]
-                ? "1 Day Before"
-                : todayIST === dueDate.toISOString().split('T')[0]
-                ? "On Due Date"
-                : null;
+                    ? "1 Day Before"
+                    : todayIST === dueDate.toISOString().split('T')[0]
+                        ? "On Due Date"
+                        : null;
 
             if (reminderDateType) {
                 console.log(`Reminder (${reminderDateType}): ${invoice.customerName} has an unpaid invoice`);
@@ -56,7 +56,7 @@ const remindEvent = async () => {
                     customerName: invoice.customerName,
                     companyName: invoice.companyName,
                     amount: invoice.remainingAmount,
-                    dueDate: dueDate.toISOString().split('T')[0], 
+                    dueDate: dueDate.toISOString().split('T')[0],
                     reminderType: reminderDateType,
                 });
                 console.log(`Reminder (${reminderDateType}) emitted for:`, invoice.customerName);
@@ -88,14 +88,14 @@ const remindEvent = async () => {
             
                 <p><strong>Best regards,</strong><br/>
                 [${owner.companyName}]</p>
-            `;            
+            `;
 
                 await sendEmailReminder({
-                    to: invoice.emailAddress, 
+                    to: invoice.emailAddress,
                     subject: "Invoice Payment Reminder",
                     message: emailMessage,
                 });
-                
+
                 console.log(`Email sent (${reminderDateType}) for invoice #${invoice._id}`);
             } else {
                 console.log(`No reminder needed for invoice #${invoice._id}`);
@@ -111,20 +111,20 @@ cron.schedule('0 0 * * *', remindEvent, {
 
 const invoiceAdd = async (req, res) => {
     try {
-        const { 
-            companyName, 
-            customerName, 
-            contactNumber, 
-            emailAddress, 
-            address, 
-            gstNumber, 
-            productName, 
-            amount, 
-            discount, 
-            gstRate, 
-            date, 
-            endDate, 
-            paidAmount 
+        const {
+            companyName,
+            customerName,
+            contactNumber,
+            emailAddress,
+            address,
+            gstNumber,
+            productName,
+            amount,
+            discount,
+            gstRate,
+            date,
+            endDate,
+            paidAmount
         } = req.body;
 
         const parsedAmount = parseFloat(amount) || 0;
@@ -310,10 +310,10 @@ const getPaidInvoices = async (req, res) => {
 };
 
 const transporter = nodemailer.createTransport({
-    service: "gmail",  
+    service: "gmail",
     auth: {
-        user: process.env.EMAIL_USER,  
-        pass: process.env.EMAIL_PASS,  
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
     },
 });
 
@@ -335,19 +335,19 @@ const sendEmailReminder = async ({ to, subject = "(No Subject)", message = "(No 
 
 const getInvoicesByStatus = async (req, res) => {
     const { status } = req.query;
-  
+
     try {
-      const invoices = await Invoice.find({ status }, 'Name email amount');
-      res.status(200).json({
-        success: true,
-        data: invoices
-      });
+        const invoices = await Invoice.find({ status }, 'Name email amount');
+        res.status(200).json({
+            success: true,
+            data: invoices
+        });
     } catch (error) {
-      console.error(`Error fetching ${status} invoices:`, error);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error: " + error.message,
-      });
+        console.error(`Error fetching ${status} invoices:`, error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error: " + error.message,
+        });
     }
 };
 

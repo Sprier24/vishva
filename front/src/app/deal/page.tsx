@@ -31,9 +31,9 @@ export default function CertificatePage() {
                                         Deal
                                     </BreadcrumbLink>
                                     <BreadcrumbSeparator className="hidden md:block" />
-                                    <BreadcrumbLink href="">
-                                        Create
-                                    </BreadcrumbLink>
+                                    <span>
+                                        Create Deal
+                                    </span>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>

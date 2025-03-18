@@ -22,12 +22,12 @@ export default function CertificatePage() {
                                     </BreadcrumbLink>
                                     <BreadcrumbSeparator className="hidden md:block" />
                                     <BreadcrumbLink href="/Scheduled/table">
-                                        Scheduled
+                                        Event or Meeting
                                     </BreadcrumbLink>
                                     <BreadcrumbSeparator className="hidden md:block" />
-                                    <BreadcrumbLink href="">
-                                        Create
-                                    </BreadcrumbLink>
+                                   <span>
+                                    Create Event or Meeting
+                                   </span>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
