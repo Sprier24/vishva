@@ -64,14 +64,14 @@ export default function ScheduledEventForm() {
         throw new Error(data.error || "Failed to submit the event.");
       }
       toast({
-        title: "Scheduled Event Created",
-        description: "Your scheduled event has been created successfully.",
+        title: "Event or Meeting Submitted",
+        description: "The event or meeting has been successfully created",
       });
       router.push("/Scheduled/table")
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "There was an error submitting the event.",
+        description: error instanceof Error ? error.message : "There was an error creating the event or meeting",
         variant: "destructive",
       });
     } finally {
@@ -150,8 +150,8 @@ export default function ScheduledEventForm() {
                 <FormControl>
                   <select
                     {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                    >
                     <option value="call">Call</option>
                     <option value="Meeting">Meeting</option>
                     <option value="Demo">Demo</option>
@@ -171,8 +171,8 @@ export default function ScheduledEventForm() {
                 <FormControl>
                   <select
                     {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                    >
                     <option value="one-time">One Time</option>
                     <option value="Daily">Daily</option>
                     <option value="Weekly">Weekly</option>
@@ -196,8 +196,8 @@ export default function ScheduledEventForm() {
                 <FormControl>
                   <select
                     {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                    >
                     <option value="Scheduled">Schedule</option>
                     <option value="Postpone">Postpone</option>
                     <option value="Completed">Complete</option>
@@ -217,8 +217,8 @@ export default function ScheduledEventForm() {
                 <FormControl>
                   <select
                     {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                    >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
@@ -275,7 +275,7 @@ export default function ScheduledEventForm() {
                 <textarea
                   placeholder="Enter more details here..."
                   {...field}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
                   rows={3}
                 />
               </FormControl>
@@ -284,8 +284,8 @@ export default function ScheduledEventForm() {
           )}
         />
 
-        <div className="text-right">
-          <Button type="submit" className="w-25" disabled={isSubmitting}>
+        <div className="flex justify-center sm:justify-end">
+          <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="animate-spin mr-2" />

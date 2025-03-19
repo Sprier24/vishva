@@ -48,14 +48,14 @@ export default function AccountForm() {
         throw new Error(data.error || "Failed to submit the account.");
       }
       toast({
-        title: "Account Created",
-        description: "Your account has been created successfully.",
+        title: "Account Submitted",
+        description: "The account has been successfully created",
       });
       router.push("/Account/table");
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "There was an error submitting the account.",
+        description: error instanceof Error ? error.message : "There was an error creating the account",
         variant: "destructive",
       });
     } finally {
@@ -134,8 +134,8 @@ export default function AccountForm() {
                 <FormControl>
                   <select
                     {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                    >
                     <option value="Savings">Savings</option>
                     <option value="Current">Current</option>
                     <option value="Other">Other</option>
@@ -147,7 +147,7 @@ export default function AccountForm() {
           />
           <FormField
             control={form.control}
-            name="UpiCode"
+            name="UpiId"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>UPI ID (Optional)</FormLabel>
@@ -160,8 +160,8 @@ export default function AccountForm() {
           />
         </div>
 
-        <div className="text-right">
-          <Button type="submit" className="w-25" disabled={isSubmitting}>
+        <div className="flex justify-center sm:justify-end">
+          <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="animate-spin mr-2" />

@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
+import { toast } from "@/hooks/use-toast"
 
 interface Event {
   _id: string;
@@ -90,10 +91,18 @@ export default function CalendarPage() {
       if (!response.ok) {
         throw new Error('Failed to update event');
       }
+        toast({
+              title: "Event  Updated",
+              description: "Your event has been updated successfully.",
+            });
       const updatedEvent = await response.json();
       setEvents(events.map((event) => (event._id === updatedEvent.data._id ? updatedEvent.data : event)));
     } catch (error) {
-      console.error('Error updating event:', error);
+       toast({
+              title: "Error",
+              description: error instanceof Error ? error.message : "There was an error updating the event.",
+              variant: "destructive",
+            });
     }
   };
 
@@ -107,10 +116,17 @@ export default function CalendarPage() {
       if (!response.ok) {
         throw new Error('Failed to delete event');
       }
+        toast({
+              title: "Event  Deleted",
+              description: "Your event has been deleted successfully.",
+            });
       setEvents(events.filter((event) => event._id !== eventId));
     } catch (error) {
-      console.error('Error deleting event:', error);
-    }
+ toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "There was an error deleting the event.",
+        variant: "destructive",
+      });    }
   };
 
   const handleCreateEvent = async (newEvent: Event) => {
@@ -123,10 +139,18 @@ export default function CalendarPage() {
       if (!response.ok) {
         throw new Error('Failed to create event');
       }
+        toast({
+              title: "Event Created",
+              description: "Your event has been submitted successfully.",
+            });
       const createdEvent = await response.json();
       setEvents([...events, createdEvent.data]);
     } catch (error) {
-      console.error('Error creating event:', error);
+       toast({
+              title: "Error",
+              description: error instanceof Error ? error.message : "There was an error submitting the event.",
+              variant: "destructive",
+            });
     }
   };
 

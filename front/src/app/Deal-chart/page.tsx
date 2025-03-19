@@ -13,45 +13,44 @@ import { Button } from "@/components/ui/button"
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
 import { ModeToggle } from "@/components/ModeToggle";
+import { Calendar1 } from "lucide-react"
 
 export default function CertificatePage() {
     return (
-            <SidebarProvider>
-                <AppSidebar />
-                <SidebarInset>
+        <SidebarProvider>
+        <AppSidebar />
+            <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
                     <div className="flex items-center gap-2 px-4">
-                    <SidebarTrigger className="-ml-1" />
-                    <ModeToggle />
-                    <Separator orientation="vertical" className="mr-2 h-4" />
-                    <Breadcrumb>
-                        <BreadcrumbList>
-                        <BreadcrumbItem className="hidden md:block">
-                            <BreadcrumbLink href="/dashboard">
-                            Dashboard
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
-                        <BreadcrumbSeparator className="hidden md:block" />
-                        <BreadcrumbItem>
-                            <BreadcrumbLink href="/deal">
-                                Deal
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>  
-                        <BreadcrumbSeparator className="hidden md:block" />
-                        <BreadcrumbItem>
-                            <BreadcrumbLink href="/Deal-chart">
-                                Graph
-                            </BreadcrumbLink>
-                        </BreadcrumbItem>
+                        <SidebarTrigger className="-ml-1" />
+                        <Separator orientation="vertical" className="mr-2 h-4"/>
+                        <Breadcrumb>
+                        <BreadcrumbList className="flex items-center space-x-2">
+                            <BreadcrumbItem className="hidden sm:block md:block">
+                            <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator className="hidden sm:block md:block"/>
+                            <BreadcrumbItem className="hidden sm:block md:block">
+                            <BreadcrumbLink href="/deal/table">Deal</BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator className="hidden sm:block md:block" />
+                            <span className="hidden sm:block md:block">
+                            Graph
+                            </span>
                         </BreadcrumbList>
-                    </Breadcrumb>
+                        </Breadcrumb>
                     </div>
                     <div className="flex items-center space-x-4 ml-auto mr-4">
-                    <div  >
-                            <SearchBar/>
+                        <div  >
+                            <SearchBar />
                         </div>
+                        <a href="/calendar">
+                            <div>
+                                <Calendar1 />
+                            </div>
+                        </a>
                         <div>
-                        <Notification/>
+                            <Notification />
                         </div>
                     </div>
                 </header>
