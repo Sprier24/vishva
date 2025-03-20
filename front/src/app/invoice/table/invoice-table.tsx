@@ -1,22 +1,22 @@
 "use client";
-import React, { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { toast } from "@/hooks/use-toast"
-import { z } from "zod"
-import { cn } from "@/lib/utils"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
+import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "@/hooks/use-toast";
+import { z } from "zod";
+import { cn } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import axios from "axios";
-import { format } from "date-fns"
-import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
+import { format } from "date-fns";
+import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { Calendar } from "@/components/ui/calendar"
+import { Calendar } from "@/components/ui/calendar";
 
 interface Invoice {
     _id: string;
@@ -101,14 +101,12 @@ const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "contactNumber",
 
 const formSchema = invoiceSchema;
 
-
-
 export default function InvoiceTable() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const router = useRouter();
 
@@ -128,11 +126,9 @@ export default function InvoiceTable() {
         }
     };
 
-
     useEffect(() => {
         fetchInvoices();
     }, []);
-
 
     const [isAddNewOpen, setIsAddNewOpen] = useState(false);
     const [filterValue, setFilterValue] = useState("");
@@ -146,10 +142,6 @@ export default function InvoiceTable() {
         direction: "ascending",
     });
     const [page, setPage] = useState(1);
-
-
-
-
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -171,7 +163,7 @@ export default function InvoiceTable() {
             paidAmount: "",
             remainingAmount: 0,
         }
-    })
+    });
 
     const hasSearchFilter = Boolean(filterValue);
 
@@ -179,7 +171,6 @@ export default function InvoiceTable() {
         if (visibleColumns.size === columns.length) return columns; // Check if all columns are selected
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
-
 
     const filteredItems = React.useMemo(() => {
         let filteredInvoices = [...invoices];
@@ -235,10 +226,8 @@ export default function InvoiceTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<Invoice | null>(null);
 
-    // Function to handle edit button click
     const handleEditClick = (invoice: Invoice) => {
         setSelectedInvoice(invoice);
-        // Pre-fill the form with invoice data
         form.reset({
             companyName: invoice.companyName,
             customerName: invoice.customerName,
@@ -260,14 +249,16 @@ export default function InvoiceTable() {
         setIsEditDialogOpen(true);
     };
 
-    // Function to handle delete button click
-    const handleDeleteClick = async (invoice: Invoice) => {
-        if (!window.confirm("Are you sure you want to delete this invoice?")) {
-            return;
-        }
+    const handleDeleteClick = (invoice: Invoice) => {
+        setSelectedInvoice(invoice);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedInvoice?._id) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/invoice/deleteInvoice/${invoice._id}`, {
+            const response = await fetch(`http://localhost:8000/api/v1/invoice/deleteInvoice/${selectedInvoice._id}`, {
                 method: "DELETE",
             });
 
@@ -281,7 +272,6 @@ export default function InvoiceTable() {
                 description: "The invoice has been successfully deleted.",
             });
 
-            // Refresh the invoices list
             fetchInvoices();
         } catch (error) {
             toast({
@@ -289,14 +279,13 @@ export default function InvoiceTable() {
                 description: error instanceof Error ? error.message : "Failed to delete invoice",
                 variant: "destructive",
             });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setSelectedInvoice(null);
         }
     };
 
-
-
-
-    const [isSubmitting, setIsSubmitting] = useState(false)
-
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     async function onEdit(values: z.infer<typeof formSchema>) {
         if (!selectedInvoice?._id) return;
@@ -319,12 +308,10 @@ export default function InvoiceTable() {
                 description: "The invoice has been successfully updated.",
             });
 
-            // Close dialog and reset form
             setIsEditDialogOpen(false);
             setSelectedInvoice(null);
             form.reset();
 
-            // Refresh the invoices list
             fetchInvoices();
         } catch (error) {
             toast({
@@ -363,9 +350,9 @@ export default function InvoiceTable() {
                     </div>
                 );
             case "date":
-                return formatDate(cellValue); // Format the endDate
+                return formatDate(cellValue);
             case "endDate":
-                return formatDate(cellValue); // Format the endDate
+                return formatDate(cellValue);
             default:
                 return cellValue;
         }
@@ -763,8 +750,8 @@ export default function InvoiceTable() {
                                                     {...field}
                                                     value={field.value}
                                                     onChange={(e) => field.onChange(Number(e.target.value))}
-                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                                                    >
                                                     <option value="">Select GST Rate</option>
                                                     <option value="0">0%</option>
                                                     <option value="5">5%</option>
@@ -819,8 +806,8 @@ export default function InvoiceTable() {
                                             <FormControl>
                                                 <select
                                                     {...field}
-                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                                                    >
                                                     <option value="Paid">Paid</option>
                                                     <option value="Unpaid">Unpaid</option>
                                                 </select>
@@ -876,6 +863,34 @@ export default function InvoiceTable() {
                     </Form>
                 </DialogContent>
             </Dialog>
+
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+    <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
+        sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+        <DialogHeader>
+            <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+            <DialogDescription className="text-sm xs:text-xs">
+                Are you sure you want to delete this invoice? This action cannot be undone.
+            </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-4 mt-4">
+            <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs"
+            >
+                Cancel
+            </Button>
+            <Button
+                variant="destructive"
+                onClick={handleDeleteConfirm}
+                                className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
+            >
+                Delete
+            </Button>
+        </div>
+    </DialogContent>
+</Dialog>
         </div>
     );
 }

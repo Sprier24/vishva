@@ -60,6 +60,8 @@ export default function AccountTable() {
     const [error, setError] = useState<string | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
+     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+   
 
 
     const fetchAccounts = async () => {
@@ -230,37 +232,41 @@ export default function AccountTable() {
     };
 
 
-    // Function to handle delete button click
-    const handleDeleteClick = async (account: Account) => {
-        if (!window.confirm("Are you sure you want to delete this lead?")) {
-            return;
-        }
+      const handleDeleteClick = (account: Account) => {
+            setSelectedAccount(account);
+            setIsDeleteDialogOpen(true);
+        };
+    
+        const handleDeleteConfirm = async () => {
+            if (!selectedAccount?._id) return;
+    
+            try {
+                const response = await fetch(`http://localhost:8000/api/v1/account/deleteAccount/${selectedAccount._id}`, {
+                    method: "DELETE",
+                });
 
-        try {
-            const response = await fetch(`http://localhost:8000/api/v1/account/deleteAccount/${account._id}`, {
-                method: "DELETE",
-            });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || "Failed to delete Account");
+                }
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to delete Account");
+                toast({
+                    title: "Account Deleted",
+                    description: "The account has been successfully deleted.",
+                });
+
+                fetchAccounts();
+            } catch (error) {
+                toast({
+                    title: "Error",
+                    description: error instanceof Error ? error.message : "Failed to delete account",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsDeleteDialogOpen(false);
+                setSelectedAccount(null);
             }
-
-            toast({
-                title: "Lead Deleted",
-                description: "The account has been successfully deleted.",
-            });
-
-            // Refresh the leads list
-            fetchAccounts();
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: error instanceof Error ? error.message : "Failed to delete lead",
-                variant: "destructive",
-            });
-        }
-    };
+        };
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     async function onEdit(values: z.infer<typeof accountSchema>) {
@@ -543,6 +549,10 @@ export default function AccountTable() {
                 </div>
             </div>
 
+          
+
+
+
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
                     <DialogHeader>
@@ -658,6 +668,33 @@ export default function AccountTable() {
                 </DialogContent>
             </Dialog>
 
+  <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+    <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
+        sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+        <DialogHeader>
+            <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+            <DialogDescription className="text-sm xs:text-xs">
+                Are you sure you want to delete this invoice? This action cannot be undone.
+            </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-4 mt-4">
+            <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs"
+            >
+                Cancel
+            </Button>
+            <Button
+                variant="destructive"
+                onClick={handleDeleteConfirm}
+                                className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
+            >
+                Delete
+            </Button>
+        </div>
+    </DialogContent>
+</Dialog>
         </div>
 
     );

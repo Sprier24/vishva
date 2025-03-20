@@ -77,6 +77,8 @@ export default function ComplaintTable() {
     const [error, setError] = useState<string | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
+ const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
+    const [complaintToDelete, setComplaintToDelete] = useState<Complaint | null>(null);
 
     const fetchComplaints = async () => {
         try {
@@ -106,6 +108,7 @@ export default function ComplaintTable() {
         direction: "ascending",
     });
     const [page, setPage] = useState(1);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const handleSortChange = (column: string) => {
         setSortDescriptor((prevState) => {
@@ -218,27 +221,28 @@ export default function ComplaintTable() {
     };
 
 
-    // Function to handle delete button click
-    const handleDeleteClick = async (complaint: Complaint) => {
-        if (!window.confirm("Are you sure you want to delete this deal?")) {
-            return;
-        }
+    const handleDeleteClick = (complaint: Complaint) => {
+        setSelectedcomplaint(complaint);
+        setIsDeleteDialogOpen(true);
+    };
 
+    const handleDeleteConfirm = async () => {
+        if (!selectedcomplaint?._id) return;
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/complaint/deleteComplaint/${complaint._id}`, {
+            const response = await fetch(`http://localhost:8000/api/v1/complaint/deleteComplaint/${selectedcomplaint._id}`, {
                 method: "DELETE",
             });
-
+    
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to delete deal");
             }
-
+    
             toast({
                 title: "deal Deleted",
                 description: "The deal has been successfully deleted.",
             });
-
+    
             // Refresh the leads list
             fetchComplaints();
         } catch (error) {
@@ -247,8 +251,12 @@ export default function ComplaintTable() {
                 description: error instanceof Error ? error.message : "Failed to delete complaint",
                 variant: "destructive",
             });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setSelectedcomplaint(null);
         }
     };
+  
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     async function onEdit(values: z.infer<typeof complaintSchema>) {
@@ -528,6 +536,34 @@ export default function ComplaintTable() {
               </div>
             </div>
             </div> 
+
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+    <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
+        sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+        <DialogHeader>
+            <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+            <DialogDescription className="text-sm xs:text-xs">
+                Are you sure you want to delete this invoice? This action cannot be undone.
+            </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-4 mt-4">
+            <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs"
+            >
+                Cancel
+            </Button>
+            <Button
+                variant="destructive"
+                onClick={handleDeleteConfirm}
+                                className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
+            >
+                Delete
+            </Button>
+        </div>
+    </DialogContent>
+</Dialog>
 
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">

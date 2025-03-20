@@ -2,13 +2,14 @@
 
 import * as z from "zod"
 import { useState } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, Router } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { useForm } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { useRouter } from "next/navigation";
 
 const contactSchema = z.object({
   companyName: z.string().min(2, { message: "Company name is required." }),
@@ -25,6 +26,7 @@ const contactSchema = z.object({
 
 export default function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
   const form = useForm<z.infer<typeof contactSchema>>({
     resolver: zodResolver(contactSchema),
     defaultValues: {
@@ -52,13 +54,14 @@ export default function ContactForm() {
         throw new Error(data.error || "Failed to submit the contact.");
       }
       toast({
-        title: "Contact Created",
-        description: "Your contact has been created successfully.",
+        title: "Contact Submitted",
+        description: "The contact has been successfully created",
       });
+      router.push("/contact/table");
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "There was an error submitting the contact.",
+        description: error instanceof Error ? error.message : "There was an error creating the contact",
         variant: "destructive",
       });
     } finally {
@@ -106,7 +109,15 @@ export default function ContactForm() {
               <FormItem>
                 <FormLabel>Contact Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter contact number" {...field} />
+                  <Input
+                    placeholder="Enter contact number"
+                    type="tel"
+                    {...field}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      field.onChange(value);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -166,7 +177,7 @@ export default function ContactForm() {
                 <textarea
                   placeholder="Enter more details here..."
                   {...field}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
                   rows={3}
                 />
               </FormControl>
@@ -175,11 +186,12 @@ export default function ContactForm() {
           )}
         />
 
-        <div className="text-right">
-          <Button type="submit" className="w-25" disabled={isSubmitting}>
+        <div className="flex justify-center sm:justify-end">
+          <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="animate-spin mr-2" />
+                <table />
                 Submitting...
               </>
             ) : (

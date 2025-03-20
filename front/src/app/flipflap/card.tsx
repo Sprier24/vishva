@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 type File = {
   id: string;
@@ -17,10 +17,6 @@ const GoogleDriveClone = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'file' | 'photo'>('all');
-
-  // Ref for modal to detect click outside of it
-  const modalRef = useRef<HTMLDivElement>(null);
-  const modalBackdropRef = useRef<HTMLDivElement>(null); // Ref for modal backdrop
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -99,7 +95,10 @@ const GoogleDriveClone = () => {
       .then(data => {
         if (data.success) {
           console.log('File deleted successfully');
+          // Remove the deleted file from the state to reflect the change in the UI
           setFiles(prevFiles => prevFiles.filter(file => file.id !== fileId));
+          
+          // Only close the modal after successful deletion
           setSelectedFile(null); // Close the modal after deletion
         } else {
           console.log('Failed to delete file');
@@ -109,6 +108,9 @@ const GoogleDriveClone = () => {
         console.error('Error deleting file:', error);
       });
   };
+  
+
+
 
   const handleFileClick = (item: File) => {
     setSelectedFile(item);
@@ -126,13 +128,6 @@ const GoogleDriveClone = () => {
 
     setDownloadStatus('Download Started...');
     setTimeout(() => setDownloadStatus(null), 2000);
-  };
-
-  // Close the modal if clicked outside the modal content
-  const handleClickOutside = (e: React.MouseEvent) => {
-    if (modalBackdropRef.current && !modalRef.current?.contains(e.target as Node)) {
-      setSelectedFile(null); // Close the modal if clicked outside
-    }
   };
 
   return (
@@ -243,6 +238,8 @@ const GoogleDriveClone = () => {
                     <h3>{item.name}</h3>
                   </div>
                 )}
+
+
               </div>
             )
           )}
@@ -250,57 +247,62 @@ const GoogleDriveClone = () => {
       </div>
 
       {selectedFile && (
-        <div
-          className="modal fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center"
-          ref={modalBackdropRef}
-          onClick={handleClickOutside} // Close modal if clicked outside
+  <div className="modal fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center">
+    <div className="modal-content bg-white p-6 rounded-lg w-3/4 max-w-4xl">
+      <button
+        onClick={handleModalClose}
+        className="text-black font-bold text-xl absolute top-0 right-0 p-4"
+        style={{
+          cursor: 'pointer',
+          color: 'red',
+        }}
+      >
+        ×
+      </button>
+
+      {/* Download Button */}
+      <button
+        onClick={() => handleDownload(selectedFile)}
+        className="bg-blue-500 text-white py-2 px-4 rounded-md mt-4 hover:bg-blue-700"
+      >
+        Download
+      </button>
+
+      <button
+        onClick={() => handleDelete(selectedFile.id)} // Pass the file's ID here
+        className="bg-red-500 text-white py-2 px-4 rounded-md mt-2 hover:bg-red-700"
+      >
+        Delete
+      </button>
+
+      {downloadStatus && (
+        <div className="text-green-500 mt-2">{downloadStatus}</div>
+      )}
+
+      {selectedFile.fileType === 'image' ? (
+        <img
+          src={`http://localhost:8000/uploads/${selectedFile.fileUrl}`}
+          alt={selectedFile.name}
+          className="w-full h-auto"
+        />
+      ) : selectedFile.fileType === 'video' ? (
+        <video
+          src={`http://localhost:8000/uploads/${selectedFile.fileUrl}`}
+          className="w-full h-auto"
+          controls
         >
-          <div
-            className="modal-content bg-white p-6 rounded-lg w-3/4 max-w-4xl"
-            ref={modalRef}
-          >
-            {/* Download Button */}
-            <button
-              onClick={() => handleDownload(selectedFile)}
-              className="bg-blue-500 text-white py-2 px-4 rounded-md mt-4 hover:bg-blue-700"
-            >
-              Download
-            </button>
-
-            <button
-              onClick={() => handleDelete(selectedFile.id)} // Pass the file's ID here
-              className="bg-red-500 text-white py-2 px-4 rounded-md mt-2 hover:bg-red-700"
-            >
-              Delete
-            </button>
-
-            {downloadStatus && (
-              <div className="text-green-500 mt-2">{downloadStatus}</div>
-            )}
-
-            {selectedFile.fileType === 'image' ? (
-              <img
-                src={`http://localhost:8000/uploads/${selectedFile.fileUrl}`}
-                alt={selectedFile.name}
-                className="w-full h-auto"
-              />
-            ) : selectedFile.fileType === 'video' ? (
-              <video
-                src={`http://localhost:8000/uploads/${selectedFile.fileUrl}`}
-                className="w-full h-auto"
-                controls
-              >
-                Your browser does not support the video tag.
-              </video>
-            ) : (
-              <div className="text-black text-center mb-2">
-                <p>📄</p>
-                <h3>{selectedFile?.name}</h3>
-              </div>
-            )}
-          </div>
+          Your browser does not support the video tag.
+        </video>
+      ) : (
+        <div className="text-black text-center mb-2">
+          <p>📄</p>
+          <h3>{selectedFile?.name}</h3>
         </div>
       )}
+    </div>
+  </div>
+)}
+
     </div>
   );
 };

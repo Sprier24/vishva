@@ -70,7 +70,9 @@ export default function ContactTable() {
     const [error, setError] = useState<string | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
-
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+ 
     const fetchContacts = async () => {
         try {
             const response = await axios.get(
@@ -220,7 +222,6 @@ export default function ContactTable() {
     }, [sortDescriptor, items]);
 
     const [isEditOpen, setIsEditOpen] = useState(false);
-    const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
 
     // Function to handle edit button click
     const handleEditClick = (contact: Contact) => {
@@ -239,13 +240,16 @@ export default function ContactTable() {
 
 
     // Function to handle delete button click
-    const handleDeleteClick = async (contact: Contact) => {
-        if (!window.confirm("Are you sure you want to delete this contact?")) {
-            return;
-        }
+ const handleDeleteClick = (contact: Contact) => {
+        setSelectedContact(contact);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedContact?._id) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/contact/deleteContact/${contact._id}`, {
+            const response = await fetch(`http://localhost:8000/api/v1/contact/deleteContact/${selectedContact._id}`, {
                 method: "DELETE",
             });
 
@@ -266,8 +270,12 @@ export default function ContactTable() {
                 description: error instanceof Error ? error.message : "Failed to delete Contact",
                 variant: "destructive",
             });
+        }  finally {
+            setIsDeleteDialogOpen(false);
+            setSelectedContact(null);
         }
     };
+
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     async function onEdit(values: z.infer<typeof contactSchema>) {
@@ -550,6 +558,7 @@ export default function ContactTable() {
             </div>
             </div>
 
+
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
                     <DialogHeader>
@@ -678,6 +687,33 @@ export default function ContactTable() {
                 </DialogContent>
             </Dialog>
 
+   <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+    <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
+        sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+        <DialogHeader>
+            <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+            <DialogDescription className="text-sm xs:text-xs">
+                Are you sure you want to delete this invoice? This action cannot be undone.
+            </DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-4 mt-4">
+            <Button
+                variant="outline"
+                onClick={() => setIsDeleteDialogOpen(false)}
+                className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs"
+            >
+                Cancel
+            </Button>
+            <Button
+                variant="destructive"
+                onClick={handleDeleteConfirm}
+                                className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
+            >
+                Delete
+            </Button>
+        </div>
+    </DialogContent>
+</Dialog>
         </div>
 
     );

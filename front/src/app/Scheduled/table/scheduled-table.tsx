@@ -246,6 +246,7 @@ export default function ScheduledEvents() {
 
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedScheduledEvents, setSelectedScheduledEvents] = useState<ScheduledEvents | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     // Function to handle edit button click
     const handleEditClick = (scheduledEvents: ScheduledEvents) => {
@@ -269,38 +270,45 @@ export default function ScheduledEvents() {
     };
 
 
-    // Function to handle delete button click
-    const handleDeleteClick = async (scheduledEvents: ScheduledEvents) => {
-        if (!window.confirm("Are you sure you want to delete this scheduled?")) {
-            return;
-        }
-
-
-        try {
-            const response = await fetch(`http://localhost:8000/api/v1/scheduledevents/deleteScheduledEvent/${scheduledEvents.id}`, {
-                method: "DELETE",
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to delete scheduled");
+       const handleDeleteClick = (scheduledEvents: ScheduledEvents) => {
+            setSelectedScheduledEvents(scheduledEvents);
+            setIsDeleteDialogOpen(true);
+        };
+    
+        const handleDeleteConfirm = async () => {
+            if (!selectedScheduledEvents?._id) return;
+    
+            try {
+                const response = await fetch(`http://localhost:8000/api/v1/scheduledevents/deleteScheduledEvent/${selectedScheduledEvents.id}`, {
+                    method: "DELETE",
+                });
+    
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || "Failed to delete scheduled");
+                }
+    
+                toast({
+                    title: "Scheduled Deleted",
+                    description: "The scheduled has been successfully deleted.",
+                });
+    
+                // Refresh the leads list
+                fetchScheduledEvents();
+            } catch (error) {
+                toast({
+                    title: "Error",
+                    description: error instanceof Error ? error.message : "Failed to delete lead",
+                    variant: "destructive",
+                });
+            } finally {
+                setIsDeleteDialogOpen(false);
+                setSelectedScheduledEvents(null);
             }
+        };
+    
 
-            toast({
-                title: "Scheduled Deleted",
-                description: "The scheduled has been successfully deleted.",
-            });
-
-            // Refresh the leads list
-            fetchScheduledEvents();
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: error instanceof Error ? error.message : "Failed to delete lead",
-                variant: "destructive",
-            });
-        }
-    };
+    // Function to handle delete button cli
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     async function onEdit(values: z.infer<typeof eventSchema>) {
@@ -782,6 +790,34 @@ export default function ScheduledEvents() {
                             </Button>
                         </form>
                     </Form>
+                </DialogContent>
+            </Dialog>
+
+             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
+                    sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogDescription className="text-sm xs:text-xs">
+                            Are you sure you want to delete this invoice? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-4 mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDeleteDialogOpen(false)}
+                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteConfirm}
+                                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
+                        >
+                            Delete
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

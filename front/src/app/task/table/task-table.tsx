@@ -84,7 +84,7 @@ export default function TaskTable() {
     const [error, setError] = useState<string | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
-
+    
     const fetchTasks = async () => {
         try {
             const response = await axios.get(
@@ -150,6 +150,9 @@ export default function TaskTable() {
         direction: "ascending",
     });
     const [page, setPage] = useState(1);
+    const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
+    const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+
 
     const handleSortChange = (column: string) => {
         setSortDescriptor((prevState) => {
@@ -261,37 +264,10 @@ export default function TaskTable() {
 
     // Function to handle delete button click
 
-    const handleDeleteClick = async (task: Task) => {
-        if (!window.confirm("Are you sure you want to delete this task?")) {
-            return;
-        }
-
-        try {
-            const response = await fetch(`http://localhost:8000/api/v1/task/deleteTask/${task._id}`, {
-                method: "DELETE",
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to delete task");
-            }
-
-            toast({
-                title: "Task Deleted",
-                description: "The task has been successfully deleted.",
-            });
-
-            fetchTasks();
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: error instanceof Error ? error.message : "Failed to delete task",
-                variant: "destructive",
-            });
-        }
+    const handleDeleteClick = (task: Task) => {
+        setTaskToDelete(task);
+        setIsDeleteConfirmationOpen(true);
     };
-
-
 
 
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -422,11 +398,15 @@ export default function TaskTable() {
                             onClear={() => setFilterValue("")}
                         />
                     </div>
-                    <div className="flex gap-3">
+<div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
                         <Dropdown>
-                            <DropdownTrigger className="flex">
-                                <Button endContent={<ChevronDownIcon className="text-small" />} variant="default" className="px-3 py-2 text-sm sm:text-base">
-                                    Hide Column
+                            <DropdownTrigger className="w-full sm:w-auto">
+                                <Button
+                                    endContent={<ChevronDownIcon className="text-small" />}
+                                    variant="default"
+                                    className="px-3 py-2 text-sm sm:text-base w-full sm:w-auto flex items-center justify-between"
+                                >
+                                    Hide Columns
                                 </Button>
                             </DropdownTrigger>
                             <DropdownMenu
@@ -439,24 +419,21 @@ export default function TaskTable() {
                                     const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
                                     setVisibleColumns(newKeys);
                                 }}
-                                style={{
-                                    backgroundColor: "#f0f0f0",
-                                    color: "#000000",
-                                    height: "400px",
-                                    overflowY: "scroll",
-                                    scrollbarWidth: "none",
-                                    msOverflowStyle: "none"
-                                }}
+                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300"
                             >
                                 {columns.map((column) => (
-                                    <DropdownItem key={column.uid} className="capitalize" style={{ color: "#000000" }}>
+                                    <DropdownItem 
+                                        key={column.uid} 
+                                        className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
+                                    >
                                         {column.name}
                                     </DropdownItem>
                                 ))}
                             </DropdownMenu>
                         </Dropdown>
+
                         <Button
-                            className="addButton"
+                            className="addButton w-full sm:w-auto flex items-center justify-between"
                             style={{ backgroundColor: 'hsl(339.92deg 91.04% 52.35%)' }}
                             variant="default"
                             size="default"
@@ -572,14 +549,69 @@ export default function TaskTable() {
             </div>
             </div>
 
+            <Dialog open={isDeleteConfirmationOpen} onOpenChange={setIsDeleteConfirmationOpen}>
+        <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6">
+            <DialogHeader>
+                <DialogTitle>Confirm Deletion</DialogTitle>
+                <DialogDescription>
+                    Are you sure you want to delete this task? This action cannot be undone.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-end gap-4 mt-4">
+                <Button
+                    variant="outline"
+                    onClick={() => setIsDeleteConfirmationOpen(false)}
+                >
+                    Cancel
+                </Button>
+                <Button
+                    variant="destructive"
+                    onClick={async () => {
+                        if (taskToDelete) {
+                            try {
+                                const response = await fetch(`http://localhost:8000/api/v1/task/deleteTask/${taskToDelete._id}`, {
+                                    method: "DELETE",
+                                });
+
+                                if (!response.ok) {
+                                    const errorData = await response.json();
+                                    throw new Error(errorData.message || "Failed to delete task");
+                                }
+
+                                toast({
+                                    title: "Task Deleted",
+                                    description: "The task has been successfully deleted.",
+                                });
+
+                                fetchTasks();
+                            } catch (error) {
+                                toast({
+                                    title: "Error",
+                                    description: error instanceof Error ? error.message : "Failed to delete task",
+                                    variant: "destructive",
+                                });
+                            } finally {
+                                setIsDeleteConfirmationOpen(false);
+                                setTaskToDelete(null);
+                            }
+                        }
+                    }}
+                >
+                    Delete
+                </Button>
+            </div>
+        </DialogContent>
+    </Dialog>
+
+
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[700px] h-[700px] overflow-auto hide-scrollbar">
+                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
                     <DialogHeader>
                         <DialogTitle>Update Task</DialogTitle>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onEdit)} className="space-y-6">
-                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField
                                     control={form.control}
                                     name="subject"
@@ -779,4 +811,3 @@ export default function TaskTable() {
 
     );
 }
-
