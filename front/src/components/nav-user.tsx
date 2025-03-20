@@ -417,246 +417,246 @@ export function NavUser() {
       </Dialog>
 
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
-            <DialogDescription>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)}>
-                  <div>
-                    <label htmlFor="logo">
-                      Logo
-                      <br />
-                      <img
-                        src={logoPreview || (currentOwner?.logo ? `http://localhost:8000/uploads/${currentOwner.logo}` : "/default-logo.png")}
-                        style={{ width: '80px', height: '80px', borderRadius: '50%', border: '1px solid #ccc' }}
-                        alt="Logo Preview"
-                      />
-                    </label>
-                    <input
-                      type="file"
-                      id="logo"
-                      accept="image/*"
-                      onChange={handleLogoChange}
-                      style={{ display: 'none' }}
-                    />
-                  </div>  
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-                    {/* Company Name */}
-                    <div style={{ flex: '1 1 45%' }}>
-                      <FormField
-                        control={form.control}
-                        name="companyName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Company Name</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Edit Profile</DialogTitle>
+      <DialogDescription>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <div>
+              <label htmlFor="logo">
+                Logo
+                <br />
+                <img
+                  src={logoPreview || (currentOwner?.logo ? `http://localhost:8000/uploads/${currentOwner.logo}` : "/default-logo.png")}
+                  style={{ width: '80px', height: '80px', borderRadius: '50%', border: '1px solid #ccc' }}
+                  alt="Logo Preview"
+                />
+              </label>
+              <input
+                type="file"
+                id="logo"
+                accept="image/*"
+                onChange={handleLogoChange}
+                style={{ display: 'none' }}
+              />
+            </div>  
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+              {/* Company Name */}
+              <div style={{ flex: '1 1 45%' }}>
+                <FormField
+                  control={form.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                    {/* Owner Name */}
-                    <div style={{ flex: '1 1 45%' }}>
-                      <FormField
-                        control={form.control}
-                        name="ownerName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Owner Name</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+              {/* Owner Name */}
+              <div style={{ flex: '1 1 45%' }}>
+                <FormField
+                  control={form.control}
+                  name="ownerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Owner Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                    {/* Contact Number */}
-                    <div style={{ flex: '1 1 45%' }}>
-                      <FormField
-                        control={form.control}
-                        name="contactNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Contact Number</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+              {/* Contact Number */}
+              <div style={{ flex: '1 1 45%' }}>
+                <FormField
+                  control={form.control}
+                  name="contactNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Number</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                    {/* Email Address */}
-                    <div style={{ flex: '1 1 45%' }}>
-                      <FormField
-                        control={form.control}
-                        name="emailAddress"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email Address</FormLabel>
-                            <FormControl>
-                              <Input {...field} className="cursor-not-allowed" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+              {/* Email Address */}
+              <div style={{ flex: '1 1 45%' }}>
+                <FormField
+                  control={form.control}
+                  name="emailAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled className="text-gray-900" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                    {/* Website */}
-                    <div style={{ flex: '1 1 45%' }}>
-                      <FormField
-                        control={form.control}
-                        name="website"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Website</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+              {/* Website */}
+              <div style={{ flex: '1 1 45%' }}>
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                    {/* Business Registration */}
-                    <div style={{ flex: '1 1 45%' }}>
-                      <FormField
-                        control={form.control}
-                        name="businessRegistration"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Business Registration</FormLabel>
-                            <FormControl>
-                              <select {...field} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                                <option value="">Select Business Registration</option>
-                                <option value="Sole proprietorship">Sole proprietorship</option>
-                                <option value="One person Company">One person Company</option>
-                                <option value="Partnership">Partnership</option>
-                                <option value="Private Limited">Private Limited</option>
-                              </select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+              {/* Business Registration */}
+              <div style={{ flex: '1 1 45%' }}>
+                <FormField
+                  control={form.control}
+                  name="businessRegistration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Registration</FormLabel>
+                      <FormControl>
+                        <select {...field} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                          <option value="">Select Business Registration</option>
+                          <option value="Sole proprietorship">Sole proprietorship</option>
+                          <option value="One person Company">One person Company</option>
+                          <option value="Partnership">Partnership</option>
+                          <option value="Private Limited">Private Limited</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                    {/* Company Type */}
-                    <div style={{ flex: '1 1 45%' }}>
-                      <FormField
-                        control={form.control}
-                        name="companyType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Company Type</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+              {/* Company Type */}
+              <div style={{ flex: '1 1 45%' }}>
+                <FormField
+                  control={form.control}
+                  name="companyType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Type</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                    {/* Employee Size */}
-                    <div style={{ flex: '1 1 45%' }}>
-                      <FormField
-                        control={form.control}
-                        name="employeeSize"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Employee Size</FormLabel>
-                            <FormControl>
-                              <select {...field} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                                <option value="">Select Employee Size</option>
-                                <option value="1-10">1-10</option>
-                                <option value="11-50">11-50</option>
-                                <option value="51-100">51-100</option>
-                                <option value=">100">&gt;100</option>
-                              </select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+              {/* Employee Size */}
+              <div style={{ flex: '1 1 45%' }}>
+                <FormField
+                  control={form.control}
+                  name="employeeSize"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Employee Size</FormLabel>
+                      <FormControl>
+                        <select {...field} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}>
+                          <option value="">Select Employee Size</option>
+                          <option value="1-10">1-10</option>
+                          <option value="11-50">11-50</option>
+                          <option value="51-100">51-100</option>
+                          <option value=">100">&gt;100</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                    {/* PAN Number */}
-                    <div style={{ flex: '1 1 45%' }}>
-                      <FormField
-                        control={form.control}
-                        name="panNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>PAN Number</FormLabel>
-                            <FormControl>
-                              <Input {...field} className="cursor-not-allowed" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+              {/* PAN Number */}
+              <div style={{ flex: '1 1 45%' }}>
+                <FormField
+                  control={form.control}
+                  name="panNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>PAN Number</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled className="text-gray-900" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                    {/* Document Type */}
-                    <div style={{ flex: '1 1 45%' }}>
-                      <FormField
-                        control={form.control}
-                        name="documentType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Document Type</FormLabel>
-                            <FormControl>
-                              <Input {...field} className="cursor-not-allowed"/>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+              {/* Document Type */}
+              <div style={{ flex: '1 1 45%' }}>
+                <FormField
+                  control={form.control}
+                  name="documentType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Document Type</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled  className="text-gray-900"/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                    {/* Document Number */}
-                    <div style={{ flex: '1 1 45%' }}>
-                      <FormField
-                        control={form.control}
-                        name="documentNumber"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Document Number</FormLabel>
-                            <FormControl>
-                              <Input {...field} className="cursor-not-allowed"/>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
+              {/* Document Number */}
+              <div style={{ flex: '1 1 45%' }}>
+                <FormField
+                  control={form.control}
+                  name="documentNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Document Number</FormLabel>
+                      <FormControl>
+                        <Input {...field} disabled />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
-                  {/* Buttons */}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', marginTop: '24px' }}>
-                    <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? <Loader2 className="animate-spin" /> : "Save Changes"}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
+            {/* Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', marginTop: '24px' }}>
+              <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="animate-spin" /> : "Save Changes"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogDescription>
+    </DialogHeader>
+  </DialogContent>
+</Dialog>
     </>
   );
 }
