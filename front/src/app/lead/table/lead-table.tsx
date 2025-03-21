@@ -1082,13 +1082,22 @@ export default function LeadTable() {
          </Dialog>
 
          {isInvoiceFormVisible && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm"
-                onClick={() => setIsInvoiceFormVisible(false)} // Close on clicking outside
-
-               >
-                    <div className="bg-white p-4 rounded-md shadow-lg  w-11/12 sm:w-full max-w-3xl max-h-[80vh] overflow-y-auto"
-                                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+                 <div
+                 className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm"
+                 onClick={() => setIsInvoiceFormVisible(false)} // Close on clicking outside
+             >
+                 <div
+    className="bg-white p-4 rounded-md shadow-lg w-11/12 sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto relative scrollbar-hide"
+    onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
 >
+
+                     {/* Close Icon */}
+                     <button
+                         className="absolute top-4 right-4 text-gray-600 hover:text-gray-900"
+                         onClick={() => setIsInvoiceFormVisible(false)}
+                     >
+                         ✖
+                     </button>
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">
                             Create Invoice
                         </h3>
@@ -1394,7 +1403,7 @@ export default function LeadTable() {
                             <div className="flex justify-end mt-6">
                                 <button
                                     type="submit"
-                                    className="bg-gray-900 text-white px-6 py-2 rounded-md hover:bg-gray-400"
+                                    className="bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-400 w-full sm:w-auto text-sm sm:text-base"
                                 >
                                     Create Invoice
                                 </button>
