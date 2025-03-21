@@ -1099,7 +1099,7 @@ export default function LeadTable() {
                          ✖
                      </button>
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                            Create Invoice
+                            Add Invoice
                         </h3>
                         <form
                             onSubmit={handleInvocieSubmit}
@@ -1125,9 +1125,18 @@ export default function LeadTable() {
                                                 companyName: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1148,9 +1157,18 @@ export default function LeadTable() {
                                                 customerName: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
 
                                 <div className="form-group">
@@ -1172,9 +1190,18 @@ export default function LeadTable() {
                                                 contactNumber: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1195,9 +1222,18 @@ export default function LeadTable() {
                                                 emailAddress: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
 
                                 <div className="form-group">
@@ -1216,9 +1252,18 @@ export default function LeadTable() {
                                         onChange={(e) =>
                                             setNewInvoice({ ...newInvoice, address: e.target.value })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1239,8 +1284,18 @@ export default function LeadTable() {
                                                 gstNumber: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
+                                        required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
 
                                 <div className="form-group">
@@ -1262,8 +1317,18 @@ export default function LeadTable() {
                                                 productName: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
+                                        required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1279,9 +1344,18 @@ export default function LeadTable() {
                                         placeholder="Enter product amount"
                                         value={newInvoice.amount}
                                         onChange={handleChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
 
                                 <div className="form-group">
@@ -1298,8 +1372,18 @@ export default function LeadTable() {
                                         placeholder="Enter discount"
                                         value={newInvoice.discount}
                                         onChange={handleChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
+                                        required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1312,10 +1396,9 @@ export default function LeadTable() {
                                         name="gstRate"
                                         id="gstRate"
                                         value={newInvoice.gstRate}
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-300 rounded-md text-black custom-input cursor-pointer"
                                         onChange={handleChange}
                                     >
-                                        <option value="">Select GST Rate</option>
                                         <option value="0">0%</option>
                                         <option value="5">5%</option>
                                         <option value="12">12%</option>
@@ -1339,8 +1422,18 @@ export default function LeadTable() {
                                         placeholder="Enter paid amount"
                                         value={newInvoice.paidAmount}
                                         onChange={handleChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
+                                        required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1355,8 +1448,18 @@ export default function LeadTable() {
                                         id="remainingAmount"
                                         value={newInvoice.remainingAmount}
                                         onChange={handleChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
+                                        required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                             </div>
 
@@ -1374,7 +1477,7 @@ export default function LeadTable() {
                                     onChange={(e) =>
                                         setNewInvoice({ ...newInvoice, status: e.target.value })
                                     }
-                                    className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                    className="w-full p-3 border border-gray-300 rounded-md text-black custom-input cursor-pointer"
                                 >
                                     <option value="paid">Paid</option>
                                     <option value="unpaid">Unpaid</option>
@@ -1395,7 +1498,7 @@ export default function LeadTable() {
                                     onChange={(e) =>
                                         setNewInvoice({ ...newInvoice, date: e.target.value })
                                     }
-                                    className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                    className="w-full p-3 border border-gray-300 rounded-md text-black custom-input cursor-pointer"
                                     required
                                 />
                             </div>
@@ -1405,7 +1508,7 @@ export default function LeadTable() {
                                     type="submit"
                                     className="bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-400 w-full sm:w-auto text-sm sm:text-base"
                                 >
-                                    Create Invoice
+                                    Add Invoice
                                 </button>
                             </div>
                         </form>

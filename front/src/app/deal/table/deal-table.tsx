@@ -1372,15 +1372,24 @@ export default function DealTable() {
 
 
 {isInvoiceFormVisible && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm"
-                onClick={() => setIsInvoiceFormVisible(false)} // Close on clicking outside
-
-               >
-                    <div className="bg-white p-4 rounded-md shadow-lg  w-11/12 sm:w-full max-w-3xl max-h-[80vh] overflow-y-auto"
-                                onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+                 <div
+                 className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm"
+                 onClick={() => setIsInvoiceFormVisible(false)} // Close on clicking outside
+             >
+                 <div
+    className="bg-white p-4 rounded-md shadow-lg w-11/12 sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto relative scrollbar-hide"
+    onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
 >
+
+                     {/* Close Icon */}
+                     <button
+                         className="absolute top-4 right-4 text-gray-600 hover:text-gray-900"
+                         onClick={() => setIsInvoiceFormVisible(false)}
+                     >
+                         ✖
+                     </button>
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                            Create Invoice
+                            Add Invoice
                         </h3>
                         <form
                             onSubmit={handleInvocieSubmit}
@@ -1406,9 +1415,18 @@ export default function DealTable() {
                                                 companyName: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1429,9 +1447,18 @@ export default function DealTable() {
                                                 customerName: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
 
                                 <div className="form-group">
@@ -1453,9 +1480,18 @@ export default function DealTable() {
                                                 contactNumber: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1476,9 +1512,18 @@ export default function DealTable() {
                                                 emailAddress: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
 
                                 <div className="form-group">
@@ -1497,9 +1542,18 @@ export default function DealTable() {
                                         onChange={(e) =>
                                             setNewInvoice({ ...newInvoice, address: e.target.value })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1520,8 +1574,18 @@ export default function DealTable() {
                                                 gstNumber: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
+                                        required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
 
                                 <div className="form-group">
@@ -1543,8 +1607,18 @@ export default function DealTable() {
                                                 productName: e.target.value,
                                             })
                                         }
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
+                                        required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1560,9 +1634,18 @@ export default function DealTable() {
                                         placeholder="Enter product amount"
                                         value={newInvoice.amount}
                                         onChange={handleChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
                                         required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
 
                                 <div className="form-group">
@@ -1579,8 +1662,18 @@ export default function DealTable() {
                                         placeholder="Enter discount"
                                         value={newInvoice.discount}
                                         onChange={handleChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
+                                        required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1593,10 +1686,9 @@ export default function DealTable() {
                                         name="gstRate"
                                         id="gstRate"
                                         value={newInvoice.gstRate}
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-300 rounded-md text-black custom-input cursor-pointer"
                                         onChange={handleChange}
                                     >
-                                        <option value="">Select GST Rate</option>
                                         <option value="0">0%</option>
                                         <option value="5">5%</option>
                                         <option value="12">12%</option>
@@ -1620,8 +1712,18 @@ export default function DealTable() {
                                         placeholder="Enter paid amount"
                                         value={newInvoice.paidAmount}
                                         onChange={handleChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
+                                        required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                                 <div className="form-group">
                                     <label
@@ -1636,8 +1738,18 @@ export default function DealTable() {
                                         id="remainingAmount"
                                         value={newInvoice.remainingAmount}
                                         onChange={handleChange}
-                                        className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                        className="w-full p-3 border border-gray-400 rounded-md text-black custom-input"
+                                        required
                                     />
+                                    <style>
+                                        {`
+                                    .custom-input:focus {
+                                        border-color: black !important;
+                                        box-shadow: none !important;
+                                        outline: none !important;
+                                    }
+                                    `}
+                                    </style>
                                 </div>
                             </div>
 
@@ -1655,7 +1767,7 @@ export default function DealTable() {
                                     onChange={(e) =>
                                         setNewInvoice({ ...newInvoice, status: e.target.value })
                                     }
-                                    className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                    className="w-full p-3 border border-gray-300 rounded-md text-black custom-input cursor-pointer"
                                 >
                                     <option value="paid">Paid</option>
                                     <option value="unpaid">Unpaid</option>
@@ -1676,7 +1788,7 @@ export default function DealTable() {
                                     onChange={(e) =>
                                         setNewInvoice({ ...newInvoice, date: e.target.value })
                                     }
-                                    className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                    className="w-full p-3 border border-gray-300 rounded-md text-black custom-input cursor-pointer"
                                     required
                                 />
                             </div>
@@ -1684,9 +1796,9 @@ export default function DealTable() {
                             <div className="flex justify-end mt-6">
                                 <button
                                     type="submit"
-                                    className="bg-gray-900 text-white px-6 py-2 rounded-md hover:bg-gray-400"
+                                    className="bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-400 w-full sm:w-auto text-sm sm:text-base"
                                 >
-                                    Create Invoice
+                                    Add Invoice
                                 </button>
                             </div>
                         </form>

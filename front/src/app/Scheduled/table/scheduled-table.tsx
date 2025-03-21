@@ -19,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar"
 
 interface ScheduledEvents {
-    id: string;
+    _id: string;
     subject: string;
     assignedUser: string;
     customer: string;
@@ -80,6 +80,7 @@ export default function ScheduledEvents() {
     const [error, setError] = useState<string | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
+     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const fetchScheduledEvents = async () => {
         try {
@@ -246,12 +247,9 @@ export default function ScheduledEvents() {
 
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedScheduledEvents, setSelectedScheduledEvents] = useState<ScheduledEvents | null>(null);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    // Function to handle edit button click
     const handleEditClick = (scheduledEvents: ScheduledEvents) => {
         setSelectedScheduledEvents(scheduledEvents);
-        // Pre-fill the form with lead data
         form.reset({
             id: scheduledEvents.id,
             subject: scheduledEvents.subject,
@@ -269,54 +267,51 @@ export default function ScheduledEvents() {
         setIsEditOpen(true);
     };
 
+       // Function to handle delete button click
+ const handleDeleteClick = (scheduledEvents: ScheduledEvents) => {
+    setSelectedScheduledEvents(scheduledEvents);
+        setIsDeleteDialogOpen(true);
+    };
 
-       const handleDeleteClick = (scheduledEvents: ScheduledEvents) => {
-            setSelectedScheduledEvents(scheduledEvents);
-            setIsDeleteDialogOpen(true);
-        };
-    
-        const handleDeleteConfirm = async () => {
-            if (!selectedScheduledEvents?._id) return;
-    
-            try {
-                const response = await fetch(`http://localhost:8000/api/v1/scheduledevents/deleteScheduledEvent/${selectedScheduledEvents.id}`, {
-                    method: "DELETE",
-                });
-    
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || "Failed to delete scheduled");
-                }
-    
-                toast({
-                    title: "Scheduled Deleted",
-                    description: "The scheduled has been successfully deleted.",
-                });
-    
-                // Refresh the leads list
-                fetchScheduledEvents();
-            } catch (error) {
-                toast({
-                    title: "Error",
-                    description: error instanceof Error ? error.message : "Failed to delete lead",
-                    variant: "destructive",
-                });
-            } finally {
-                setIsDeleteDialogOpen(false);
-                setSelectedScheduledEvents(null);
+    const handleDeleteConfirm = async () => {
+        if (!selectedScheduledEvents?._id) return;
+
+        try {
+            const response = await fetch(`http://localhost:8000/api/v1/scheduledevents/deleteScheduledEvent/${selectedScheduledEvents._id}`, {
+                method: "DELETE",
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to delete scheduled");
             }
-        };
-    
 
-    // Function to handle delete button cli
+            toast({
+                title: "Scheduled Deleted",
+                description: "The scheduled has been successfully deleted.",
+            });
+
+            // Refresh the leads list
+            fetchScheduledEvents();
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: error instanceof Error ? error.message : "Failed to delete lead",
+                variant: "destructive",
+            });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setSelectedScheduledEvents(null);
+        }
+    };
 
     const [isSubmitting, setIsSubmitting] = useState(false)
     async function onEdit(values: z.infer<typeof eventSchema>) {
-        if (!selectedScheduledEvents?.id) return;
+        if (!selectedScheduledEvents?._id) return;
 
         setIsSubmitting(true);
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/scheduledevents/updateScheduledEvent/${selectedScheduledEvents.id}`, {
+            const response = await fetch(`http://localhost:8000/api/v1/scheduledevents/updateScheduledEvent/${selectedScheduledEvents._id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
@@ -664,8 +659,8 @@ export default function ScheduledEvents() {
                                             <FormControl>
                                                 <select
                                                     {...field}
-                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                                                    >
                                                     <option value="call">Call</option>
                                                     <option value="Meeting">Meeting</option>
                                                     <option value="Demo">Demo</option>
@@ -685,8 +680,8 @@ export default function ScheduledEvents() {
                                             <FormControl>
                                                 <select
                                                     {...field}
-                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                                                    >
                                                     <option value="one-time">One Time</option>
                                                     <option value="Daily">Daily</option>
                                                     <option value="Weekly">Weekly</option>
@@ -710,8 +705,8 @@ export default function ScheduledEvents() {
                                             <FormControl>
                                                 <select
                                                     {...field}
-                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                                                    >
                                                     <option value="Scheduled">Schedule</option>
                                                     <option value="Postpone">Postpone</option>
                                                     <option value="Completed">Complete</option>
@@ -731,8 +726,8 @@ export default function ScheduledEvents() {
                                             <FormControl>
                                                 <select
                                                     {...field}
-                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                                                    >
                                                     <option value="High">High</option>
                                                     <option value="Medium">Medium</option>
                                                     <option value="Low">Low</option>
@@ -770,7 +765,7 @@ export default function ScheduledEvents() {
                                             <textarea
                                                 placeholder="Enter more details here..."
                                                 {...field}
-                                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
                                                 rows={3}
                                             />
                                         </FormControl>
@@ -793,7 +788,7 @@ export default function ScheduledEvents() {
                 </DialogContent>
             </Dialog>
 
-             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
                 <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
                     sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
                     <DialogHeader>
