@@ -57,30 +57,41 @@ export default function DealForm() {
     })
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        setIsSubmitting(true)
+        setIsSubmitting(true);
         try {
             const response = await fetch("http://localhost:8000/api/v1/deal/createdeal", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
-            })
-            const data = await response.json()
+            });
+            const data = await response.json();
+    
             if (!response.ok) {
-                throw new Error(data.error || "Failed to submit the deal")
+                if (response.status === 400 && data.message === "This deal already exists.") {
+                    toast({
+                        title: "Warning",
+                        description: "A deal with these details already exists.",
+                        variant: "destructive",
+                    });
+                } else {
+                    throw new Error(data.error || "Failed to submit the deal.");
+                }
+                return;
             }
+    
             toast({
                 title: "Deal Submitted",
-                description: `Your Deal has been successfully submitted. `,
-            })
-            router.push("/deal/table")
+                description: `The deal has been successfully created`,
+            });
+            router.push("/deal/table");
         } catch (error) {
             toast({
                 title: "Error",
-                description: error instanceof Error ? error.message : "There was an error submitting the deal.",
+                description: error instanceof Error ? error.message : "There was an error creating the deal",
                 variant: "destructive",
-            })
+            });
         } finally {
-            setIsSubmitting(false)
+            setIsSubmitting(false);
         }
     }
 
@@ -227,7 +238,7 @@ export default function DealForm() {
                                 <FormControl>
                                     <select
                                         {...field}
-                                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
                                     >
                                         <option value="Proposal">Proposal</option>
                                         <option value="New">New</option>
@@ -325,7 +336,7 @@ export default function DealForm() {
                                 <textarea
                                     placeholder="Enter more details here..."
                                     {...field}
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
                                     rows={3}
                                 />
                             </FormControl>
@@ -334,8 +345,8 @@ export default function DealForm() {
                     )}
                 />
 
-                <div className="text-right">
-                    <Button type="submit" className="w-25" disabled={isSubmitting}>
+                <div className="flex justify-center sm:justify-end">
+                    <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
                         {isSubmitting ? (
                             <>
                                 <Loader2 className="animate-spin mr-2" />

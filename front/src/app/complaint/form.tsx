@@ -17,12 +17,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 
 const complaintSchema = z.object({
   companyName: z.string().optional(),
-  complainerName: z.string().min(2, { message: "Complainer name is required." }),
+  complainerName: z.string().nonempty({ message: "Complainer name is required." }),
   contactNumber: z.string().regex(/^\d*$/, { message: "Paid amount must be numeric" }).optional(),
   emailAddress: z.string().optional(),
-  subject: z.string().min(2, { message: "Subject is required." }),
+  subject: z.string().nonempty({ message: "Subject is required." }),
   date: z.date().optional(),
-  caseStatus: z.enum(["Pending", "Resolved", "In Progress"]),
+  caseStatus: z.enum(["Pending", "Resolved", "InProgress"]),
   priority: z.enum(["High", "Medium", "Low"]),
   caseOrigin: z.string().optional(),
 });
@@ -45,7 +45,7 @@ export default function ComplaintForm() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof complaintSchema>) => {
+    const onSubmit = async (values: z.infer<typeof complaintSchema>) => {
     setIsSubmitting(true);
     try {
       const response = await fetch("http://localhost:8000/api/v1/complaint/createComplaint", {
@@ -55,9 +55,18 @@ export default function ComplaintForm() {
       });
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to submit the complaint.");
-      }
+         if (!response.ok) {
+              if (response.status === 400 && data.message === "This complaint already exists.") {
+                toast({
+                  title: "Warning",
+                  description: "A complaint with these details already exists.",
+                  variant: "destructive",
+                });
+              } else {
+                throw new Error(data.error || "Failed to submit the complaint.");
+              }
+              return;
+            }
       toast({
         title: "Complaint Submitted",
         description: "The complaint has been successfully created",
@@ -203,7 +212,7 @@ export default function ComplaintForm() {
                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
                   >
                     <option value="Pending">Pending</option>
-                    <option value="In Progress">In Progress</option>
+                    <option value="InProgress">In Progress</option>
                     <option value="Resolved">Resolved</option>
                   </select>
                 </FormControl>

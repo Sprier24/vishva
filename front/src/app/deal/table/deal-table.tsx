@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon,ReceiptText,SquareUser} from "lucide-react"
+import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon, ReceiptText, SquareUser } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
@@ -234,7 +234,7 @@ export default function DealTable() {
     const [page, setPage] = useState(1);
     const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
     const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
-    
+
     const handleAddContactClick = (deal: Deal) => {
         setIsContactFormVisible(true);
 
@@ -348,51 +348,39 @@ export default function DealTable() {
         gstRate: number,
         paidAmount: number
     ) => {
-        // Calculate the discounted amount
-        const discountedAmount = amount - (amount * (discount / 100));
-    
-        // Calculate GST amount
-        const gstAmount = discountedAmount * (gstRate / 100);
-    
-        // Calculate total without GST
+        // Subtract the discount from the amount to get the discounted amount
+        const discountedAmount = amount - amount * (discount / 100);
+        const gstAmount = discountedAmount * (gstRate / 100); // Calculate GST on the discounted amount
         const totalWithoutGst = discountedAmount;
-    
-        // Calculate total with GST
-        const totalWithGst = discountedAmount + gstAmount;
-    
-        // Calculate remaining amount
-        const remainingAmount = totalWithGst - paidAmount;
-    
+        const totalWithGst = discountedAmount + gstAmount; // Add GST to the discounted amount
+        const remainingAmount = totalWithGst - paidAmount; // Calculate the remaining amount
+
         return {
             totalWithoutGst,
             totalWithGst,
             remainingAmount,
         };
     };
-      
+
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
         const { name, value } = e.target;
-    
-        // Convert numeric values to numbers
-        const numericValue = ["amount", "discount", "gstRate", "paidAmount"].includes(name)
-            ? parseFloat(value) || 0
-            : value;
-    
-        // Update the invoice state
-        const updatedInvoice = { ...newInvoice, [name]: numericValue };
-    
-        // Recalculate GST if relevant fields change
-        if (["amount", "discount", "gstRate", "paidAmount"].includes(name)) {
+        const updatedInvoice = { ...newInvoice, [name]: value };
+
+        if (
+            name === "amount" ||
+            name === "discount" ||
+            name === "gstRate" ||
+            name === "paidAmount"
+        ) {
             const { totalWithoutGst, totalWithGst, remainingAmount } = calculateGST(
-                updatedInvoice.amount || 0,
-                updatedInvoice.discount || 0,
-                updatedInvoice.gstRate || 0,
-                updatedInvoice.paidAmount || 0
+                updatedInvoice.amount,
+                updatedInvoice.discount,
+                updatedInvoice.gstRate,
+                updatedInvoice.paidAmount
             );
-    
-            // Update the invoice state with new calculations
+
             setNewInvoice({
                 ...updatedInvoice,
                 totalWithoutGst,
@@ -400,13 +388,10 @@ export default function DealTable() {
                 remainingAmount,
             });
         } else {
-            // Update the invoice state without recalculating GST
             setNewInvoice(updatedInvoice);
         }
     };
-      
-
-      const handleContactSubmit = async (e: React.FormEvent) => {
+    const handleContactSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Basic validation: Check if any required field is empty
@@ -522,7 +507,6 @@ export default function DealTable() {
         return filteredDeals;
     }, [Deals, filterValue, statusFilter]);
 
-    
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
     const items = React.useMemo(() => {
@@ -568,15 +552,15 @@ export default function DealTable() {
     };
 
     // Function to handle delete button click
-      const handleDeleteClick = (Deals: Deal) => {
-           setSelectedDeal(Deals);
-           setIsDeleteDialogOpen(true);
-       };
-   
-       const handleDeleteConfirm = async () => {
-           if (!selectedDeal?._id) return;
-   
-           try {
+    const handleDeleteClick = (Deals: Deal) => {
+        setSelectedDeal(Deals);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedDeal?._id) return;
+
+        try {
             const response = await fetch(`http://localhost:8000/api/v1/deal/deleteDeal/${selectedDeal._id}`, {
                 method: "DELETE",
             });
@@ -598,12 +582,12 @@ export default function DealTable() {
                 description: error instanceof Error ? error.message : "Failed to delete deal",
                 variant: "destructive",
             });
-        }finally {
-               setIsDeleteDialogOpen(false);
-               setSelectedDeal(null);
-           }
-       };
-   
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setSelectedDeal(null);
+        }
+    };
+
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     async function onEdit(values: z.infer<typeof formSchema>) {
@@ -623,8 +607,8 @@ export default function DealTable() {
             }
 
             toast({
-                title: "deal Updated",
-                description: "The deal has been successfully updated.",
+                title: "Deal Updated",
+                description: "The deal has been successfully updated",
             });
 
             setIsEditOpen(false);
@@ -635,7 +619,7 @@ export default function DealTable() {
         } catch (error) {
             toast({
                 title: "Error",
-                description: error instanceof Error ? error.message : "Failed to update deal",
+                description: error instanceof Error ? error.message : "There was an error updating the deal",
                 variant: "destructive",
             });
         } finally {
@@ -674,21 +658,21 @@ export default function DealTable() {
                         </span>
                     </Tooltip>
                     <Tooltip color="danger" content="Add Contact">
-                                            <span
-                                                className="text-lg text-danger cursor-pointer active:opacity-50"
-                                                onClick={() => handleAddContactClick(Deals)}
-                                            >
-                                                <ReceiptText className="h-4 w-4" />
-                                            </span>
-                                        </Tooltip>
-                                        <Tooltip color="danger" content="Add Invoice">
-                                            <span
-                                                className="text-lg text-danger cursor-pointer active:opacity-50"
-                                                onClick={() => handleAddInvoice(Deals)}
-                                            >
-                                                <SquareUser className="h-4 w-4" />
-                                            </span>
-                                        </Tooltip>
+                        <span
+                            className="text-lg text-danger cursor-pointer active:opacity-50"
+                            onClick={() => handleAddContactClick(Deals)}
+                        >
+                            <ReceiptText className="h-4 w-4" />
+                        </span>
+                    </Tooltip>
+                    <Tooltip color="danger" content="Add Invoice">
+                        <span
+                            className="text-lg text-danger cursor-pointer active:opacity-50"
+                            onClick={() => handleAddInvoice(Deals)}
+                        >
+                            <SquareUser className="h-4 w-4" />
+                        </span>
+                    </Tooltip>
                 </div>
             );
         }
@@ -769,8 +753,8 @@ export default function DealTable() {
                                 className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300"
                             >
                                 {columns.map((column) => (
-                                    <DropdownItem 
-                                        key={column.uid} 
+                                    <DropdownItem
+                                        key={column.uid}
                                         className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
                                     >
                                         {column.name}
@@ -896,8 +880,6 @@ export default function DealTable() {
                 </div>
             </div>
 
-           
-
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
                     <DialogHeader>
@@ -905,7 +887,7 @@ export default function DealTable() {
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onEdit)} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField
                                     control={form.control}
                                     name="companyName"
@@ -1045,8 +1027,8 @@ export default function DealTable() {
                                             <FormControl>
                                                 <select
                                                     {...field}
-                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                                                    >
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                                                >
                                                     <option value="Proposal">Proposal</option>
                                                     <option value="New">New</option>
                                                     <option value="Discussion">Discussion</option>
@@ -1137,7 +1119,7 @@ export default function DealTable() {
                                             <textarea
                                                 placeholder="Enter more details here..."
                                                 {...field}
-                                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
                                                 rows={3}
                                             />
                                         </FormControl>
@@ -1161,233 +1143,204 @@ export default function DealTable() {
                 </DialogContent>
             </Dialog>
 
-             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
-                    sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+            <Dialog open={isContactFormVisible} onOpenChange={(open) => setIsContactFormVisible(open)}>
+                <DialogContent className="w-[100vw] max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
-                        <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
-                        </DialogDescription>
+                        <DialogTitle>Add Contact</DialogTitle>
                     </DialogHeader>
-                    <div className="flex justify-end gap-4 mt-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsDeleteDialogOpen(false)}
-                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={handleDeleteConfirm}
-                                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
-                        >
-                            Delete
-                        </Button>
-                    </div>
+                    <Form {...form}>
+                        <form onSubmit={handleContactSubmit} className="space-y-6">
+                            {/* First row */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="companyName"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Company Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter company name"
+                                                    value={newContact.companyName}
+                                                    onChange={(e) =>
+                                                        setNewContact({ ...newContact, companyName: e.target.value })
+                                                    }
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="customerName"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Client / Customer Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter client / customer Name"
+                                                    value={newContact.customerName}
+                                                    onChange={(e) =>
+                                                        setNewContact({ ...newContact, customerName: e.target.value })
+                                                    }
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            {/* Second row */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="contactNumber"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Contact Number</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter contact number"
+                                                    value={newContact.contactNumber}
+                                                    onChange={(e) =>
+                                                        setNewContact({ ...newContact, contactNumber: e.target.value })
+                                                    }
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="emailAddress"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Email Address</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter valid email address"
+                                                    value={newContact.emailAddress}
+                                                    onChange={(e) =>
+                                                        setNewContact({
+                                                            ...newContact,
+                                                            emailAddress: e.target.value,
+                                                        })
+                                                    }
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            {/* Third row */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField
+                                    control={form.control}
+                                    name="address"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Company Address</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter company address"
+                                                    value={newContact.address}
+                                                    onChange={(e) =>
+                                                        setNewContact({ ...newContact, address: e.target.value })
+                                                    }
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="gstNumber"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>GST Number</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter GST number"
+                                                    value={newContact.gstNumber}
+                                                    onChange={(e) =>
+                                                        setNewContact({ ...newContact, gstNumber: e.target.value })
+                                                    }
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+
+                            {/* Notes */}
+                            <FormField
+                                control={form.control}
+                                name="description"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Notes (Optional)</FormLabel>
+                                        <FormControl>
+                                            <textarea
+                                                placeholder="Enter more details here..."
+                                                value={newContact.description}
+                                                onChange={(e) =>
+                                                    setNewContact({ ...newContact, description: e.target.value })
+                                                }
+                                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                                                rows={3}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {/* Submit Button */}
+                            <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Submitting Contact...
+                                    </>
+                                ) : (
+                                    "Add Contact"
+                                )}
+                            </Button>
+                        </form>
+                    </Form>
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isContactFormVisible} onOpenChange={(open) => setIsContactFormVisible(open)}>
-    <DialogContent className="w-[100vw] max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
-        <DialogHeader>
-            <DialogTitle>Add Contact</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-            <form onSubmit={handleContactSubmit} className="space-y-6">
-                {/* First row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="companyName"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Company Name</FormLabel>
-                                <FormControl>
-                                    <Input 
-                                        className="w-full" 
-                                        placeholder="Enter company name"
-                                        value={newContact.companyName}
-                                        onChange={(e) =>
-                                            setNewContact({ ...newContact, companyName: e.target.value })
-                                        } 
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="customerName"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Client / Customer Name</FormLabel>
-                                <FormControl>
-                                    <Input 
-                                        className="w-full" 
-                                        placeholder="Enter client / customer Name"
-                                        value={newContact.customerName}
-                                        onChange={(e) =>
-                                            setNewContact({ ...newContact, customerName: e.target.value })
-                                        }
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
+            {isInvoiceFormVisible && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm"
+                    onClick={() => setIsInvoiceFormVisible(false)} // Close on clicking outside
+                >
+                    <div
+                        className="bg-white p-4 rounded-md shadow-lg w-11/12 sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto relative scrollbar-hide"
+                        onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+                    >
 
-                {/* Second row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="contactNumber"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Contact Number</FormLabel>
-                                <FormControl>
-                                    <Input 
-                                        className="w-full"
-                                        placeholder="Enter contact number" 
-                                        value={newContact.contactNumber}
-                                        onChange={(e) =>
-                                            setNewContact({ ...newContact, contactNumber: e.target.value })
-                                        } 
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="emailAddress"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Email Address</FormLabel>
-                                <FormControl>
-                                    <Input 
-                                        className="w-full"
-                                        placeholder="Enter valid email address"
-                                        value={newContact.emailAddress}
-                                        onChange={(e) =>
-                                            setNewContact({
-                                                ...newContact,
-                                                emailAddress: e.target.value,
-                                            })
-                                        } 
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-
-                {/* Third row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="address"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Company Address</FormLabel>
-                                <FormControl>
-                                    <Input 
-                                        className="w-full"
-                                        placeholder="Enter company address"
-                                        value={newContact.address}
-                                        onChange={(e) =>
-                                            setNewContact({ ...newContact, address: e.target.value })
-                                        } 
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="gstNumber"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>GST Number</FormLabel>
-                                <FormControl>
-                                    <Input 
-                                        className="w-full"
-                                        placeholder="Enter GST number"
-                                        value={newContact.gstNumber}
-                                        onChange={(e) =>
-                                            setNewContact({ ...newContact, gstNumber: e.target.value })
-                                        }  
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-
-                {/* Notes */}
-                <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Notes (Optional)</FormLabel>
-                            <FormControl>
-                                <textarea
-                                    placeholder="Enter more details here..."
-                                    value={newContact.description}
-                                    onChange={(e) =>
-                                        setNewContact({ ...newContact, description: e.target.value })
-                                    }
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
-                                    rows={3}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-
-                {/* Submit Button */}
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Submitting Contact...
-                        </>
-                    ) : (
-                        "Add Contact"
-                    )}
-                </Button>
-            </form>
-        </Form>
-    </DialogContent>
-</Dialog>
-
-
-{isInvoiceFormVisible && (
-                 <div
-                 className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm"
-                 onClick={() => setIsInvoiceFormVisible(false)} // Close on clicking outside
-             >
-                 <div
-    className="bg-white p-4 rounded-md shadow-lg w-11/12 sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto relative scrollbar-hide"
-    onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
->
-
-                     {/* Close Icon */}
-                     <button
-                         className="absolute top-4 right-4 text-gray-600 hover:text-gray-900"
-                         onClick={() => setIsInvoiceFormVisible(false)}
-                     >
-                         ✖
-                     </button>
+                        {/* Close Icon */}
+                        <button
+                            className="absolute top-4 right-4 text-gray-600 hover:text-gray-900"
+                            onClick={() => setIsInvoiceFormVisible(false)}
+                        >
+                            ✖
+                        </button>
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">
                             Add Invoice
                         </h3>
@@ -1772,7 +1725,7 @@ export default function DealTable() {
                                     <option value="paid">Paid</option>
                                     <option value="unpaid">Unpaid</option>
                                 </select>
-                           </div> 
+                            </div>
                             <div className="form-group">
                                 <label
                                     htmlFor="date"

@@ -83,7 +83,7 @@ const sendEmail = async () => {
 
         toast({
             title: "Email Sent Successfully",
-            description: "Your email has been sent successfully.",
+            description: "The email has been sent successfully",
         });
 
         setTo("");
@@ -94,7 +94,7 @@ const sendEmail = async () => {
         console.error("Error sending email:", error);
         toast({
             title: "Error",
-            description: error instanceof Error ? error.message : "There was an error sending the email.",
+            description: error instanceof Error ? error.message : "There was an error sending the email",
             variant: "destructive",
         });
     } finally {

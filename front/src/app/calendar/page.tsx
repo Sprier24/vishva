@@ -12,7 +12,8 @@ import { Separator } from "@/components/ui/separator";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
-import { toast } from "@/hooks/use-toast"
+import { Calendar1 } from "lucide-react"
+import Select from "react-select";
 
 interface Event {
   _id: string;
@@ -40,7 +41,6 @@ export default function CalendarPage() {
     { id: 3, name: 'Low', color: 'bg-yellow-500' },
   ];
 
-  // Fetch events from the backend
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -91,18 +91,10 @@ export default function CalendarPage() {
       if (!response.ok) {
         throw new Error('Failed to update event');
       }
-        toast({
-              title: "Event  Updated",
-              description: "Your event has been updated successfully.",
-            });
       const updatedEvent = await response.json();
       setEvents(events.map((event) => (event._id === updatedEvent.data._id ? updatedEvent.data : event)));
     } catch (error) {
-       toast({
-              title: "Error",
-              description: error instanceof Error ? error.message : "There was an error updating the event.",
-              variant: "destructive",
-            });
+      console.error('Error updating event:', error);
     }
   };
 
@@ -116,17 +108,10 @@ export default function CalendarPage() {
       if (!response.ok) {
         throw new Error('Failed to delete event');
       }
-        toast({
-              title: "Event  Deleted",
-              description: "Your event has been deleted successfully.",
-            });
       setEvents(events.filter((event) => event._id !== eventId));
     } catch (error) {
- toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "There was an error deleting the event.",
-        variant: "destructive",
-      });    }
+      console.error('Error deleting event:', error);
+    }
   };
 
   const handleCreateEvent = async (newEvent: Event) => {
@@ -139,18 +124,10 @@ export default function CalendarPage() {
       if (!response.ok) {
         throw new Error('Failed to create event');
       }
-        toast({
-              title: "Event Created",
-              description: "Your event has been submitted successfully.",
-            });
       const createdEvent = await response.json();
       setEvents([...events, createdEvent.data]);
     } catch (error) {
-       toast({
-              title: "Error",
-              description: error instanceof Error ? error.message : "There was an error submitting the event.",
-              variant: "destructive",
-            });
+      console.error('Error creating event:', error);
     }
   };
 
@@ -173,22 +150,23 @@ export default function CalendarPage() {
       days.push(
         <div
           key={day}
-          className={`p-2 border border-gray-200 ${isToday ? 'relative' : ''}`}
+          className={`p-1 xs:p-2 sm:p-3 md:p-4 lg:p-5 border border-gray-300 ${isToday ? 'relative' : ''}`}
         >
           <div className={`font-bold ${isToday ? 'flex items-center justify-center w-6 h-6 bg-blue-500 text-white rounded-full' : ''}`}>
             {day}
           </div>
           {dayEvents.map((event) => (
             <div
-              key={event._id}
-              className={`${calendars.find((cal) => cal.id === event.calendarId)?.color} text-white p-1 mb-1 rounded cursor-pointer`}
-              onClick={() => {
-                setSelectedEvent(event);
-                setShowEventModal(true);
-              }}
-            >
-              {event.event} {/* Changed from `title` to `event` */}
-            </div>
+            key={event._id}
+            className={`${calendars.find((cal) => cal.id === event.calendarId)?.color} text-white p-1 mb-1 rounded cursor-pointer text-sm leading-tight truncate`}
+            style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            onClick={() => {
+              setSelectedEvent(event);
+              setShowEventModal(true);
+            }}
+          >
+            {event.event}
+          </div>          
           ))}
         </div>
       );
@@ -197,107 +175,134 @@ export default function CalendarPage() {
   };
 
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    { value: 0, label: "January" },
+    { value: 1, label: "February" },
+    { value: 2, label: "March" },
+    { value: 3, label: "April" },
+    { value: 4, label: "May" },
+    { value: 5, label: "June" },
+    { value: 6, label: "July" },
+    { value: 7, label: "August" },
+    { value: 8, label: "September" },
+    { value: 9, label: "October" },
+    { value: 10, label: "November" },
+    { value: 11, label: "December" }
   ];
-
+  
   const years = Array.from({ length: 2100 - 1900 + 1 }, (_, i) => 1900 + i);
+  const yearOptions = years.map((year) => ({ value: year, label: year.toString() }));
+  
+  const customStyles = {
+    control: (base) => ({
+      ...base,
+      backgroundColor: "#f3f4f6", // Light gray background
+      color: "black",
+      minHeight: "36px",
+      borderRadius: "6px",
+      border: "1px solid #d1d5db", // Soft gray border
+      boxShadow: "none",
+      "&:hover": { borderColor: "#9ca3af" }, // Slightly darker on hover
+    }),
+    singleValue: (base) => ({
+      ...base,
+      color: "black",
+    }),
+    menu: (base) => ({
+      ...base,
+      maxHeight: "none", // Allow full height without scrollbar
+      overflow: "hidden",
+      backgroundColor: "white",
+      color: "black",
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected ? "#2563eb" : "white", // Professional blue for selected
+      color: state.isSelected ? "white" : "black",
+      "&:hover": { backgroundColor: "#e5e7eb" }, // Light gray hover
+    }),
+  };
+  
 
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4 w-full">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">
-                    Dashboard
-                  </BreadcrumbLink>
-                  <BreadcrumbLink href="/invoice"></BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <span>
-                  Calendar
-                </span>
-              </BreadcrumbList>
-            </Breadcrumb>
-            <div className="flex items-center space-x-4 ml-auto mr-4">
-              <div  >
-                <SearchBar />
-              </div>
-              <div>
-                <Notification />
-              </div>
-            </div>
-          </div>
-        </header>
-        <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15">
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex space-x-2">
-              <select
-                value={currentDate.getMonth()}
-                onChange={handleMonthChange}
-                className="bg-lime-500 dark:bg-lime-700 p-2 rounded hover:bg-lime-600 dark:hover:bg-lime-800 focus:outline-none focus:ring-2 focus:ring-lime-400 dark:focus:ring-lime-500 text-white"
-              >
-                {months.map((month, index) => (
-                  <option key={month} value={index} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                    {month}
-                  </option>
-                ))}
-              </select>
-              <div className="relative">
-                <select
-                  value={currentDate.getFullYear()}
-                  onChange={handleYearChange}
-                  className="bg-lime-500 dark:bg-lime-700 p-2 rounded hover:bg-lime-600 dark:hover:bg-lime-800 focus:outline-none focus:ring-2 focus:ring-lime-400 dark:focus:ring-lime-500 text-white appearance-none"
-                  style={{ width: '100px', overflowY: 'auto' }}
-                >
-                  {years.map((year) => (
-                    <option key={year} value={year} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
-                      {year}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
+            <AppSidebar />
+            <SidebarInset>
+                <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
+                    <div className="flex items-center gap-2 px-4">
+                        <SidebarTrigger className="-ml-1" />
+                        <Separator orientation="vertical" className="mr-2 h-4"/>
+                        <Breadcrumb>
+                        <BreadcrumbList className="flex items-center space-x-2">
+
+                            <BreadcrumbItem className="hidden sm:block md:block">
+                            <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator className="hidden sm:block md:block"/>
+                            <span className="hidden sm:block md:block">
+                                Calendar
+                            </span>
+                        </BreadcrumbList>
+                        </Breadcrumb>
+                    </div>
+                    <div className="flex items-center space-x-4 ml-auto mr-4">
+                        <div  >
+                            <SearchBar />
+                        </div>
+                        <div>
+                            <Notification />
+                        </div>
+                    </div>
+                </header>
+                <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15">
+                  <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-4 sm:space-y-0">
+                  <div className="flex space-x-2">
+                    <Select
+                      value={months.find((m) => m.value === currentDate.getMonth())}
+                      onChange={(selectedOption) => handleMonthChange({ target: { value: selectedOption?.value } })}
+                      options={months}
+                      className="w-32 text-sm"
+                      styles={customStyles}
+                    />
+
+                    <Select
+                      value={yearOptions.find((option) => option.value === currentDate.getFullYear())}
+                      onChange={(selectedOption) => handleYearChange({ target: { value: selectedOption?.value.toString() } })}
+                      options={yearOptions}
+                      className="w-24 text-sm"
+                      styles={customStyles}
+                    />
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={handlePrevMonth}
+                      className="bg-gray-100 text-black border border-gray-300 p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition"
+                    >
+                      <FaChevronLeft />
+                    </button>
+
+                    <button
+                      onClick={handleNextMonth}
+                      className="bg-gray-100 text-black border border-gray-300 p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition"
+                    >
+                      <FaChevronRight />
+                    </button>
+
+                    <button
+                      onClick={handleAddEvent}
+                      className="bg-gray-400 text-black border border-gray-500 p-2 rounded-md hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 transition"
+                    >
+                      <FaPlus />
+                    </button>
+                  </div>
                 </div>
+              <div className="grid grid-cols-7 gap-2 mb-4">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                  <div key={day} className="font-bold text-center text-sm sm:text-base">
+                    {day}
+                  </div>
+                ))}
               </div>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={handlePrevMonth}
-                className="bg-lime-500 p-2 rounded hover:bg-lime-600 focus:outline-none focus:ring-2 focus:ring-lime-400"
-              >
-                <FaChevronLeft />
-              </button>
-              <button
-                onClick={handleNextMonth}
-                className="bg-lime-500 p-2 rounded hover:bg-lime-600 focus:outline-none focus:ring-2 focus:ring-lime-400"
-              >
-                <FaChevronRight />
-              </button>
-              <button
-                onClick={handleAddEvent}
-                className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                <FaPlus />
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-7 gap-2 mb-4">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-              <div key={day} className="font-bold text-center">
-                {day}
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 gap-2">{renderCalendarDays()}</div>
+            <div className="grid grid-cols-7 gap-2">{renderCalendarDays()}</div>
           {showEventModal && (
             <EventModal
               event={selectedEvent}
@@ -393,22 +398,22 @@ const EventModal = ({ event, onSave, onClose, onDelete, calendars }: { event: Ev
               <button
                 type="button"
                 onClick={handleDelete}
-                className="bg-red-500 text-white p-2 rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
-              >
+                className="bg-red-400 text-black border border-red-500 p-2 rounded-md hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 transition"
+                >
                 Delete
               </button>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="bg-lime-500 text-white p-2 rounded hover:bg-lime-600 focus:outline-none focus:ring-2 focus:ring-lime-400"
-            >
+              className="bg-gray-100 text-black border border-gray-300 p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition"
+              >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            >
+              className="bg-gray-400 text-black border border-gray-500 p-2 rounded-md hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 transition"
+              >
               Save
             </button>
           </div>

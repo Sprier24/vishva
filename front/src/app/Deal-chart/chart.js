@@ -62,14 +62,14 @@ export default function CardChart() {
         responsive: true,
         plugins: {
           legend: {
-            labels: { color: "white" },
+            labels: { color: "black" },
             align: "end",
             position: "bottom",
           },
           title: {
             display: false,
             text: "Sales Charts",
-            color: "white",
+            color: "black",
           },
         },
         interaction: {
@@ -78,11 +78,11 @@ export default function CardChart() {
         },
         scales: {
           x: {
-            ticks: { color: "white" },
+            ticks: { color: "black" },
             grid: { display: false, color: "rgba(33, 37, 41, 0.3)" },
           },
           y: {
-            ticks: { color: "white" },
+            ticks: { color: "black" },
             grid: { color: "rgba(250, 250, 250, 0.15)" },
           },
         },
@@ -102,7 +102,7 @@ export default function CardChart() {
         <div className="flex flex-wrap items-center justify-between">
           <div className="relative w-full max-w-full flex-grow flex-1">
             <h6 className="uppercase text-blueGray-100 mb-1 text-xs font-semibold">Overview</h6>
-            <h2 className="text-white text-blueGray-100 font-semibold">Total Deal Value</h2>
+            <h2 className="text-black text-blueGray-100 font-semibold">Total Deal Value</h2>
           </div>
 
           <div className="flex gap-4">

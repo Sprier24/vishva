@@ -107,10 +107,18 @@ export default function InvoiceForm() {
         body: JSON.stringify(values),
       });
       const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || "Failed to submit the invoice");
-      }
+        if (response.status === 400 && data.message === "Duplicate invoice detected. An invoice with these details already exists.") {
+            toast({
+                title: "Warning",
+                description: "An invoice with these details already exists.",
+                variant: "destructive",
+            });
+        } else {
+            throw new Error(data.error || "Failed to submit the invoice.");
+        }
+        return;
+    }
       toast({
         title: "Invoice Submitted",
         description: `Your invoice has been successfully submitted.`,

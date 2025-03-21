@@ -54,19 +54,20 @@ export default function CertificatePage() {
                   </div>
               </div>
           </header>
-                <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 ">
-                    <Card className="max-w-5xl mx-h-10xl">
-                        <CardHeader>
-                            <CardTitle className="text-3xl font-bold text-center">Lead Manager</CardTitle>
-                            <CardDescription className="text-center">
-                                Manage and track your leads effectively.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <CardLineChart/>
-                        </CardContent>
-                    </Card>
-                </div>
+          <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15">
+              <Card className="max-w-8xl mx-auto ">
+                  <CardHeader>
+                      <CardTitle className="text-3xl font-bold text-center">Lead Manager</CardTitle>
+                      <CardDescription className="text-center">
+                      Manage and track your leads effectively.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <CardLineChart />
+                    </CardContent>
+                </Card>
+            </div>
+            
             </SidebarInset>
         </SidebarProvider>
     )

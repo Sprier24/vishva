@@ -12,15 +12,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useRouter } from "next/navigation";
 
 const contactSchema = z.object({
-  companyName: z.string().min(2, { message: "Company name is required." }),
-  customerName: z.string().min(2, { message: "Customer name is required." }),
+  companyName: z.string().nonempty({ message: "Company name is required." }),
+  customerName: z.string().nonempty({ message: "Customer name is required." }),
   contactNumber: z
     .string()
     .regex(/^\d*$/, { message: "Contact number must be numeric" })
     .nonempty({ message: "Contact number is required" }),
   emailAddress: z.string().email({ message: "Invalid email address." }),
-  address: z.string().min(2, { message: "Company address is required." }),
-  gstNumber: z.string().min(1, { message: "GST number is required." }),
+  address: z.string().nonempty({ message: "Company address is required." }),
+  gstNumber: z.string().nonempty({ message: "GST number is required." }),
   description: z.string().optional(),
 });
 
@@ -39,7 +39,6 @@ export default function ContactForm() {
       description: "",
     },
   });
-
   const onSubmit = async (values: z.infer<typeof contactSchema>) => {
     setIsSubmitting(true);
     try {
@@ -48,27 +47,40 @@ export default function ContactForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
-        throw new Error(data.error || "Failed to submit the contact.");
+        if (response.status === 400 && data.message === "This deal already exists.") {
+          toast({
+            title: "Warning",
+            description: "A deal with these details already exists.",
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(data.error || "Failed to submit the contact.");
+        }
+        return;
       }
+  
       toast({
         title: "Contact Submitted",
-        description: "The contact has been successfully created",
+        description: "The contact has been successfully created.",
       });
+  
       router.push("/contact/table");
+  
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "There was an error creating the contact",
+        description: error instanceof Error ? error.message : "There was an error creating the contact.",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

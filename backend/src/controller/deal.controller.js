@@ -3,22 +3,40 @@ const Deal = require("../model/dealSchema.model");
 
 const createDeal = async (req, res) => {
     try {
-        const { companyName, customerName, amount, productName, emailAddress, address, date, status } = req.body;
+        const { companyName, customerName, amount, productName, emailAddress, address, date, status, contactNumber, gstNumber, endDate, notes, isActive } = req.body;
 
+        // Check for an existing deal with all key details
+        const existingDeal = await Deal.findOne({
+            companyName,
+            customerName,
+            emailAddress,
+            productName,
+            contactNumber,
+            gstNumber
+        });
+
+        if (existingDeal) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "This deal already exists."                  
+            });
+        }
+
+        // Create and save a new deal
         const dealData = new Deal({
             companyName,
             customerName,
-            contactNumber: req.body.contactNumber,  
+            contactNumber,
             emailAddress,
             address,
             productName,
             amount,
-            gstNumber: req.body.gstNumber,  
+            gstNumber,
             status: status || 'New',  
             date,
-            endDate: req.body.endDate,  
-            notes: req.body.notes || '',  
-            isActive: req.body.isActive ?? true, 
+            endDate,  
+            notes: notes || '',  
+            isActive: isActive ?? true, 
         });
 
         await dealData.save();  

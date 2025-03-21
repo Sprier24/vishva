@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import CardLineChart from "../Deal-chart/chart"
-
 import {
     SidebarInset,
     SidebarProvider,
@@ -9,10 +8,8 @@ import {
 import { AppSidebar } from "@/components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
-import { Button } from "@/components/ui/button" 
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
-import { ModeToggle } from "@/components/ModeToggle";
 import { Calendar1 } from "lucide-react"
 
 export default function CertificatePage() {
@@ -54,16 +51,16 @@ export default function CertificatePage() {
                         </div>
                     </div>
                 </header>
-                <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 ">
-                    <Card className="max-w-5xl mx-h-10xl">
+                <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15">
+                    <Card className="max-w-8xl mx-auto">
                         <CardHeader>
-                            <CardTitle className="text-3xl font-bold text-center">Deal Manager</CardTitle>
-                            <CardDescription className="text-center">
-                                Manage and track your deals effectively.
-                            </CardDescription>
+                        <CardTitle className="text-3xl font-bold text-center">Deal Manager</CardTitle>
+                        <CardDescription className="text-center">
+                        Manage and track your deals effectively.
+                        </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <CardLineChart/>
+                        <CardLineChart />
                         </CardContent>
                     </Card>
                 </div>

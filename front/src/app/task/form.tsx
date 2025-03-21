@@ -53,14 +53,28 @@ export default function Task() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
+  
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to submit the task.");
+  
+      if (response.status === 400) {
+        // Show a warning toast if the task already exists
+        toast({
+          title: "Warning",
+          description: data.message || "This task already exists!",
+          variant: "destructive", // Ensure your toast library supports a "warning" variant
+        });
+        return; // Stop further execution
       }
+  
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to submit the task.");
+      }
+  
       toast({
         title: "Task Submitted",
         description: `The task has been successfully created`,
       });
+  
       router.push(`/task/table`);
     } catch (error) {
       toast({
@@ -72,6 +86,7 @@ export default function Task() {
       setIsSubmitting(false);
     }
   };
+  
 
   return (
     <Form {...form}>

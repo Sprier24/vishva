@@ -57,31 +57,43 @@ export default function LeadForm() {
     })
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        setIsSubmitting(true)
+        setIsSubmitting(true);
         try {
             const response = await fetch("http://localhost:8000/api/v1/lead/createLead", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
-            })
-            const data = await response.json()
-
+            });
+            const data = await response.json();
+            console.log("Backend Response:", data); // Log the response
+    
             if (!response.ok) {
-                throw new Error(data.error || "Failed to submit the lead")
+                if (response.status === 400 && data.message === "This lead already exists") {
+                    toast({
+                        title: "Warning",
+                        description: "A lead with these details already exists.",
+                        variant: "destructive",
+                    });
+                } else {
+                    throw new Error(data.error || "Failed to submit the lead.");
+                }
+                return;
             }
+    
             toast({
                 title: "Lead Submitted",
-                description: `Your lead has been successfully submitted. ID: ${data.id}`,
-            })
-            router.push("/lead/table")
+                description: `Your lead has been successfully submitted. ID: ${data.data._id}`,
+            });
+            router.push("/lead/table");
         } catch (error) {
+            console.error("Error:", error); // Log the error
             toast({
                 title: "Error",
                 description: error instanceof Error ? error.message : "There was an error submitting the lead.",
                 variant: "destructive",
-            })
+            });
         } finally {
-            setIsSubmitting(false)
+            setIsSubmitting(false);
         }
     }
 

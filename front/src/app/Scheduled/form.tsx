@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const eventSchema = z.object({
-  subject: z.string().min(2, { message: "Subject is required." }),
+  subject: z.string().nonempty({ message: "Subject is required." }),
   assignedUser: z.string().optional(),
   location: z.string().optional(),
   customer: z.string().optional(),
@@ -61,7 +61,16 @@ export default function ScheduledEventForm() {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to submit the event.");
+        if (response.status === 400 && data.message === "This deal already exists.") {
+          toast({
+            title: "Warning",
+            description: "A deal with these details already exists.",
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(data.error || "Failed to submit the contact.");
+        }
+        return;
       }
       toast({
         title: "Event or Meeting Submitted",

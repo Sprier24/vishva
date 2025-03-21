@@ -12,12 +12,12 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const accountSchema = z.object({
-  bankName: z.string().min(2, { message: "Bank name is required." }),
-  IFSCCode: z.string().min(2, { message: "Bank IFSC code is required." }),
-  accountHolderName: z.string().min(2, { message: "Bank account holder name is required." }),
-  accountNumber: z.string().min(2, { message: "Bank account number is required." }),
+  bankName: z.string().nonempty({ message: "Bank name is required." }),
+  IFSCCode: z.string().nonempty({ message: "Bank IFSC code is required." }),
+  accountHolderName: z.string().nonempty({ message: "Bank account holder name is required." }),
+  accountNumber: z.string().nonempty({ message: "Bank account number is required." }),
   accountType: z.enum(["Current", "Savings", "Other"], { message: "Account type is required." }),
-  UpiId: z.string().min(2, { message: "UpiId is required." }),
+  UpiId: z.string().nonempty({ message: "UpiId is required." }),
 });
 
 export default function AccountForm() {
@@ -43,25 +43,40 @@ export default function AccountForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
+      
       const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error(data.error || "Failed to submit the account.");
+        if (response.status === 400 && data.message === "This account already exists.") {
+          toast({
+            title: "Warning",
+            description: "An account with these details already exists.",
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(data.error || "Failed to submit the account.");
+        }
+        return;
       }
+  
       toast({
         title: "Account Submitted",
-        description: "The account has been successfully created",
+        description: "The account has been successfully created.",
       });
+  
       router.push("/Account/table");
+  
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "There was an error creating the account",
+        description: error instanceof Error ? error.message : "There was an error creating the account.",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <Form {...form}>

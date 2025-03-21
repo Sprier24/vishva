@@ -3,8 +3,25 @@ const Lead = require("../model/leadSchema.model");
 
 const createLead = async (req, res) => {
     try {
-        const { companyName, customerName, amount, productName, emailAddress, address, date, status } = req.body;
-        
+        const { companyName, customerName, amount, productName, contactNumber, emailAddress, address, date, status } = req.body;
+
+        // Check for duplicate leads
+        const existingLead = await Lead.findOne({
+            companyName,
+            customerName,
+            emailAddress,
+            productName,
+            contactNumber
+        });
+
+        if (existingLead) {
+            return res.status(400).json({
+                success: false,
+                message: "This lead already exists" // Ensure this message matches the frontend check
+            });
+        }
+
+        // Create and save a new lead
         const leadData = new Lead({
             companyName,
             customerName,
@@ -21,7 +38,7 @@ const createLead = async (req, res) => {
             isActive: req.body.isActive ?? true,  
         });
 
-        await leadData.save();  
+        await leadData.save();
 
         res.status(201).json({
             success: true,

@@ -104,33 +104,40 @@ export default function InvoiceForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      const response = await fetch("http://localhost:8000/api/v1/invoice/invoiceAdd", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
+        const response = await fetch("http://localhost:8000/api/v1/invoice/invoiceAdd", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(values),
+        });
+        const data = await response.json();
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to submit the invoice");
-      }
-
-      toast({
-        title: "Invoice Submitted",
-        description: `Your invoice has been successfully submitted. ID: ${data.id}`,
-      });
-      router.push(`/invoice/${data.id}`);
+        if (!response.ok) {
+            if (response.status === 400 && data.message === "Duplicate invoice detected. An invoice with these details already exists.") {
+                toast({
+                    title: "Warning",
+                    description: "An invoice with these details already exists.",
+                    variant: "destructive",
+                });
+            } else {
+                throw new Error(data.error || "Failed to submit the invoice.");
+            }
+            return;
+        }
+        toast({
+            title: "Invoice Submitted",
+            description: `Your invoice has been successfully submitted.`,
+        });
+        router.push(`/invoice/table`);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "There was an error submitting the invoice.",
-        variant: "destructive",
-      });
+        toast({
+            title: "Error",
+            description: error instanceof Error ? error.message : "There was an error submitting the invoice.",
+            variant: "destructive",
+        });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
-  }
+}
 
   return (
     <Form {...form}>

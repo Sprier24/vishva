@@ -21,6 +21,7 @@ import { ModeToggle } from "@/components/ModeToggle";
 import { Meteors } from "@/components/ui/meteors";
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
+import { Calendar1 } from "lucide-react";
 
 interface Invoice {
   _id: string;
@@ -148,35 +149,39 @@ export default function App() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <ModeToggle />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/invoice">Invoice</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbLink href="/invoice/invoiceDrop">Drag & Drop</BreadcrumbLink>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-          <div className="flex items-center space-x-4 ml-auto mr-4">
-            <div>
-              <SearchBar />
+      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
+            <div className="flex items-center gap-2 px-4">
+                <SidebarTrigger className="-ml-1" />
+                <Separator orientation="vertical" className="mr-2 h-4"/>
+                <Breadcrumb>
+                <BreadcrumbList className="flex items-center space-x-2">
+                    <BreadcrumbItem className="hidden sm:block md:block">
+                    <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden sm:block md:block"/>
+                    <BreadcrumbItem className="hidden sm:block md:block">
+                    <BreadcrumbLink href="/invoice/table">Invoice</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden sm:block md:block" />
+                    <span className="hidden sm:block md:block">
+                        Drag and Drop
+                    </span>
+                </BreadcrumbList>
+                </Breadcrumb>
             </div>
-            <div>
-              <Notification />
+            <div className="flex items-center space-x-4 ml-auto mr-4">
+                <div  >
+                    <SearchBar />
+                </div>
+                <a href="/calendar">
+                    <div>
+                        <Calendar1 />
+                    </div>
+                </a>
+                <div>
+                    <Notification />
+                </div>
             </div>
-          </div>
         </header>
 
         <div className="p-6">
@@ -208,7 +213,7 @@ export default function App() {
 
                   <div className="mt-4 flex flex-col gap-3 min-h-[250px] max-h-[500px] overflow-y-auto">
                     {invoiceStatus.length === 0 ? (
-                      <p className="text-center text-gray-500">No invoices available</p>
+                      <p className="text-center text-gray-500">No invoice available</p>
                     ) : (
                       invoiceStatus.map((invoice) => (
                         <div

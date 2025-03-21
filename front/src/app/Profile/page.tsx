@@ -23,6 +23,7 @@ const formSchema = z.object({
   companyType: z.string().min(1, { message: 'Company type is required.' }),
   employeeSize: z.string().min(1, { message: 'Employee size is required.' }),
   businessRegistration: z.string().min(1, { message: 'Business registration is required.' }),
+  gstNumber: z.string().optional(),
   logo: z.instanceof(File).optional(),
 });
 
@@ -44,6 +45,7 @@ const NewProfile: React.FC = () => {
       panNumber: '',
       companyType: '',
       employeeSize: '',
+      gstNumber: '',
       businessRegistration: '',
     },
   });
@@ -61,7 +63,7 @@ const NewProfile: React.FC = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     const formData = new FormData();
-  
+
     Object.keys(values).forEach((key) => {
       const value = values[key as keyof typeof values];
       if (value instanceof File) {
@@ -70,23 +72,23 @@ const NewProfile: React.FC = () => {
         formData.append(key, value);
       }
     });
-  
+
     for (const [key, value] of formData.entries()) {
       console.log(key, value);
     }
-  
+
     try {
       const response = await fetch('http://localhost:8000/api/v1/owner/addOwner', {
         method: 'POST',
         body: formData,
       });
-  
+
       const data = await response.json();
-  
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to submit the profile.');
       }
-  
+
       toast({
         title: 'Profile Created',
         description: `Your profile has been created successfully.`,
@@ -116,9 +118,9 @@ const NewProfile: React.FC = () => {
                 Logo
                 <br />
                 <img
-                 src={logoPreview || 'https://via.placeholder.com/80'}
-                 style={{ width: '80px', height: '80px', borderRadius: '50%', border: '1px solid #ccc' }}
-                 alt="Logo Preview"
+                  src={logoPreview || 'https://via.placeholder.com/80'}
+                  style={{ width: '80px', height: '80px', borderRadius: '50%', border: '1px solid #ccc' }}
+                  alt="Logo Preview"
                 />
               </label>
               <input
@@ -212,6 +214,21 @@ const NewProfile: React.FC = () => {
               )}
             />
 
+
+            <FormField
+              control={form.control}
+              name="panNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Pan Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter Pan Number" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="documentType"
@@ -221,7 +238,6 @@ const NewProfile: React.FC = () => {
                   <FormControl>
                     <select {...field} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                       <option value="">Select Document Type</option>
-                      <option value="GST Number">GST Number</option>
                       <option value="UdhyamAadhar Number">UdhyamAadhar Number</option>
                       <option value="State Certificate">State Certificate</option>
                       <option value="Certificate of Incorporation">Certificate of Incorporation</option>
@@ -248,19 +264,21 @@ const NewProfile: React.FC = () => {
               />
             )}
 
+
             <FormField
               control={form.control}
-              name="panNumber"
+              name="gstNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Pan Number</FormLabel>
+                  <FormLabel>GST Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter Pan Number" {...field} />
+                    <Input placeholder="Enter Website URL" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
 
             <FormField
               control={form.control}
@@ -322,4 +340,4 @@ const NewProfile: React.FC = () => {
   );
 };
 
-export default NewProfile;
+export default NewProfile; 
