@@ -6,22 +6,16 @@ const createScheduledEvent = async (req, res) => {
     try {
         const eventData = req.body;
 
-        if (req.files && req.files.length > 0) {
-            eventData.attachments = req.files.map(file => file.buffer);
-        }
 
-        // Check if an event with the same title, date, and recurrence already exists
-        const existingEvent = await Scheduled.findOne({ 
-            title: eventData.title, 
-            date: eventData.date, 
-            recurrence: eventData.recurrence 
-        });
-
-        if (existingEvent) {
+        const existingSchedule = await Scheduled.findOne({tittle:eventData.tittle});
+        if(existingSchedule) {
             return res.status(400).json({
                 success: false,
-                message: "An event with the same title, date, and recurrence already exists.",
-            });
+                message:"Event with this tittle already exists",
+            })
+        }
+        if (req.files && req.files.length > 0) {
+            eventData.attachments = req.files.map(file => file.buffer);
         }
 
         // Validate recurrence type

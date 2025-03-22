@@ -39,6 +39,8 @@ export default function ContactForm() {
       description: "",
     },
   });
+
+
   const onSubmit = async (values: z.infer<typeof contactSchema>) => {
     setIsSubmitting(true);
     try {
@@ -51,10 +53,10 @@ export default function ContactForm() {
       const data = await response.json();
   
       if (!response.ok) {
-        if (response.status === 400 && data.message === "This deal already exists.") {
+        if (response.status === 400 && data.message === "This contact already exists.") {
           toast({
             title: "Warning",
-            description: "A deal with these details already exists.",
+            description: "A contact with these details already exists.",
             variant: "destructive",
           });
         } else {

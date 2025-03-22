@@ -283,10 +283,9 @@ export default function LeadTable() {
             remainingAmount: 0, // Default to 0 (since remainingAmount is a number)
         });
     };
-
-    const handleInvocieSubmit = async (e: React.FormEvent) => {
+    const handleInvoiceSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+    
         // Basic validation: Check if any required field is empty
         const {
             companyName,
@@ -296,7 +295,7 @@ export default function LeadTable() {
             address,
             gstNumber,
         } = newInvoice;
-
+    
         if (
             !companyName ||
             !customerName ||
@@ -306,17 +305,20 @@ export default function LeadTable() {
             !gstNumber
         ) {
             toast({
-                title: "Error",
-                description: "Plwasem Fill  The All the field sre required",
+                title: "Warning",
+                description: "All fields are required. Please fill them out.",
+                variant: "destructive",
             });
-            return;
+            return; // Stop execution if validation fails
         }
+    
         try {
-            // Assuming you have an endpoint for saving contacts
-            await axios.post(
+            // API request to save invoice
+            const response = await axios.post(
                 "http://localhost:8000/api/v1/invoice/invoiceAdd",
                 newInvoice
             );
+    
             setIsInvoiceFormVisible(false);
             setNewInvoice({
                 _id: "",
@@ -330,24 +332,35 @@ export default function LeadTable() {
                 amount: 0,
                 discount: 0,
                 gstRate: 0,
-                status: "paid",
+                status: "Paid",
                 date: "",
                 totalWithoutGst: 0,
                 totalWithGst: 0,
                 paidAmount: 0,
                 remainingAmount: 0,
             });
-
+    
             toast({
                 title: "Invoice Submitted",
-                description: "The Invoice has been successfully created",
+                description: "The invoice has been successfully added.",
             });
-        } catch (error) {
-            console.error("Error saving contact:", error);
-            toast({
-                title: "Failed To Add Invoice",
-                description: "The Invoice has been Failed .",
-            });
+        } catch (error: any) {
+            console.error("Error saving invoice:", error);
+    
+            // Handle duplicate invoice error
+            if (error.response && error.response.status === 400 && error.response.data.message === "Duplicate invoice detected. An invoice with these details already exists.") {
+                toast({
+                    title: "Duplicate Invoice",
+                    description: "An invoice with these details already exists.",
+                    variant: "destructive",
+                });
+            } else {
+                toast({
+                    title: "Failed To Add Invoice",
+                    description: "The invoice submission failed. Please try again.",
+                    variant: "destructive",
+                });
+            }
         }
     };
 
@@ -560,9 +573,9 @@ export default function LeadTable() {
         }
     }
 
-    const handleContactSubmit = async (e: React.FormEvent) => {
+   const handleContactSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+    
         // Basic validation: Check if any required field is empty
         const {
             companyName,
@@ -573,7 +586,7 @@ export default function LeadTable() {
             gstNumber,
             description,
         } = newContact;
-
+    
         if (
             !companyName ||
             !customerName ||
@@ -583,18 +596,21 @@ export default function LeadTable() {
             !gstNumber ||
             !description
         ) {
-
             toast({
-                title: "Error",
-                description: `Please Fill All Fields Are Required`,
-            })
+                title: "Warning",
+                description: "All fields are required. Please fill them out.",
+                variant: "destructive",
+            });
+            return; // Stop execution if validation fails
         }
+    
         try {
-            // Assuming you have an endpoint for saving contacts
-            await axios.post(
+            // API request to save contact
+            const response = await axios.post(
                 "http://localhost:8000/api/v1/contact/createContact",
                 newContact
             );
+    
             setIsContactFormVisible(false);
             setNewContact({
                 companyName: "",
@@ -605,19 +621,31 @@ export default function LeadTable() {
                 gstNumber: "",
                 description: "",
             });
+    
             toast({
                 title: "Contact Submitted",
-                description: `The contact has been successfully created`,
-            })
-        } catch (error) {
+                description: "Your contact has been successfully submitted.",
+            });
+        } catch (error: any) {
             console.error("Error saving contact:", error);
-
-            toast({
-                title: "Error",
-                description: `Your Contact has been Failed to submit.`,
-            })
+    
+            // Handle duplicate entry error
+            if (error.response && error.response.status === 400 && error.response.data.message === "This contact already exists.") {
+                toast({
+                    title: "Duplicate Contact",
+                    description: "A contact with these details already exists.",
+                    variant: "destructive",
+                });
+            } else {
+                toast({
+                    title: "Error",
+                    description: "Your contact submission failed. Please try again.",
+                    variant: "destructive",
+                });
+            }
         }
     };
+    
 
     const renderCell = React.useCallback((lead: Lead, columnKey: string) => {
         const cellValue = lead[columnKey as keyof Lead];
@@ -1073,7 +1101,7 @@ export default function LeadTable() {
                             Add Invoice
                         </h3>
                         <form
-                            onSubmit={handleInvocieSubmit}
+                            onSubmit={handleInvoiceSubmit}
                             className="space-y-6 p-6 w-full"
                         >
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

@@ -275,9 +275,9 @@ export default function DealTable() {
         });
     };
 
-    const handleInvocieSubmit = async (e: React.FormEvent) => {
+    const handleInvoiceSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+    
         // Basic validation: Check if any required field is empty
         const {
             companyName,
@@ -287,7 +287,7 @@ export default function DealTable() {
             address,
             gstNumber,
         } = newInvoice;
-
+    
         if (
             !companyName ||
             !customerName ||
@@ -297,17 +297,20 @@ export default function DealTable() {
             !gstNumber
         ) {
             toast({
-                title: "Error",
-                description: "Plwasem Fill  The All the field sre required",
+                title: "Warning",
+                description: "All fields are required. Please fill them out.",
+                variant: "destructive",
             });
-            return;
+            return; // Stop execution if validation fails
         }
+    
         try {
-            // Assuming you have an endpoint for saving contacts
-            await axios.post(
+            // API request to save invoice
+            const response = await axios.post(
                 "http://localhost:8000/api/v1/invoice/invoiceAdd",
                 newInvoice
             );
+    
             setIsInvoiceFormVisible(false);
             setNewInvoice({
                 _id: "",
@@ -328,19 +331,31 @@ export default function DealTable() {
                 paidAmount: 0,
                 remainingAmount: 0,
             });
-
+    
             toast({
-                title: "Invoice Sunmitted",
-                description: "The Invoice has been successfully Added.",
+                title: "Invoice Submitted",
+                description: "The invoice has been successfully added.",
             });
-        } catch (error) {
-            console.error("Error saving contact:", error);
-            toast({
-                title: "Failed To Add Invoice",
-                description: "The Invoice has been Failed .",
-            });
+        } catch (error: any) {
+            console.error("Error saving invoice:", error);
+    
+            // Handle duplicate invoice error
+            if (error.response && error.response.status === 400 && error.response.data.message === "Duplicate invoice detected. An invoice with these details already exists.") {
+                toast({
+                    title: "Duplicate Invoice",
+                    description: "An invoice with these details already exists.",
+                    variant: "destructive",
+                });
+            } else {
+                toast({
+                    title: "Failed To Add Invoice",
+                    description: "The invoice submission failed. Please try again.",
+                    variant: "destructive",
+                });
+            }
         }
     };
+    
 
     const calculateGST = (
         amount: number,
@@ -391,9 +406,10 @@ export default function DealTable() {
             setNewInvoice(updatedInvoice);
         }
     };
+    
     const handleContactSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
+    
         // Basic validation: Check if any required field is empty
         const {
             companyName,
@@ -404,7 +420,7 @@ export default function DealTable() {
             gstNumber,
             description,
         } = newContact;
-
+    
         if (
             !companyName ||
             !customerName ||
@@ -414,18 +430,21 @@ export default function DealTable() {
             !gstNumber ||
             !description
         ) {
-
             toast({
-                title: "Error",
-                description: `Please Fill All Fields Are Required`,
-            })
+                title: "Warning",
+                description: "All fields are required. Please fill them out.",
+                variant: "destructive",
+            });
+            return; // Stop execution if validation fails
         }
+    
         try {
-            // Assuming you have an endpoint for saving contacts
-            await axios.post(
+            // API request to save contact
+            const response = await axios.post(
                 "http://localhost:8000/api/v1/contact/createContact",
                 newContact
             );
+    
             setIsContactFormVisible(false);
             setNewContact({
                 companyName: "",
@@ -436,19 +455,31 @@ export default function DealTable() {
                 gstNumber: "",
                 description: "",
             });
+    
             toast({
                 title: "Contact Submitted",
-                description: `Your Contact has been successfully submitted.`,
-            })
-        } catch (error) {
+                description: "Your contact has been successfully submitted.",
+            });
+        } catch (error: any) {
             console.error("Error saving contact:", error);
-
-            toast({
-                title: "Error",
-                description: `Your Contact has been Failed to submit.`,
-            })
+    
+            // Handle duplicate entry error
+            if (error.response && error.response.status === 400 && error.response.data.message === "This contact already exists.") {
+                toast({
+                    title: "Duplicate Contact",
+                    description: "A contact with these details already exists.",
+                    variant: "destructive",
+                });
+            } else {
+                toast({
+                    title: "Error",
+                    description: "Your contact submission failed. Please try again.",
+                    variant: "destructive",
+                });
+            }
         }
     };
+    
 
 
     // Form setup
@@ -879,6 +910,34 @@ export default function DealTable() {
                     </div>
                 </div>
             </div>
+
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
+                    sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogDescription className="text-sm xs:text-xs">
+                            Are you sure you want to delete this invoice? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-4 mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDeleteDialogOpen(false)}
+                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteConfirm}
+                                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
+                        >
+                            Delete
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
@@ -1345,7 +1404,7 @@ export default function DealTable() {
                             Add Invoice
                         </h3>
                         <form
-                            onSubmit={handleInvocieSubmit}
+                            onSubmit={handleInvoiceSubmit}
                             className="space-y-6 p-6 w-full"
                         >
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -1765,3 +1824,8 @@ export default function DealTable() {
 
     );
 }
+
+
+
+
+    

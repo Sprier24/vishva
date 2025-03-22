@@ -1,60 +1,61 @@
 const mongoose = require('mongoose')
 const Deal = require("../model/dealSchema.model");
 
-const createDeal = async (req, res) => {
-    try {
-        const { companyName, customerName, amount, productName, emailAddress, address, date, status, contactNumber, gstNumber, endDate, notes, isActive } = req.body;
-
-        // Check for an existing deal with all key details
-        const existingDeal = await Deal.findOne({
-            companyName,
-            customerName,
-            emailAddress,
-            productName,
-            contactNumber,
-            gstNumber
-        });
-
-        if (existingDeal) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "This deal already exists."                  
+    const createDeal = async (req, res) => {
+        try {
+            const { companyName, customerName, amount, productName, emailAddress, address, date, status, contactNumber, gstNumber, endDate, notes, isActive } = req.body;
+    
+            // Check for an existing deal with all key details
+            const existingDeal = await Deal.findOne({
+                companyName,
+                customerName,
+                emailAddress,
+                productName,
+                contactNumber,
+                gstNumber
+            });
+    
+            if (existingDeal) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: "This deal already exists."                  
+                });
+            }
+    
+            // Create and save a new deal
+            const dealData = new Deal({
+                companyName,
+                customerName,
+                contactNumber,
+                emailAddress,
+                address,
+                productName,
+                amount,
+                gstNumber,
+                status: status || 'New',  
+                date,
+                endDate,  
+                notes: notes || '',  
+                isActive: isActive ?? true, 
+            });
+    
+            await dealData.save();  
+    
+            res.status(201).json({
+                success: true,
+                message: "Deal created successfully",
+                data: dealData
+            });
+        } catch (error) {
+            console.error("Error creating deal:", error);
+            res.status(500).json({
+                success: false,
+                message: "Internal server error: " + error.message,
             });
         }
+    };
 
-        // Create and save a new deal
-        const dealData = new Deal({
-            companyName,
-            customerName,
-            contactNumber,
-            emailAddress,
-            address,
-            productName,
-            amount,
-            gstNumber,
-            status: status || 'New',  
-            date,
-            endDate,  
-            notes: notes || '',  
-            isActive: isActive ?? true, 
-        });
-
-        await dealData.save();  
-
-        res.status(201).json({
-            success: true,
-            message: "Deal created successfully",
-            data: dealData
-        });
-    } catch (error) {
-        console.error("Error creating deal:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error: " + error.message,
-        });
-    }
-};
-
+    
 const getAllDeals = async (req, res) => {
     try {
         const deals = await Deal.find({});
@@ -105,7 +106,7 @@ const getLeadById = async (req, res) => {
     }
 };
 
-const updateLead = async (req, res) => {
+const updateDeal = async (req, res) => {
     const { id } = req.params;  
     const updates = req.body;   
 
@@ -113,7 +114,7 @@ const updateLead = async (req, res) => {
         if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({
                 success: false,
-                message: "Invalid leadId"
+                message: "Invalid dealId"
             });
         }
 
@@ -124,7 +125,7 @@ const updateLead = async (req, res) => {
             });
         }
 
-        const updatedLead = await Lead.findByIdAndUpdate(
+        const updatedDeal = await Deal.findByIdAndUpdate(
             id,
             updates,
             {
@@ -133,20 +134,20 @@ const updateLead = async (req, res) => {
             }
         );
 
-        if (!updatedLead) {
+        if (!updatedDeal) {
             return res.status(404).json({
                 success: false,
-                message: "Lead not found",
+                message: "Deal not found",
             });
         }
 
         res.status(200).json({
             success: true,
-            message: "Lead updated successfully",
-            data: updatedLead
+            message: "Deal updated successfully",
+            data: updatedDeal
         });
     } catch (error) {
-        console.error("Error updating lead:", error);
+        console.error("Error updating deal:", error);
         res.status(500).json({
             success: false,
             message: "Internal server error: " + error.message,
@@ -154,26 +155,26 @@ const updateLead = async (req, res) => {
     }
 };
 
-const deleteLead = async (req, res) => {
+const deleteDeal = async (req, res) => {
     const { id } = req.params;
 
     try {
-        const deletedLead = await Lead.findByIdAndDelete(id);
+        const deletedDeal = await Deal.findByIdAndDelete(id);
 
-        if (!deletedLead) {
+        if (!deletedDeal) {
             return res.status(404).json({
                 success: false,
-                message: "Lead not found"
+                message: "Deal not found"
             });
         }
 
         res.status(200).json({
             success: true,
-            message: "Lead deleted successfully",
-            data: deletedLead
+            message: "Deal deleted successfully",
+            data: deletedDeal
         });
     } catch (error) {
-        console.error("Error deleting lead:", error);
+        console.error("Error deleting deal:", error);
         res.status(500).json({
             success: false,
             message: "Internal server error: " + error.message,
@@ -350,8 +351,8 @@ module.exports = {
     createDeal,
     getAllDeals,
     getLeadById,
-    updateLead,
-    deleteLead,
+    updateDeal,
+    deleteDeal,
     getNewLeads,
     getDiscussionLeads,
     getDemoLeads,

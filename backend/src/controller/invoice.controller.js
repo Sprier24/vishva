@@ -154,8 +154,8 @@ const invoiceAdd = async (req, res) => {
         let { status } = req.body;
 
         // Set default status if missing or invalid
-        if (!status || !['Unpaid', 'Paid', 'Pending'].includes(status)) {
-            status = 'Pending';
+        if (!status || !['Unpaid', 'Paid'].includes(status)) {
+            status = 'Unpaid';
         }
 
         const newInvoice = new Invoice({

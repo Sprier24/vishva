@@ -284,6 +284,53 @@ body {
   cursor: not-allowed;
 }
 
+/* Default styles for larger screens */
+.responsive-container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.responsive-logo-name {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.responsive-name-email {
+  text-align: right;
+}
+
+.responsive-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 768px) {
+  .responsive-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .responsive-logo-name {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .responsive-name-email {
+    text-align: center;
+  }
+
+  .responsive-details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}
 
 /* Responsive Design */
 @media (max-width: 640px) {
@@ -334,5 +381,34 @@ body {
   .notification-panel {
     width: 24rem; /* 96 in Tailwind */
     height: 100%;
+  }
+}
+
+/* Responsive Fields for Small Screens */
+@media (max-width: 500px) {
+  .responsive-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .responsive-fields > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .responsive-fields > div > span {
+    flex: 1;
+  }
+
+  .responsive-fields > div > span:first-child {
+    font-weight: bold;
+    margin-right: 8px;
+  }
+
+  .responsive-fields > div > span:last-child {
+    text-align: right;
   }
 }

@@ -24,7 +24,7 @@ const createContact = async (req, res) => {
       });
   
       if (existingContact) {
-        return res.status(400).json({ success: false, message: "This complaint already exists." });
+        return res.status(400).json({ success: false, message: "This contact already exists." });
       }
   
   try {

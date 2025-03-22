@@ -60,18 +60,20 @@ export default function ScheduledEventForm() {
         body: JSON.stringify(formattedValues),
       });
       const data = await response.json();
-      if (!response.ok) {
-        if (response.status === 400 && data.message === "This deal already exists.") {
-          toast({
-            title: "Warning",
-            description: "A deal with these details already exists.",
-            variant: "destructive",
-          });
-        } else {
-          throw new Error(data.error || "Failed to submit the contact.");
-        }
-        return;
-      }
+      
+       if (response.status === 400) {
+              // Show a warning toast if the task already exists
+              toast({
+                title: "Warning",
+                description: data.message || "This event already exists!",
+                variant: "destructive", // Ensure your toast library supports a "warning" variant
+              });
+              return; // Stop further execution
+            }
+        
+            if (!response.ok) {
+              throw new Error(data.message || "Failed to submit the event.");
+            }
       toast({
         title: "Event or Meeting Submitted",
         description: "The event or meeting has been successfully created",
