@@ -972,6 +972,7 @@ export default function Page() {
     fetchSchedule();
   }, []);
 
+  //Lead Page
   const onNextPage = React.useCallback(() => {
     if (page < pages) {
       setPage(page + 1);
@@ -984,18 +985,70 @@ export default function Page() {
     }
   }, [page]);
 
+  //Invoice  Page
   const onNextPageInvoice = React.useCallback(() => {
     if (pageInvoice < pagesInvoice) {
-      setPage(pageInvoice + 1);
+      setPageInvoice(pageInvoice + 1);
     }
   }, [pageInvoice, pagesInvoice]);
 
   const onPreviousPageInvoice = React.useCallback(() => {
     if (pageInvoice > 1) {
-      setPage(pageInvoice - 1);
+      setPageInvoice(pageInvoice - 1);
     }
   }, [pageInvoice]);
   
+//Deal Page
+const onNextPageDeal = React.useCallback(() => {
+  if (pageDeal < pagesDeal) {
+    setPageDeal(pageDeal + 1);
+  }
+}, [pageDeal, pagesDeal]);
+
+const onPreviousPageDeal = React.useCallback(() => {
+  if (pageDeal > 1) {
+    setPageDeal(pageDeal - 1);
+  }
+}, [pageDeal]);
+
+//Taskk Page
+const onNextPageTask = React.useCallback(() => {
+  if (pageTask < pagesTask) {
+    setPageTask(pageTask + 1);
+  }
+}, [pageTask, pagesTask]);
+
+const onPreviousPageTask = React.useCallback(() => {
+  if (pageTask > 1) {
+    setPageTask(pageTask - 1);
+  }
+}, [pageTask]);
+
+//Reminder Page
+const onNextPageReminder = React.useCallback(() => {
+  if (pageReminder < pagesReminder) {
+    setPageReminder(pageReminder + 1);
+  }
+}, [pageReminder, pagesReminder]);
+
+const onPreviousPageReminder = React.useCallback(() => {
+  if (pageReminder > 1) {
+    setPageReminder(pageReminder - 1);
+  }
+}, [pageReminder]);
+
+//Schedule Page
+const onNextPageSchedule = React.useCallback(() => {
+  if (pageSchedule < pagesSchedule) {
+    setPageSchedule(pageSchedule + 1);
+  }
+}, [pageSchedule, pagesSchedule]);
+
+const onPreviousPageSchedule = React.useCallback(() => {
+  if (pageSchedule > 1) {
+    setPageSchedule(pageSchedule - 1);
+  }
+}, [pageSchedule]);
 
   //Lead Chart//
   const dynamicChartData = useMemo(() => {
@@ -1681,10 +1734,10 @@ export default function Page() {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onPreviousPageDeal}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onNextPageDeal}>
             Next
           </Button>
         </div>
@@ -1715,10 +1768,10 @@ export default function Page() {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onPreviousPageTask}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onNextPageTask}>
             Next
           </Button>
         </div>
@@ -1749,10 +1802,10 @@ export default function Page() {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onPreviousPageReminder}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onNextPageReminder}>
             Next
           </Button>
         </div>
@@ -1785,10 +1838,10 @@ export default function Page() {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onPreviousPageSchedule}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onNextPageSchedule}>
             Next
           </Button>
         </div>
