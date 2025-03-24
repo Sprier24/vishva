@@ -106,13 +106,16 @@ const NewProfile: React.FC = () => {
   };
 
   return (
+
     <div style={{ display: 'flex', flexDirection: 'column', padding: '50px', height: '100vh' }}>
-      <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold' }}>Create Profile</h1>
+      {/* Centered Header */}
+      <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold', textAlign: 'center' }}>Create Profile</h1>
       <Separator className="my-4 border-gray-500 border-1" />
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 flex-grow">
+          {/* Logo Section */}
+          <div className="flex items-center justify-between mb-6">
             <div>
               <label htmlFor="logo">
                 Logo
@@ -132,18 +135,9 @@ const NewProfile: React.FC = () => {
                 style={{ display: 'none' }}
               />
             </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {isSubmitting ? 'Submitting...' : 'Save Owner'}
-              </Button>
-            </div>
           </div>
 
-          <h2>Profile Information</h2>
-          <br />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px', flexGrow: 1 }}>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <FormField
               control={form.control}
               name="companyName"
@@ -214,7 +208,6 @@ const NewProfile: React.FC = () => {
               )}
             />
 
-
             <FormField
               control={form.control}
               name="panNumber"
@@ -264,7 +257,6 @@ const NewProfile: React.FC = () => {
               />
             )}
 
-
             <FormField
               control={form.control}
               name="gstNumber"
@@ -272,13 +264,12 @@ const NewProfile: React.FC = () => {
                 <FormItem>
                   <FormLabel>GST Number</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter Website URL" {...field} />
+                    <Input placeholder="Enter GST Number" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
 
             <FormField
               control={form.control}
@@ -334,6 +325,17 @@ const NewProfile: React.FC = () => {
               )}
             />
           </div>
+
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              "Save Profile"
+            )}
+          </Button>
         </form>
       </Form>
     </div>

@@ -13,7 +13,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, 
 }).single('logo');
 
 const addOwner = async (req, res) => {
@@ -36,6 +35,7 @@ const addOwner = async (req, res) => {
         panNumber,
         documentType,
         documentNumber,
+        gstNumber,
       } = req.body;
 
       const logoPath = req.file ? `/uploads/${path.basename(req.file.path)}` : null;
@@ -53,6 +53,7 @@ const addOwner = async (req, res) => {
         panNumber,
         documentType,
         documentNumber,
+        gstNumber,
         dataFilled: true,
       });
 

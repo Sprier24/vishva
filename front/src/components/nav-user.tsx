@@ -399,7 +399,7 @@ export function NavUser() {
                   </div>
 
                   {currentOwner.website && (
-                    <div className="col-span-1 md:col-span-2">
+                    <div >
                       <span className="font-bold">Company Website</span>
                       <br />
                       <a
@@ -424,6 +424,7 @@ export function NavUser() {
                 </button>
               </div>
             </div>
+
           ) : (
             <div className="text-center text-gray-600 dark:text-gray-400 text-lg">No profile found</div>
           )}
@@ -432,21 +433,27 @@ export function NavUser() {
 
 
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <div>
-                <label htmlFor="logo">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-6 w-full">
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <label htmlFor="logo" style={{ textAlign: 'center' }}>
                   Logo
                   <br />
                   <img
-                    src={logoPreview || `http://localhost:8000/uploads/${currentOwner.logo}`}
-                    style={{ width: '80px', height: '80px', borderRadius: '50%', border: '1px solid #ccc' }}
+                    src={logoPreview || (currentOwner?.logo ? `http://localhost:8000/uploads/${currentOwner.logo}` : "/default-logo.png")}
+                    style={{
+                      width: '120px',  // Increased width
+                      height: '120px', // Increased height
+                      borderRadius: '50%',
+                      border: '1px solid #ccc',
+                    }}
                     alt="Logo Preview"
                   />
+
                 </label>
                 <input
                   type="file"
@@ -456,227 +463,210 @@ export function NavUser() {
                   style={{ display: 'none' }}
                 />
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
 
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="companyName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Company Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="ownerName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Owner Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="contactNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Number</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="emailAddress"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address</FormLabel>
-                        <FormControl>
-                          <Input {...field} className="cursor-not-allowed" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="website"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Website</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="panNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>PAN Number</FormLabel>
-                        <FormControl>
-                          <Input {...field} className="cursor-not-allowed" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="businessRegistration"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Business Registration</FormLabel>
-                        <FormControl>
-                          <select {...field} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                            <option value="">Select Business Registration</option>
-                            <option value="Sole proprietorship">Sole proprietorship</option>
-                            <option value="One person Company">One person Company</option>
-                            <option value="Partnership">Partnership</option>
-                            <option value="Private Limited">Private Limited</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="gstNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>GST Number</FormLabel>
-                        <FormControl>
-                          <Input {...field} className="cursor-not-allowed" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="companyType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Company Type</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="employeeSize"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Employee Size</FormLabel>
-                        <FormControl>
-                          <select {...field} style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}>
-                            <option value="">Select Employee Size</option>
-                            <option value="1-10">1-10</option>
-                            <option value="11-50">11-50</option>
-                            <option value="51-100">51-100</option>
-                            <option value=">100">&gt;100</option>
-                          </select>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-              
-
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="documentType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Document Type</FormLabel>
-                        <FormControl>
-                          <Input {...field} className="cursor-not-allowed" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div style={{ flex: '1 1 45%' }}>
-                  <FormField
-                    control={form.control}
-                    name="documentNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Document Number</FormLabel>
-                        <FormControl>
-                          <Input {...field} className="cursor-not-allowed" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+              {/* Form Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Name</FormLabel>
+                      <FormControl>
+                        <Input className="w-full p-2 border rounded-md" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="ownerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Owner Name</FormLabel>
+                      <FormControl>
+                        <Input className="w-full p-2 border rounded-md" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', marginTop: '24px' }}>
-                <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? <Loader2 className="animate-spin" /> : "Save Changes"}
-                </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="contactNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Number</FormLabel>
+                      <FormControl>
+                        <Input className="w-full p-2 border rounded-md" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="emailAddress"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input className="w-full p-2 border rounded-md" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="panNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>PAN Number</FormLabel>
+                      <FormControl>
+                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="businessRegistration"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Business Registration</FormLabel>
+                      <FormControl>
+                        <select className="w-full p-2 border rounded-md bg-white" {...field}>
+                          <option value="">Select Business Registration</option>
+                          <option value="Sole proprietorship">Sole proprietorship</option>
+                          <option value="One person Company">One person Company</option>
+                          <option value="Partnership">Partnership</option>
+                          <option value="Private Limited">Private Limited</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="gstNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>GST Number</FormLabel>
+                      <FormControl>
+                        <Input className="w-full p-2 border rounded-md cursor-not-allowed bg-gray-100" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="companyType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Type</FormLabel>
+                      <FormControl>
+                        <Input className="w-full p-2 border rounded-md" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="employeeSize"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Employee Size</FormLabel>
+                      <FormControl>
+                        <select className="w-full p-2 border rounded-md bg-white" {...field}>
+                          <option value="">Select Employee Size</option>
+                          <option value="1-10">1-10</option>
+                          <option value="11-50">11-50</option>
+                          <option value="51-100">51-100</option>
+                          <option value=">100">&gt;100</option>
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="documentType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Document Type</FormLabel>
+                      <FormControl>
+                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="documentNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Document Number</FormLabel>
+                      <FormControl>
+                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Buttons */}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Save Changes...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
             </form>
           </Form>
         </DialogContent>
       </Dialog>
+
     </>
   );
 }
