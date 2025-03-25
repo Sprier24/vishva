@@ -46,7 +46,7 @@ export default function LeadForm() {
             emailAddress: "",
             address: "",
             productName: "",
-            amount: 0,
+            amount: undefined,
             gstNumber: "",
             status: "New",
             date: new Date(),
@@ -57,43 +57,31 @@ export default function LeadForm() {
     })
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        setIsSubmitting(true);
+        setIsSubmitting(true)
         try {
             const response = await fetch("http://localhost:8000/api/v1/lead/createLead", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
-            });
-            const data = await response.json();
-            console.log("Backend Response:", data); // Log the response
-    
+            })
+            const data = await response.json()
+
             if (!response.ok) {
-                if (response.status === 400 && data.message === "This lead already exists") {
-                    toast({
-                        title: "Warning",
-                        description: "A lead with these details already exists.",
-                        variant: "destructive",
-                    });
-                } else {
-                    throw new Error(data.error || "Failed to submit the lead.");
-                }
-                return;
+                throw new Error(data.error || "Failed to submit the lead")
             }
-    
             toast({
                 title: "Lead Submitted",
-                description: `Your lead has been successfully submitted. ID: ${data.data._id}`,
-            });
-            router.push("/lead/table");
+                description: `The lead has been successfully created`,
+            })
+            router.push("/lead/table")
         } catch (error) {
-            console.error("Error:", error); // Log the error
             toast({
                 title: "Error",
-                description: error instanceof Error ? error.message : "There was an error submitting the lead.",
+                description: error instanceof Error ? error.message : "There was an error creating the lead",
                 variant: "destructive",
-            });
+            })
         } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false)
         }
     }
 
@@ -206,7 +194,7 @@ export default function LeadForm() {
                                         type="number"
                                         {...field}
                                         onChange={(e) => {
-                                            const value = e.target.valueAsNumber || 0;
+                                            const value = e.target.valueAsNumber || "";
                                             field.onChange(value);
                                         }}
                                     />
@@ -240,7 +228,7 @@ export default function LeadForm() {
                                 <FormControl>
                                     <select
                                         {...field}
-                                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                                     >
                                         <option value="Proposal">Proposal</option>
                                         <option value="New">New</option>
@@ -260,70 +248,40 @@ export default function LeadForm() {
                         control={form.control}
                         name="date"
                         render={({ field }) => (
-                            <FormItem className="flex flex-col justify-between">
-                                <FormLabel>Lead Date</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                variant={"outline"}
-                                                className={cn(
-                                                    "w-full pl-3 text-left font-normal",
-                                                    !field.value && "text-muted-foreground"
-                                                )}
-                                            >
-                                                {field.value ? (
-                                                    format(field.value, "dd-MM-yyyy")
-                                                ) : (
-                                                    <span>Pick a date</span>
-                                                )}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={field.onChange}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                            </FormItem>
+                            <div className="form-group">
+                                <label htmlFor="date" className="text-sm font-medium text-gray-700">
+                                    Lead Date
+                                </label>
+                                <input
+                                    type="date"
+                                    name="date"
+                                    id="date"
+                                    value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                                    className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                    required
+                                />
+                            </div>
                         )}
                     />
-
                     <FormField
                         control={form.control}
                         name="endDate"
                         render={({ field }) => (
-                            <FormItem className="flex flex-col justify-between">
-                                <FormLabel>Final Date</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                variant={"outline"}
-                                                className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                                            >
-                                                {field.value ? format(field.value, "dd-MM-yyyy") : <span>Pick a date</span>}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={field.onChange}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                            </FormItem>
+                            <div className="form-group">
+                                <label htmlFor="endDate" className="text-sm font-medium text-gray-700">
+                                    Final Date
+                                </label>
+                                <input
+                                    type="date"
+                                    name="endDate"
+                                    id="endDate"
+                                    value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                                    className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                    required
+                                />
+                            </div>
                         )}
                     />
                 </div>
@@ -338,7 +296,7 @@ export default function LeadForm() {
                                 <textarea
                                     placeholder="Enter more details here..."
                                     {...field}
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
                                     rows={3}
                                 />
                             </FormControl>
@@ -347,8 +305,8 @@ export default function LeadForm() {
                     )}
                 />
 
-                <div className="text-right">
-                    <Button type="submit" className="w-25" disabled={isSubmitting}>
+                <div className="flex justify-center sm:justify-end">
+                    <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
                         {isSubmitting ? (
                             <>
                                 <Loader2 className="animate-spin mr-2" />
@@ -360,6 +318,6 @@ export default function LeadForm() {
                     </Button>
                 </div>
             </form>
-        </Form>
+        </Form >
     )
 }

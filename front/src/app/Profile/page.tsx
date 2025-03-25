@@ -63,48 +63,85 @@ const NewProfile: React.FC = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     const formData = new FormData();
-
+  
     Object.keys(values).forEach((key) => {
       const value = values[key as keyof typeof values];
       if (value instanceof File) {
         formData.append(key, value);
-      } else if (typeof value === 'string') {
+      } else if (typeof value === "string") {
         formData.append(key, value);
       }
     });
-
-    for (const [key, value] of formData.entries()) {
-      console.log(key, value);
-    }
-
+  
     try {
-      const response = await fetch('http://localhost:8000/api/v1/owner/addOwner', {
-        method: 'POST',
+      const token = localStorage.getItem("authToken");
+      console.log("Token being sent:", token);
+  
+      if (!token) {
+        toast({
+          title: "Authentication Error",
+          description: "You are not logged in. Please log in and try again.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+  
+      const response = await fetch("http://localhost:8000/api/v1/owner/add-owner", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
-
+  
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to submit the profile.');
+      console.log("Response from server:", data);
+  
+      if (response.status === 401) {
+        toast({
+          title: "Unauthorized",
+          description: "Your session has expired. Please log in again.",
+          variant: "destructive",
+        });
+        localStorage.removeItem("authToken"); // Remove expired token
+        router.push("/login");
+        return;
       }
-
+  
+      if (response.status === 403) {
+        toast({
+          title: "Unauthorized",
+          description: "The email entered does not match the logged-in user's email.",
+          variant: "destructive",
+        });
+        return;
+      }
+  
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to submit the profile.");
+      }
+  
       toast({
-        title: 'Profile Created',
-        description: `Your profile has been created successfully.`,
+        title: "Profile Created",
+        description: "Your profile has been created successfully.",
       });
-      router.push('/dashboard');
+  
+      router.push("/dashboard");
     } catch (error) {
+      console.error("Error submitting profile:", error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'There was an error submitting the profile.',
-        variant: 'destructive',
+        title: "Error",
+        description: error instanceof Error ? error.message : "There was an error submitting the profile.",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
+  
+  
   return (
 
     <div style={{ display: 'flex', flexDirection: 'column', padding: '50px', height: '100vh' }}>
@@ -115,14 +152,15 @@ const NewProfile: React.FC = () => {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 flex-grow">
           {/* Logo Section */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
+          {/* Logo Section */}
+          <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between mb-6 w-full">
+            <div className="text-center">
               <label htmlFor="logo">
                 Logo
                 <br />
                 <img
                   src={logoPreview || 'https://via.placeholder.com/80'}
-                  style={{ width: '80px', height: '80px', borderRadius: '50%', border: '1px solid #ccc' }}
+                  className="w-20 h-20 rounded-full border border-gray-300 mx-auto"
                   alt="Logo Preview"
                 />
               </label>
@@ -132,10 +170,11 @@ const NewProfile: React.FC = () => {
                 accept="image/*"
                 onChange={handleLogoChange}
                 required
-                style={{ display: 'none' }}
+                className="hidden"
               />
             </div>
           </div>
+
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <FormField
@@ -326,16 +365,18 @@ const NewProfile: React.FC = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Submitting...
-              </>
-            ) : (
-              "Save Profile"
-            )}
-          </Button>
+            <div className="flex justify-center sm:justify-end">
+                    <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="animate-spin mr-2" />
+                          Submitting...
+                        </>
+                      ) : (
+                        "Save Profile "
+                      )}
+                    </Button>
+                  </div>
         </form>
       </Form>
     </div>

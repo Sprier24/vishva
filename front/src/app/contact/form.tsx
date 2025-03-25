@@ -40,7 +40,6 @@ export default function ContactForm() {
     },
   });
 
-
   const onSubmit = async (values: z.infer<typeof contactSchema>) => {
     setIsSubmitting(true);
     try {
@@ -49,40 +48,27 @@ export default function ContactForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-  
       const data = await response.json();
-  
+
       if (!response.ok) {
-        if (response.status === 400 && data.message === "This contact already exists.") {
-          toast({
-            title: "Warning",
-            description: "A contact with these details already exists.",
-            variant: "destructive",
-          });
-        } else {
-          throw new Error(data.error || "Failed to submit the contact.");
-        }
-        return;
+        throw new Error(data.error || "Failed to submit the contact.");
       }
-  
       toast({
         title: "Contact Submitted",
-        description: "The contact has been successfully created.",
+        description: "The contact has been successfully created",
       });
-  
       router.push("/contact/table");
-  
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "There was an error creating the contact.",
+        description: error instanceof Error ? error.message : "There was an error creating the contact",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">

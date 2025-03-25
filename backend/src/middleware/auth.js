@@ -1,17 +1,32 @@
-const jwt = require('jsonwebtoken')
-const authenticateToken = (req, res, next) => {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+const jwt = require('jsonwebtoken');
+const User = require('../model/usersSchema.model'); // Adjust the path based on your project structure
 
-    if (!token) {
-        return res.status(401).json({ success: false, message: 'Access denied. No token provided.' });
+const authenticateUser = async (req, res, next) => {
+  const token = req.header("Authorization")?.split(" ")[1];
+
+  if (!token) {
+    console.log("No token provided");
+    return res.status(401).json({ message: "Unauthorized: No token provided" });
+  }
+
+  try {
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id).select("-password");
+
+    if (!user) {
+      console.log("User not found");
+      return res.status(401).json({ message: "Unauthorized: User not found" });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            return res.status(403).json({ success: false, message: 'Invalid or expired token.' });
-        }
-        req.user = decoded; 
-    });
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error("JWT Verification Error:", error);
+    res.status(401).json({ message: "Unauthorized: Invalid token" });
+  }
 };
 
-module.exports={authenticateToken}
+
+module.exports = authenticateUser;

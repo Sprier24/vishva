@@ -37,7 +37,10 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toISOString().split("T")[0]; // Returns "YYYY-MM-DD"
+    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
+    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
+    const year = date.getFullYear();  // Get the full year
+    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
 };
 
 const columns = [
@@ -67,7 +70,7 @@ const complaintSchema = z.object({
     emailAddress: z.string().optional(),
     subject: z.string().min(2, { message: "Subject is required." }),
     date: z.date().optional(),
-    caseStatus: z.enum(["Pending", "Resolved", "In Progress"]),
+    caseStatus: z.enum(["Pending", "Resolved", "InProgress"]),
     priority: z.enum(["High", "Medium", "Low"]),
     caseOrigin: z.string().optional(),
 });
@@ -213,7 +216,7 @@ export default function ComplaintTable() {
             contactNumber: complaint.contactNumber,
             subject: complaint.subject,
             date: new Date(complaint.date),
-            caseStatus: complaint.caseStatus as "Pending" | "Resolved" | "In Progress",
+            caseStatus: complaint.caseStatus as "Pending" | "Resolved" | "InProgress",
             priority: complaint.priority as "High" | "Medium" | "Low",
             caseOrigin: complaint.caseOrigin,
         });
@@ -301,19 +304,21 @@ export default function ComplaintTable() {
     const renderCell = React.useCallback((complaint: Complaint, columnKey: string) => {
         const cellValue = complaint[columnKey as keyof Complaint];
 
-        // Format dates if the column is "date" or "endDate"
+        // Format date fields
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
             return formatDate(cellValue);
         }
-        // Render note column with a fallback message if there's no note
-        if (columnKey === "notes") {
-            return cellValue || "No note available";
+
+        // Handle fields that should default to "N/A" if empty
+        if (columnKey === "caseOrigin" || columnKey === "companyName" || columnKey === "contactNumber" || columnKey === "emailAddress") {
+            return cellValue || "N/A";
         }
-        // Render actions column with edit and delete buttons
+
+        // Handle actions column with buttons for editing and deleting
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
-                    <Tooltip content="Update">
+                    <Tooltip>
                         <span
                             className="text-lg text-default-400 cursor-pointer active:opacity-50"
                             onClick={() => handleEditClick(complaint)}
@@ -321,7 +326,7 @@ export default function ComplaintTable() {
                             <Edit className="h-4 w-4" />
                         </span>
                     </Tooltip>
-                    <Tooltip color="danger" content="Delete">
+                    <Tooltip>
                         <span
                             className="text-lg text-danger cursor-pointer active:opacity-50"
                             onClick={() => handleDeleteClick(complaint)}
@@ -333,10 +338,8 @@ export default function ComplaintTable() {
             );
         }
 
-        // For all other columns, return the raw cell value
         return cellValue;
     }, []);
-
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -407,7 +410,7 @@ export default function ComplaintTable() {
                                     const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
                                     setVisibleColumns(newKeys);
                                 }}
-                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300"
+                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300 hide-scrollbar"
                             >
                                 {columns.map((column) => (
                                     <DropdownItem
@@ -497,6 +500,7 @@ export default function ComplaintTable() {
                     <div className="lg:col-span-12">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Complaint Record</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Create complaint reported by the client / customer</h1>
                             <Table
                                 isHeaderSticky
                                 aria-label="Leads table with custom cells, pagination and sorting"
@@ -619,32 +623,20 @@ export default function ComplaintTable() {
                                     control={form.control}
                                     name="date"
                                     render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Date</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            variant={"outline"}
-                                                            className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                                                        >
-                                                            {field.value ? format(field.value, "dd-MM-yyyy") : <span>Pick a date</span>}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar
-                                                        mode="single"
-                                                        selected={field.value}
-                                                        onSelect={field.onChange}
-                                                        disabled={(date) => date > new Date()}
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
-                                            <FormMessage />
-                                        </FormItem>
+                                        <div className="form-group">
+                                            <label htmlFor="date" className="text-sm font-medium text-gray-700">
+                                                Date
+                                            </label>
+                                            <input
+                                                type="date"
+                                                name="date"
+                                                id="date"
+                                                value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                                onChange={(e) => field.onChange(new Date(e.target.value))}
+                                                className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                                required
+                                            />
+                                        </div>
                                     )}
                                 />
                             </div>
@@ -661,7 +653,7 @@ export default function ComplaintTable() {
                                                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                                                 >
                                                     <option value="Pending">Pending</option>
-                                                    <option value="In Progress">In Progress</option>
+                                                    <option value="InProgress">In Progress</option>
                                                     <option value="Resolved">Resolved</option>
                                                 </select>
                                             </FormControl>

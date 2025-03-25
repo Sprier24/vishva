@@ -315,121 +315,118 @@ export function NavUser() {
       </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
-          <DialogHeader>
-            <DialogTitle >
-              Profile Details
-            </DialogTitle>
-            <hr className="my-3 border-gray-300 dark:border-gray-700" />
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4 flex flex-col items-center text-center">
+          <DialogHeader className="w-full flex flex-col items-center text-center">
+            <DialogTitle>Profile Details</DialogTitle>
+            <hr className="my-3 border-gray-300 dark:border-gray-700 w-full" />
           </DialogHeader>
           {loading ? (
             <div className="text-center text-gray-600 dark:text-gray-400 text-lg">Loading...</div>
           ) : error ? (
             <div className="text-center text-red-600 text-lg">{error}</div>
           ) : currentOwner ? (
-            <div className="relative h-full">
-              <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-8">
-                <div className="w-full md:w-1/3 flex flex-col items-center mt-4 md:mt-6">
-                  <div className="w-32 h-32 md:w-44 md:h-44 border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800 mb-6 md:mb-8">
-                    {currentOwner.logo ? (
-                      <img
-                        src={`http://localhost:8000/uploads/${currentOwner.logo}`}
-                        alt="Company Logo"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-gray-600 dark:text-gray-400 text-base md:text-lg">No Logo</span>
-                    )}
-                  </div>
+            <div className="relative h-full flex flex-col items-center text-center w-full">
+              {/* Logo at the top, centered */}
+              <div className="w-32 h-32 md:w-44 md:h-44 border border-gray-300 dark:border-gray-700 rounded-full overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800 mb-4">
+                {currentOwner.logo ? (
+                  <img
+                    src={`http://localhost:8000/uploads/${currentOwner.logo}`}
+                    alt="Company Logo"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-gray-600 dark:text-gray-400 text-base md:text-lg">No Logo</span>
+                )}
+              </div>
 
-                  <div className="mt-2 text-center">
-                    <div className="text-lg md:text-xl font-bold font-serif text-gray-800 dark:text-white">
-                      {currentOwner.ownerName}
-                    </div>
-                    <div className="text-sm md:text-lg font-medium text-gray-600 dark:text-gray-400">
-                      {currentOwner.emailAddress}
-                    </div>
-                  </div>
+              {/* Name and email centered below logo */}
+              <div className="text-center mb-6">
+                <div className="text-lg md:text-xl font-bold font-serif text-gray-800 dark:text-white">
+                  {currentOwner.ownerName}
                 </div>
-
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 text-gray-700 dark:text-gray-300 py-4 md:py-6 text-base md:text-sm">
-                  <div>
-                    <span className="font-bold">Owner Name</span>
-                    <span className="block">{currentOwner.ownerName}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Company Name</span>
-                    <span className="block">{currentOwner.companyName}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Company Type</span>
-                    <span className="block">{currentOwner.companyType}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Employee Size</span>
-                    <span className="block">{currentOwner.employeeSize}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Contact Number</span>
-                    <span className="block">{currentOwner.contactNumber}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Email Address</span>
-                    <span className="block">{currentOwner.emailAddress}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Document Type</span>
-                    <span className="block">{currentOwner.documentType}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Document Number</span>
-                    <span className="block">{currentOwner.documentNumber || "N/A"}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">PAN Number</span>
-                    <span className="block">{currentOwner.panNumber}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Business Registration</span>
-                    <span className="block">{currentOwner.businessRegistration}</span>
-                  </div>
-                  <div>
-                    <span className="font-bold">Gst Number:</span>
-                    <span className="block">{currentOwner.gstNumber}</span>
-                  </div>
-
-                  {currentOwner.website && (
-                    <div >
-                      <span className="font-bold">Company Website</span>
-                      <br />
-                      <a
-                        href={currentOwner.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-500 dark:text-blue-400 underline"
-                      >
-                        {currentOwner.website}
-                      </a>
-                    </div>
-                  )}
+                <div className="text-sm md:text-lg font-medium text-gray-600 dark:text-gray-400">
+                  {currentOwner.emailAddress}
                 </div>
               </div>
 
-              <div className="flex justify-center md:justify-end mt-6">
+              {/* Two-column grid for other details */}
+              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-gray-700 dark:text-gray-300 py-4 md:py-6 text-base md:text-sm text-center">
+                <div>
+                  <span className="font-bold text-xl md:text-2xl font-semibold">Owner Name</span>
+                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.ownerName}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-xl md:text-2xl font-semibold">Company Name</span>
+                  <span className="block text-lg md:text-xl py-2 px-3 mr-2 ">{currentOwner.companyName}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-xl md:text-2xl font-semibold">Company Type</span>
+                  <span className="block text-lg md:text-xl py-2 px-3 mr-2 ">{currentOwner.companyType}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-xl md:text-2xl font-semibold">Employee Size</span>
+                  <span className="block text-lg md:text-xl py-2 px-3 mr-2 ">{currentOwner.employeeSize}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-xl md:text-2xl font-semibold">Contact Number</span>
+                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.contactNumber}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-xl md:text-2xl font-semibold">Email Address</span>
+                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.emailAddress}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-xl md:text-2xl font-semibold">Document Type</span>
+                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.documentType}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-xl md:text-2xl font-semibold">Document Number</span>
+                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.documentNumber || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-xl md:text-2xl font-semibold">PAN Number</span>
+                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.panNumber}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-xl md:text-2xl font-semibold">Business Registration</span>
+                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.businessRegistration}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-xl md:text-2xl font-semibold">GST Number</span>
+                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.gstNumber}</span>
+                </div>
+                {currentOwner.website && (
+                  <div>
+                    <span className="font-bold text-xl md:text-2xl font-semibold">Company Website</span>
+                    <br />
+                    <a
+                      href={currentOwner.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-500 dark:text-blue-400 underline"
+                    >
+                      {currentOwner.website}
+                    </a>
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end mt-6">
                 <button
-                  className="bg-blue-500 text-white px-5 py-2 text-base md:text-lg rounded-lg hover:bg-blue-600"
+                  type="submit"
+                  className="bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-400 w-full sm:w-auto text-sm sm:text-base"
                   onClick={() => handleEditClick(currentOwner)}
                 >
-                  Update
+                  Update Profile
                 </button>
               </div>
             </div>
-
           ) : (
             <div className="text-center text-gray-600 dark:text-gray-400 text-lg">No profile found</div>
           )}
         </DialogContent>
       </Dialog>
+
+
 
 
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
@@ -666,7 +663,6 @@ export function NavUser() {
           </Form>
         </DialogContent>
       </Dialog>
-
     </>
   );
 }

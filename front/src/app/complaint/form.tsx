@@ -45,7 +45,7 @@ export default function ComplaintForm() {
     },
   });
 
-    const onSubmit = async (values: z.infer<typeof complaintSchema>) => {
+  const onSubmit = async (values: z.infer<typeof complaintSchema>) => {
     setIsSubmitting(true);
     try {
       const response = await fetch("http://localhost:8000/api/v1/complaint/createComplaint", {
@@ -55,18 +55,9 @@ export default function ComplaintForm() {
       });
       const data = await response.json();
 
-         if (!response.ok) {
-              if (response.status === 400 && data.message === "This complaint already exists.") {
-                toast({
-                  title: "Warning",
-                  description: "A complaint with these details already exists.",
-                  variant: "destructive",
-                });
-              } else {
-                throw new Error(data.error || "Failed to submit the complaint.");
-              }
-              return;
-            }
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit the complaint.");
+      }
       toast({
         title: "Complaint Submitted",
         description: "The complaint has been successfully created",
@@ -170,32 +161,20 @@ export default function ComplaintForm() {
             control={form.control}
             name="date"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                      >
-                        {field.value ? format(field.value, "dd-MM-yyyy") : <span>Pick a date</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
+              <div className="form-group">
+                <label htmlFor="date" className="text-sm font-medium text-gray-700">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  id="date"
+                  value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                  onChange={(e) => field.onChange(new Date(e.target.value))}
+                  className="w-full p-3 border border-gray-300 rounded-md text-black"
+                  required
+                />
+              </div>
             )}
           />
         </div>
@@ -208,7 +187,7 @@ export default function ComplaintForm() {
               <FormItem>
                 <FormLabel>Case Status</FormLabel>
                 <FormControl>
-                  <select {...field} 
+                  <select {...field}
                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
                   >
                     <option value="Pending">Pending</option>
@@ -227,7 +206,7 @@ export default function ComplaintForm() {
               <FormItem>
                 <FormLabel>Priority</FormLabel>
                 <FormControl>
-                  <select {...field} 
+                  <select {...field}
                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
                   >
                     <option value="High">High</option>
@@ -261,7 +240,7 @@ export default function ComplaintForm() {
         />
 
         <div className="flex justify-center sm:justify-end">
-          <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>          
+          <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="animate-spin mr-2" />

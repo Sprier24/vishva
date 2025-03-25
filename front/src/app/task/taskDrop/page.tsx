@@ -17,10 +17,11 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { ModeToggle } from "@/components/ModeToggle"
+import { ModeToggle } from "@/components/ModeToggle";
 import { Meteors } from "@/components/ui/meteors";
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
+import Task from "../form";
 import { Calendar1 } from "lucide-react";
 
 interface Task {
@@ -93,7 +94,7 @@ export default function App() {
 
   const statusColors: Record<string, string> = {
     Pending: "text-gray-800 border-2 border-black shadow-lg shadow-black/50",
-   " In Progress": "text-gray-800 border-2 border-black shadow-lg shadow-black/50",
+    InProgress: "text-gray-800 border-2 border-black shadow-lg shadow-black/50",
     Resolved: "text-gray-800 border-2 border-black shadow-lg shadow-black/50",
   };
 
@@ -181,9 +182,11 @@ export default function App() {
             </div>
           </div>
         </header>
-        <div className="p-6 ">
+
+        <div className="p-6">
           {error && <p className="text-red-500 text-center">{error}</p>}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full max-w-6xl md:max-w-4xl mx-auto">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
             {Object.keys(statusColors).map((status) => {
               const taskStatus = groupedTasks[status] || [];
 
@@ -197,24 +200,30 @@ export default function App() {
                   }}
                   onDragLeave={() => setDraggedOver(null)}
                 >
-                  <h2 className="text-base font-bold mb-4 p-4 bg-white border border-black rounded text-gray-800 text-center">{status}</h2>
+                  <h2 className="text-base font-bold mb-4 p-4 bg-white border border-black rounded text-gray-800 text-center">
+                    {status}
+                  </h2>
+
                   <div className="p-4 rounded-lg shadow-sm border border-black mb-4">
-                    <p className="text-sm font-semibold text-gray-800">Total Task: {taskStatus.length}</p>
+                    <p className="text-sm font-semibold text-gray-800">Total Task : {taskStatus.length}</p>
                   </div>
-                  <div
-                    className="mt-4 flex flex-col gap-3 min-h-[250px] max-h-[500px] overflow-y-auto"
-                  >
+
+                  <div className="mt-4 flex flex-col gap-3 min-h-[250px] max-h-[500px] overflow-y-auto">
                     {taskStatus.length === 0 ? (
-                      <p className="text-center text-gray-500">No tasks available</p>
+                      <p className="text-center text-gray-500">No task available</p>
                     ) : (
                       taskStatus.map((task) => (
                         <div
                           key={task._id}
-                          className="p-3 border border-black rounded-lg bg-white shadow-sm cursor-grab" draggable
+                          className="p-3 border border-black rounded-lg bg-white shadow-sm cursor-grab"
+                          draggable
                           onDragStart={(e) => handleDragStart(e, task, status)}
                           onClick={() => handleTaskClick(task)}
                         >
-                          <p className="text-sm font-semibold text-black">Subject: <span>{task.subject}</span></p>
+                          <p className="text-sm font-semibold text-black">Subject : {task.subject}</p>
+                          <p className="text-sm font-semibold text-black">Name : {task.name}</p>
+                          <p className="text-sm font-semibold text-black">Task Date : {task.taskDate}</p>
+                          <p className="text-sm font-semibold text-black">Due Date : {task.dueDate}</p>
                         </div>
                       ))
                     )}
@@ -223,6 +232,7 @@ export default function App() {
               );
             })}
           </div>
+
           {isModalOpen && selectedTask && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div className="w-full max-w-md h-auto relative">
@@ -237,22 +247,21 @@ export default function App() {
                   </div>
 
                   {/* Modal Header */}
-                  <h1 className="text-2xl font-bold text-gray-900 text-center mb-6">Invoice Details</h1>
+                  <h1 className="text-2xl font-bold text-gray-900 text-center mb-6">Task Record</h1>
                   <Separator className="my-4 border-gray-300" />
                   {/* Invoice Details */}
                   <div className="grid grid-cols-2 gap-6 text-gray-700 overflow-y-auto">
                     {Object.entries(selectedTask)
-                      .filter(([key]) => !["_id", "__v", "isActive", "createdAt", "updatedAt"].includes(key)) // Exclude unwanted fields
+                      .filter(([key]) => !["_id", "__v", "isActive", "createdAt", "updatedAt"].includes(key))
                       .map(([key, value]) => (
                         <p key={key} className="text-lg">
                           <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong>{" "}
                           {["dueDate", "lastReminderDate", "taskDate"].includes(key) && value
-                            ? new Date(value).toLocaleDateString("en-GB") // ✅ Shows only date (DD/MM/YYYY)
+                            ? new Date(value).toLocaleDateString("en-GB")
                             : value || "N/A"}
                         </p>
                       ))}
                   </div>
-
                 </div>
               </div>
             </div>
@@ -261,4 +270,4 @@ export default function App() {
       </SidebarInset>
     </SidebarProvider>
   );
-} 
+}

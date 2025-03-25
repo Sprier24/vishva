@@ -46,7 +46,7 @@ export default function DealForm() {
             emailAddress: "",
             address: "",
             productName: "",
-            amount: 0,
+            amount: undefined,
             gstNumber: "",
             status: "New",
             date: new Date(),
@@ -57,41 +57,30 @@ export default function DealForm() {
     })
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        setIsSubmitting(true);
+        setIsSubmitting(true)
         try {
             const response = await fetch("http://localhost:8000/api/v1/deal/createdeal", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
-            });
-            const data = await response.json();
-    
+            })
+            const data = await response.json()
             if (!response.ok) {
-                if (response.status === 400 && data.message === "This deal already exists.") {
-                    toast({
-                        title: "Warning",
-                        description: "A deal with these details already exists.",
-                        variant: "destructive",
-                    });
-                } else {
-                    throw new Error(data.error || "Failed to submit the deal.");
-                }
-                return;
+                throw new Error(data.error || "Failed to submit the lead")
             }
-    
             toast({
                 title: "Deal Submitted",
                 description: `The deal has been successfully created`,
-            });
-            router.push("/deal/table");
+            })
+            router.push("/deal/table")
         } catch (error) {
             toast({
                 title: "Error",
                 description: error instanceof Error ? error.message : "There was an error creating the deal",
                 variant: "destructive",
-            });
+            })
         } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false)
         }
     }
 
@@ -204,7 +193,7 @@ export default function DealForm() {
                                         type="number"
                                         {...field}
                                         onChange={(e) => {
-                                            const value = e.target.valueAsNumber || 0;
+                                            const value = e.target.valueAsNumber || "";
                                             field.onChange(value);
                                         }}
                                     />
@@ -238,7 +227,7 @@ export default function DealForm() {
                                 <FormControl>
                                     <select
                                         {...field}
-                                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                                     >
                                         <option value="Proposal">Proposal</option>
                                         <option value="New">New</option>
@@ -258,70 +247,40 @@ export default function DealForm() {
                         control={form.control}
                         name="date"
                         render={({ field }) => (
-                            <FormItem className="flex flex-col justify-between">
-                                <FormLabel>Deal Date</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                variant={"outline"}
-                                                className={cn(
-                                                    "w-full pl-3 text-left font-normal",
-                                                    !field.value && "text-muted-foreground"
-                                                )}
-                                            >
-                                                {field.value ? (
-                                                    format(field.value, "dd-MM-yyyy")
-                                                ) : (
-                                                    <span>Pick a date</span>
-                                                )}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={field.onChange}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                            </FormItem>
+                            <div className="form-group">
+                                <label htmlFor="date" className="text-sm font-medium text-gray-700">
+                                    Deal Date
+                                </label>
+                                <input
+                                    type="date"
+                                    name="date"
+                                    id="date"
+                                    value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                                    className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                    required
+                                />
+                            </div>
                         )}
                     />
-
                     <FormField
                         control={form.control}
                         name="endDate"
                         render={({ field }) => (
-                            <FormItem className="flex flex-col justify-between">
-                                <FormLabel>Final Date</FormLabel>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <FormControl>
-                                            <Button
-                                                variant={"outline"}
-                                                className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                                            >
-                                                {field.value ? format(field.value, "dd-MM-yyyy") : <span>Pick a date</span>}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                            </Button>
-                                        </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={field.value}
-                                            onSelect={field.onChange}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                            </FormItem>
+                            <div className="form-group">
+                                <label htmlFor="endDate" className="text-sm font-medium text-gray-700">
+                                    Final Date
+                                </label>
+                                <input
+                                    type="date"
+                                    name="endDate"
+                                    id="endDate"
+                                    value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                                    className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                    required
+                                />
+                            </div>
                         )}
                     />
                 </div>
@@ -336,7 +295,7 @@ export default function DealForm() {
                                 <textarea
                                     placeholder="Enter more details here..."
                                     {...field}
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
                                     rows={3}
                                 />
                             </FormControl>

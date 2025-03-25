@@ -60,20 +60,9 @@ export default function ScheduledEventForm() {
         body: JSON.stringify(formattedValues),
       });
       const data = await response.json();
-      
-       if (response.status === 400) {
-              // Show a warning toast if the task already exists
-              toast({
-                title: "Warning",
-                description: data.message || "This event already exists!",
-                variant: "destructive", // Ensure your toast library supports a "warning" variant
-              });
-              return; // Stop further execution
-            }
-        
-            if (!response.ok) {
-              throw new Error(data.message || "Failed to submit the event.");
-            }
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to submit the event.");
+      }
       toast({
         title: "Event or Meeting Submitted",
         description: "The event or meeting has been successfully created",
@@ -161,8 +150,8 @@ export default function ScheduledEventForm() {
                 <FormControl>
                   <select
                     {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                    >
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                  >
                     <option value="call">Call</option>
                     <option value="Meeting">Meeting</option>
                     <option value="Demo">Demo</option>
@@ -182,8 +171,8 @@ export default function ScheduledEventForm() {
                 <FormControl>
                   <select
                     {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                    >
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                  >
                     <option value="one-time">One Time</option>
                     <option value="Daily">Daily</option>
                     <option value="Weekly">Weekly</option>
@@ -207,8 +196,8 @@ export default function ScheduledEventForm() {
                 <FormControl>
                   <select
                     {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                    >
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                  >
                     <option value="Scheduled">Schedule</option>
                     <option value="Postpone">Postpone</option>
                     <option value="Completed">Complete</option>
@@ -228,8 +217,8 @@ export default function ScheduledEventForm() {
                 <FormControl>
                   <select
                     {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                    >
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                  >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
@@ -246,32 +235,20 @@ export default function ScheduledEventForm() {
             control={form.control}
             name="date"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Event Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                      >
-                        {field.value ? format(new Date(field.value), "dd-MM-yyyy") : <span>Pick a date</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value ? new Date(field.value) : undefined}
-                      onSelect={field.onChange}
-
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
+              <div className="form-group">
+                <label htmlFor="date" className="text-sm font-medium text-gray-700">
+                  Event or meeting Date
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  id="date"
+                  value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                  onChange={(e) => field.onChange(new Date(e.target.value))}
+                  className="w-full p-3 border border-gray-300 rounded-md text-black"
+                  required
+                />
+              </div>
             )}
           />
         </div>
@@ -286,7 +263,7 @@ export default function ScheduledEventForm() {
                 <textarea
                   placeholder="Enter more details here..."
                   {...field}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
                   rows={3}
                 />
               </FormControl>

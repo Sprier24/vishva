@@ -30,10 +30,9 @@ const data = {
       title: "Dashboard",
       url: "/dashboard",
       icon: LayoutDashboard,
-      items: [
-        { title: "Dashboard", url: "/dashboard", }
-      ]
+      items: [{ title: "Dashboard", url: "/dashboard" }],
     },
+
     {
       title: "Lead",
       url: "/lead",
@@ -44,26 +43,7 @@ const data = {
         { title: "Drag & Drop", url: "/lead/leadDrop" }
       ],
     },
-    {
-      title: "Invoice",
-      url: "/invoice",
-      icon: ReceiptText,
-      items: [
-        { title: "Record", url: "/invoice/table" },
-        { title: "Graph", url: "/Invoice-chart" },
-        { title: "Drag & Drop", url: "/invoice/invoiceDrop" }
-      ],
-    },
-    {
-      title: "Reminder",
-      url: "/reminder",
-      icon: BellMinus,
 
-      items: [
-        { title: "Record", url: "/reminder/table" },
-        { title: "Email", url: "/reminder/reminderEmail" },
-      ],
-    },
     {
       title: "Deal",
       url: "/deal",
@@ -75,6 +55,29 @@ const data = {
         { title: "Drag & Drop", url: "/deal/dealDrop" }
       ],
     },
+
+    {
+      title: "Invoice",
+      url: "/invoice",
+      icon: ReceiptText,
+      items: [
+        { title: "Record", url: "/invoice/table" },
+        { title: "Graph", url: "/Invoice-chart" },
+        { title: "Drag & Drop", url: "/invoice/invoiceDrop" }
+      ],
+    },
+
+    {
+      title: "Reminder",
+      url: "/reminder",
+      icon: BellMinus,
+
+      items: [
+        { title: "Record", url: "/reminder/table" },
+        { title: "Email", url: "/reminder/reminderEmail" },
+      ],
+    },
+
     {
       title: "Task",
       url: "/task",
@@ -85,6 +88,7 @@ const data = {
         { title: "Drag & Drop", url: "/task/taskDrop" }
       ],
     },
+
     {
       title: "Complaint",
       url: "/complaint",
@@ -95,6 +99,7 @@ const data = {
         { title: "Email", url: "/complaint/complaintEmail" }
       ],
     },
+
     {
       title: "Contact",
       url: "/contact",
@@ -105,6 +110,7 @@ const data = {
         { title: "Email", url: "/contact/contactEmail" }
       ],
     },
+
     {
       title: "Account",
       url: "/account",
@@ -113,16 +119,18 @@ const data = {
         { title: "Record", url: "/Account/table" }
       ],
     },
+
     {
       title: "Documents",
       url: "/document",
       icon: ScrollText,
       items: [
-        { title: "Drive", url: "/flipflap" }
+        { title: "Drive", url: "/document" }
       ],
     },
+
     {
-      title: "Schedule",
+      title: "Event or Meeting",
       url: "/scheduled",
       icon: CalendarCog,
 
@@ -130,16 +138,24 @@ const data = {
         { title: "Record", url: "/Scheduled/table" }
       ],
     },
+
   ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [isClient, setIsClient] = React.useState(false)
   const [activePath, setActivePath] = React.useState("")
+  const [windowWidth, setWindowWidth] = React.useState(0);
 
   React.useEffect(() => {
     setIsClient(true)
     setActivePath(window.location.pathname)
+    setWindowWidth(window.innerWidth)
+
+    const handleResize = () => setWindowWidth(window.innerWidth)
+    window.addEventListener("resize", handleResize)
+
+    return () => window.removeEventListener("resize", handleResize)
   }, [])
 
   const updatedNavMain = React.useMemo(
@@ -147,13 +163,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       data.navMain.map((item) => ({
         ...item,
         isActive: isClient && activePath === item.url,
-        items: item.items?.map((subItem) => ({
-          ...subItem,
-          isActive: isClient && activePath === subItem.url,
-        })),
+        items: item.items
+          ?.filter(
+            (subItem) => !(windowWidth < 768 && subItem.title === "Drag & Drop")
+          ) // Hide Drag & Drop if width < 768px
+          .map((subItem) => ({
+            ...subItem,
+            isActive: isClient && activePath === subItem.url,
+          })),
       })),
-    [isClient, activePath]
-  );
+    [isClient, activePath, windowWidth]
+  )
 
   return (
     <Sidebar collapsible="icon" {...props}>

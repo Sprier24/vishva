@@ -23,8 +23,8 @@ interface Task {
     subject: string;
     name: string;
     relatedTo: string;
-    taskDate: string;
-    dueDate: string;
+    date: string;
+    endDate: string;
     status: string;
     priority: string;
     assigned: string;
@@ -37,8 +37,12 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
+    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
+    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
+    const year = date.getFullYear();  // Get the full year
+    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
 };
+
 
 const columns = [
     { name: "Subject", uid: "subject", sortable: true, width: "120px" },
@@ -48,14 +52,14 @@ const columns = [
     { name: "Task Notes", uid: "notes", sortable: true, width: "100px" },
     {
         name: "Task Date",
-        uid: "taskDate",
+        uid: "date",
         sortable: true,
         width: "170px",
         render: (row: any) => formatDate(row.date),
     },
     {
         name: "Due Date",
-        uid: "dueDate",
+        uid: "endDate",
         sortable: true,
         width: "170px",
         render: (row: any) => formatDate(row.date),
@@ -65,15 +69,15 @@ const columns = [
     { name: "Action", uid: "actions", sortable: true, width: "100px" },
 ];
 
-const INITIAL_VISIBLE_COLUMNS = ["subject", "name", "assigned", "relatedTo", "taskDate", "dueDate", "status", "priority", "notes", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["subject", "name", "assigned", "relatedTo", "date", "endDate", "status", "priority", "notes", "actions"];
 
 const taskSchema = z.object({
     subject: z.string().min(2, { message: "Subject is required." }),
     relatedTo: z.string().min(2, { message: "Related to  is required." }),
     name: z.string().min(2, { message: "Name is required." }),
     assigned: z.string().min(2, { message: "Assigned By is required." }),
-    taskDate: z.date().optional(),
-    dueDate: z.date().optional(),
+    date: z.date().optional(),
+    endDate: z.date().optional(),
     status: z.enum(["Pending", "Resolved", "In Progress"]),
     priority: z.enum(["High", "Medium", "Low"]),
     notes: z.string().optional(),
@@ -84,7 +88,7 @@ export default function TaskTable() {
     const [error, setError] = useState<string | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
-    
+
     const fetchTasks = async () => {
         try {
             const response = await axios.get(
@@ -153,7 +157,6 @@ export default function TaskTable() {
     const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
-
     const handleSortChange = (column: string) => {
         setSortDescriptor((prevState) => {
             if (prevState.column === column) {
@@ -178,7 +181,7 @@ export default function TaskTable() {
             subject: "",
             assigned: "",
             relatedTo: "",
-            taskDate: new Date(),
+            date: new Date(),
             endDate: undefined,
             status: "New",
             priority: "Medium",
@@ -253,8 +256,8 @@ export default function TaskTable() {
             subject: task.subject,
             assigned: task.assigned,
             relatedTo: task.relatedTo,
-            taskDate: task.taskDate ? new Date(task.taskDate) : undefined,
-            dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+            date: task.date ? new Date(task.date) : undefined,
+            endDate: task.endDate ? new Date(task.endDate) : undefined,
             status: task.status,
             priority: task.priority,
             notes: task.notes,
@@ -268,8 +271,6 @@ export default function TaskTable() {
         setTaskToDelete(task);
         setIsDeleteConfirmationOpen(true);
     };
-
-
     const [isSubmitting, setIsSubmitting] = useState(false)
 
 
@@ -291,7 +292,7 @@ export default function TaskTable() {
 
             toast({
                 title: "Task Updated",
-                description: "The task has been successfully updated.",
+                description: "The task has been successfully updated",
             });
 
             // Close dialog and reset form
@@ -304,7 +305,7 @@ export default function TaskTable() {
         } catch (error) {
             toast({
                 title: "Error",
-                description: error instanceof Error ? error.message : "Failed to update lead",
+                description: error instanceof Error ? error.message : "There was an error updating the task",
                 variant: "destructive",
             });
         } finally {
@@ -320,13 +321,13 @@ export default function TaskTable() {
         }
 
         if (columnKey === "notes") {
-            return cellValue || "No note available";
+            return cellValue || "N/A";
         }
 
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
-                    <Tooltip content="Update">
+                    <Tooltip>
                         <span
                             className="text-lg text-default-400 cursor-pointer active:opacity-50"
                             onClick={() => handleEditClick(tasks)}
@@ -334,7 +335,7 @@ export default function TaskTable() {
                             <Edit className="h-4 w-4" />
                         </span>
                     </Tooltip>
-                    <Tooltip color="danger" content="Delete">
+                    <Tooltip>
                         <span
                             className="text-lg text-danger cursor-pointer active:opacity-50"
                             onClick={() => handleDeleteClick(tasks)}
@@ -398,7 +399,7 @@ export default function TaskTable() {
                             onClear={() => setFilterValue("")}
                         />
                     </div>
-<div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
+                    <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
                         <Dropdown>
                             <DropdownTrigger className="w-full sm:w-auto">
                                 <Button
@@ -419,11 +420,11 @@ export default function TaskTable() {
                                     const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
                                     setVisibleColumns(newKeys);
                                 }}
-                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300"
+                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300 hide-scrollbar"
                             >
                                 {columns.map((column) => (
-                                    <DropdownItem 
-                                        key={column.uid} 
+                                    <DropdownItem
+                                        key={column.uid}
                                         className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
                                     >
                                         {column.name}
@@ -505,104 +506,50 @@ export default function TaskTable() {
 
     return (
         <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 max-w-screen-xl">
-             <div className="rounded-xl border bg-card text-card-foreground shadow">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-12">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                    <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Task Record</h1>
-                    <Table
-                        isHeaderSticky
-                        aria-label="Leads table with custom cells, pagination and sorting"
-                        bottomContent={bottomContent}
-                        bottomContentPlacement="outside"
-                        classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
-                        topContent={topContent}
-                        topContentPlacement="outside"
-                        onSelectionChange={setSelectedKeys}
-                        onSortChange={setSortDescriptor}
-                    >
-                    <TableHeader columns={headerColumns}>
-                      {(column) => (
-                        <TableColumn
-                          key={column.uid}
-                          align={column.uid === "actions" ? "center" : "start"}
-                          allowsSorting={column.sortable}
-                        >
-                          {column.name}
-                        </TableColumn>
-                      )}
-                    </TableHeader>
-                    <TableBody emptyContent={"Create task and add data"} items={sortedItems}>
-                      {(item) => (
-                        <TableRow key={item._id}>
-                          {(columnKey) => (
-                            <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                              {renderCell(item, columnKey)}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+            <div className="rounded-xl border bg-card text-card-foreground shadow">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="lg:col-span-12">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                            <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Task Record</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Create your company's activities or task here</h1>
+                            <Table
+                                isHeaderSticky
+                                aria-label="Leads table with custom cells, pagination and sorting"
+                                bottomContent={bottomContent}
+                                bottomContentPlacement="outside"
+                                classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
+                                topContent={topContent}
+                                topContentPlacement="outside"
+                                onSelectionChange={setSelectedKeys}
+                                onSortChange={setSortDescriptor}
+                            >
+                                <TableHeader columns={headerColumns}>
+                                    {(column) => (
+                                        <TableColumn
+                                            key={column.uid}
+                                            align={column.uid === "actions" ? "center" : "start"}
+                                            allowsSorting={column.sortable}
+                                        >
+                                            {column.name}
+                                        </TableColumn>
+                                    )}
+                                </TableHeader>
+                                <TableBody emptyContent={"Create task and add data"} items={sortedItems}>
+                                    {(item) => (
+                                        <TableRow key={item._id}>
+                                            {(columnKey) => (
+                                                <TableCell style={{ fontSize: "12px", padding: "8px" }}>
+                                                    {renderCell(item, columnKey)}
+                                                </TableCell>
+                                            )}
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
                 </div>
-              </div>
             </div>
-            </div>
-
-            <Dialog open={isDeleteConfirmationOpen} onOpenChange={setIsDeleteConfirmationOpen}>
-        <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6">
-            <DialogHeader>
-                <DialogTitle>Confirm Deletion</DialogTitle>
-                <DialogDescription>
-                    Are you sure you want to delete this task? This action cannot be undone.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="flex justify-end gap-4 mt-4">
-                <Button
-                    variant="outline"
-                    onClick={() => setIsDeleteConfirmationOpen(false)}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    variant="destructive"
-                    onClick={async () => {
-                        if (taskToDelete) {
-                            try {
-                                const response = await fetch(`http://localhost:8000/api/v1/task/deleteTask/${taskToDelete._id}`, {
-                                    method: "DELETE",
-                                });
-
-                                if (!response.ok) {
-                                    const errorData = await response.json();
-                                    throw new Error(errorData.message || "Failed to delete task");
-                                }
-
-                                toast({
-                                    title: "Task Deleted",
-                                    description: "The task has been successfully deleted.",
-                                });
-
-                                fetchTasks();
-                            } catch (error) {
-                                toast({
-                                    title: "Error",
-                                    description: error instanceof Error ? error.message : "Failed to delete task",
-                                    variant: "destructive",
-                                });
-                            } finally {
-                                setIsDeleteConfirmationOpen(false);
-                                setTaskToDelete(null);
-                            }
-                        }
-                    }}
-                >
-                    Delete
-                </Button>
-            </div>
-        </DialogContent>
-    </Dialog>
-
 
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
@@ -611,7 +558,7 @@ export default function TaskTable() {
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onEdit)} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField
                                     control={form.control}
                                     name="subject"
@@ -674,64 +621,42 @@ export default function TaskTable() {
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
-                                    name="taskDate"
+                                    name="date"
                                     render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Task Date</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            variant={"outline"}
-                                                            className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                                                        >
-                                                            {field.value ? format(field.value, "dd-MM-yyyy") : <span>Pick a date</span>}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar
-                                                        mode="single"
-                                                        onSelect={field.onChange}
-                                                        disabled={(date) => date > new Date()}
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
-                                            <FormMessage />
-                                        </FormItem>
+                                        <div className="form-group">
+                                            <label htmlFor="date" className="text-sm font-medium text-gray-700">
+                                                Task Date
+                                            </label>
+                                            <input
+                                                type="date"
+                                                name="date"
+                                                id="date"
+                                                value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                                onChange={(e) => field.onChange(new Date(e.target.value))}
+                                                className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                                required
+                                            />
+                                        </div>
                                     )}
                                 />
                                 <FormField
                                     control={form.control}
-                                    name="dueDate"
+                                    name="endDate"
                                     render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Due Date</FormLabel>
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button
-                                                            variant={"outline"}
-                                                            className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                                                        >
-                                                            {field.value ? format(field.value, "dd-MM-yyyy") : <span>Pick a date</span>}
-                                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0" align="start">
-                                                    <Calendar
-                                                        mode="single"
-                                                        onSelect={field.onChange}
-                                                        disabled={(date) => date < new Date()}
-                                                        initialFocus
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
-                                            <FormMessage />
-                                        </FormItem>
+                                        <div className="form-group">
+                                            <label htmlFor="endDate" className="text-sm font-medium text-gray-700">
+                                                Due Date
+                                            </label>
+                                            <input
+                                                type="date"
+                                                name="endDate"
+                                                id="endDate"
+                                                value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                                onChange={(e) => field.onChange(new Date(e.target.value))}
+                                                className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                                required
+                                            />
+                                        </div>
                                     )}
                                 />
                             </div>
@@ -744,7 +669,9 @@ export default function TaskTable() {
                                         <FormItem>
                                             <FormLabel>Status</FormLabel>
                                             <FormControl>
-                                                <select {...field} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <select {...field}
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                                                >
                                                     <option value="Pending">Pending</option>
                                                     <option value="In Progress">In Progress</option>
                                                     <option value="Resolved">Resolved</option>
@@ -761,7 +688,9 @@ export default function TaskTable() {
                                         <FormItem>
                                             <FormLabel>Priority</FormLabel>
                                             <FormControl>
-                                                <select {...field} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <select {...field}
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                                                >
                                                     <option value="High">High</option>
                                                     <option value="Medium">Medium</option>
                                                     <option value="Low">Low</option>
@@ -783,7 +712,7 @@ export default function TaskTable() {
                                             <textarea
                                                 {...field}
                                                 placeholder="Enter task in detail..."
-                                                className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
                                                 rows={3}
                                             />
                                         </FormControl>
@@ -804,6 +733,61 @@ export default function TaskTable() {
                             </Button>
                         </form>
                     </Form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isDeleteConfirmationOpen} onOpenChange={setIsDeleteConfirmationOpen}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6">
+                    <DialogHeader>
+                        <DialogTitle>Confirm Deletion</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this task? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-4 mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDeleteConfirmationOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
+                            variant="destructive"
+                            onClick={async () => {
+                                if (taskToDelete) {
+                                    try {
+                                        const response = await fetch(`http://localhost:8000/api/v1/task/deleteTask/${taskToDelete._id}`, {
+                                            method: "DELETE",
+                                        });
+
+                                        if (!response.ok) {
+                                            const errorData = await response.json();
+                                            throw new Error(errorData.message || "Failed to delete task");
+                                        }
+
+                                        toast({
+                                            title: "Task Deleted",
+                                            description: "The task has been successfully deleted.",
+                                        });
+
+                                        fetchTasks();
+                                    } catch (error) {
+                                        toast({
+                                            title: "Error",
+                                            description: error instanceof Error ? error.message : "Failed to delete task",
+                                            variant: "destructive",
+                                        });
+                                    } finally {
+                                        setIsDeleteConfirmationOpen(false);
+                                        setTaskToDelete(null);
+                                    }
+                                }
+                            }}
+                        >
+                            Delete
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 

@@ -31,7 +31,7 @@ const formSchema = z.object({
   gstRate: z.number().optional(),
   status: z.enum(["Paid", "Unpaid"]),
   date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Invoice Date is required" }),
-  paidAmount: z.string().optional(),
+  paidAmount: z.string().regex(/^\d*$/, { message: "Paid amount must be numeric" }).optional(),
   remainingAmount: z.number().optional(),
   totalWithoutGst: z.number().optional(),
   totalWithGst: z.number().optional(),
@@ -50,8 +50,8 @@ export default function InvoiceForm() {
       address: "",
       gstNumber: "",
       productName: "",
-      amount: 0,
-      discount: 0,
+      amount: undefined,
+      discount: undefined,
       gstRate: 0,
       status: "Unpaid",
       date: new Date(),
@@ -107,27 +107,19 @@ export default function InvoiceForm() {
         body: JSON.stringify(values),
       });
       const data = await response.json();
+
       if (!response.ok) {
-        if (response.status === 400 && data.message === "Duplicate invoice detected. An invoice with these details already exists.") {
-            toast({
-                title: "Warning",
-                description: "An invoice with these details already exists.",
-                variant: "destructive",
-            });
-        } else {
-            throw new Error(data.error || "Failed to submit the invoice.");
-        }
-        return;
-    }
+        throw new Error(data.error || "Failed to submit the invoice");
+      }
       toast({
         title: "Invoice Submitted",
-        description: `Your invoice has been successfully submitted.`,
+        description: `The invoice has been successfully created`,
       });
       router.push(`/invoice/table`);
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "There was an error submitting the invoice.",
+        description: error instanceof Error ? error.message : "There was an error creating the invoice",
         variant: "destructive",
       });
     } finally {
@@ -303,9 +295,8 @@ export default function InvoiceForm() {
                     {...field}
                     value={field.value}
                     onChange={(e) => field.onChange(Number(e.target.value))}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select GST Rate</option>
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                  ><option value="">0%</option>
                     <option value="5">5%</option>
                     <option value="12">12%</option>
                     <option value="18">18%</option>
@@ -327,7 +318,15 @@ export default function InvoiceForm() {
               <FormItem>
                 <FormLabel>Paid Amount</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter paid amount" type="string" {...field} />
+                  <Input
+                    placeholder="Enter paid amount"
+                    type="tel"
+                    {...field}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      field.onChange(value);
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -358,7 +357,7 @@ export default function InvoiceForm() {
                 <FormControl>
                   <select
                     {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                   >
                     <option value="Paid">Paid</option>
                     <option value="Unpaid">Unpaid</option>
@@ -372,37 +371,26 @@ export default function InvoiceForm() {
             control={form.control}
             name="date"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Invoice Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                      >
-                        {field.value ? format(field.value, "dd-MM-yyyy") : <span>Pick a date</span>}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
+              <div className="form-group">
+                <label htmlFor="date" className="text-sm font-medium text-gray-700">
+                  Invoice Date
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  id="date"
+                  value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                  onChange={(e) => field.onChange(new Date(e.target.value))}
+                  className="w-full p-3 border border-gray-300 rounded-md text-black"
+                  required
+                />
+              </div>
             )}
           />
         </div>
 
-        <div className="text-right">
-          <Button type="submit" className="w-25" disabled={isSubmitting}>
+        <div className="flex justify-center sm:justify-end">
+          <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
                 <Loader2 className="animate-spin mr-2" />

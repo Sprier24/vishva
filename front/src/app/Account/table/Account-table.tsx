@@ -21,7 +21,7 @@ interface Account {
     accountNumber: string;
     accountType: string;
     IFSCCode: string;
-    UpiID: string;
+    UpiId: string;
 }
 
 const generateUniqueId = () => {
@@ -40,11 +40,11 @@ const columns = [
     { name: "Bank Account Holder Name", uid: "accountHolderName", sortable: true, width: "120px" },
     { name: "Bank Account Number", uid: "accountNumber", sortable: true, width: "120px" },
     { name: "Account Type", uid: "accountType", sortable: true, width: "120px" },
-    { name: "UPI ID", uid: "UpiID", sortable: true, width: "100px" },
+    { name: "UPI ID", uid: "UpiId", sortable: true, width: "100px" },
     { name: "Action", uid: "actions", sortable: true, width: "100px" },
 
 ];
-const INITIAL_VISIBLE_COLUMNS = ["accountHolderName", "accountNumber", "bankName", "accountType", "IFSCCode", "UpiID", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["accountHolderName", "accountNumber", "bankName", "accountType", "IFSCCode", "UpiId", "actions"];
 
 const accountSchema = z.object({
     bankName: z.string().min(2, { message: "Bank name is required." }),
@@ -52,7 +52,7 @@ const accountSchema = z.object({
     accountHolderName: z.string().min(2, { message: "Bank account holder name is required." }),
     accountNumber: z.string().min(2, { message: "Bank account number is required." }),
     accountType: z.enum(["Current", "Savings", "Other"], { message: "Account type is required." }),
-    UpiId: z.string().min(2, { message: "UpiId is required." }),
+    UpiId: z.string().optional(),
 });
 
 export default function AccountTable() {
@@ -60,7 +60,7 @@ export default function AccountTable() {
     const [error, setError] = useState<string | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
-
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const fetchAccounts = async () => {
         try {
@@ -157,7 +157,7 @@ export default function AccountTable() {
             accountNumber: "",
             accountType: "Current",
             IFSCCode: "",
-            UpiID: ""
+            UpiId: ""
         },
     })
 
@@ -179,7 +179,7 @@ export default function AccountTable() {
                     bankName: account.bankName,
                     accountType: account.accountType,
                     IFSCCode: account.IFSCCode,
-                    UpiID: account.UpiID
+                    UpiId: account.UpiId
                 };
 
                 return Object.values(searchableFields).some(value =>
@@ -224,20 +224,23 @@ export default function AccountTable() {
             bankName: account.bankName,
             accountType: account.accountType,
             IFSCCode: account.IFSCCode,
-            UpiID: account.UpiID
+            UpiId: account.UpiId
         });
         setIsEditOpen(true);
     };
 
 
     // Function to handle delete button click
-    const handleDeleteClick = async (account: Account) => {
-        if (!window.confirm("Are you sure you want to delete this lead?")) {
-            return;
-        }
+    const handleDeleteClick = (account: Account) => {
+        setSelectedAccount(account);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedAccount?._id) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/account/deleteAccount/${account._id}`, {
+            const response = await fetch(`http://localhost:8000/api/v1/account/deleteAccount/${selectedAccount._id}`, {
                 method: "DELETE",
             });
 
@@ -247,18 +250,20 @@ export default function AccountTable() {
             }
 
             toast({
-                title: "Lead Deleted",
+                title: "Account Deleted",
                 description: "The account has been successfully deleted.",
             });
 
-            // Refresh the leads list
             fetchAccounts();
         } catch (error) {
             toast({
                 title: "Error",
-                description: error instanceof Error ? error.message : "Failed to delete lead",
+                description: error instanceof Error ? error.message : "Failed to delete account",
                 variant: "destructive",
             });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setSelectedAccount(null);
         }
     };
 
@@ -311,14 +316,14 @@ export default function AccountTable() {
             return formatDate(cellValue);
         }
         // Render note column with a fallback message if there's no note
-        if (columnKey === "notes") {
-            return cellValue || "No note available";
+        if (columnKey === "UpiId") {
+            return cellValue || "N/A";
         }
         // Render actions column with edit and delete buttons
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
-                    <Tooltip content="Update">
+                    <Tooltip>
                         <span
                             className="text-lg text-default-400 cursor-pointer active:opacity-50"
                             onClick={() => handleEditClick(account)}
@@ -326,7 +331,7 @@ export default function AccountTable() {
                             <Edit className="h-4 w-4" />
                         </span>
                     </Tooltip>
-                    <Tooltip color="danger" content="Delete">
+                    <Tooltip>
                         <span
                             className="text-lg text-danger cursor-pointer active:opacity-50"
                             onClick={() => handleDeleteClick(account)}
@@ -413,11 +418,11 @@ export default function AccountTable() {
                                     const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
                                     setVisibleColumns(newKeys);
                                 }}
-                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300"
+                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300 hide-scrollbar"
                             >
                                 {columns.map((column) => (
-                                    <DropdownItem 
-                                        key={column.uid} 
+                                    <DropdownItem
+                                        key={column.uid}
                                         className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
                                     >
                                         {column.name}
@@ -504,6 +509,7 @@ export default function AccountTable() {
                     <div className="lg:col-span-12">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Account Record</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Store client / customer's bank account details</h1>
                             <Table
                                 isHeaderSticky
                                 aria-label="Leads table with custom cells, pagination and sorting"
@@ -550,7 +556,7 @@ export default function AccountTable() {
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onEdit)} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField
                                     control={form.control}
                                     name="bankName"
@@ -619,7 +625,7 @@ export default function AccountTable() {
                                                 <select
                                                     {...field}
                                                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
-                                                    >
+                                                >
                                                     <option value="Savings">Savings</option>
                                                     <option value="Current">Current</option>
                                                     <option value="Other">Other</option>
@@ -655,6 +661,34 @@ export default function AccountTable() {
                             </Button>
                         </form>
                     </Form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
+        sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogDescription className="text-sm xs:text-xs">
+                            Are you sure you want to delete this invoice? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-4 mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDeleteDialogOpen(false)}
+                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteConfirm}
+                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
+                        >
+                            Delete
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 

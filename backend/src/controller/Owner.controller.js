@@ -18,11 +18,14 @@ const upload = multer({
 const addOwner = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
-      console.error('Multer Error:', err);
-      return res.status(400).json({ message: 'Error uploading file', error: err.message });
+      return res.status(400).json({ message: "Error uploading file", error: err.message });
     }
 
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized: User not logged in" });
+      }
+
       const {
         companyName,
         ownerName,
@@ -37,6 +40,11 @@ const addOwner = async (req, res) => {
         documentNumber,
         gstNumber,
       } = req.body;
+
+      // ✅ Check if the email in req.body matches the authenticated user's email
+      if (req.user.email !== emailAddress) {
+        return res.status(403).json({ message: "Unauthorized: Email mismatch" });
+      }
 
       const logoPath = req.file ? `/uploads/${path.basename(req.file.path)}` : null;
 
@@ -58,13 +66,14 @@ const addOwner = async (req, res) => {
       });
 
       await newOwner.save();
-      res.status(201).json({ message: 'Owner added successfully', data: newOwner, datafilled: true });
+      res.status(201).json({ message: "Owner added successfully", data: newOwner, datafilled: true });
     } catch (error) {
-      console.error('Backend Error:', error);
-      res.status(400).json({ message: 'Error adding owner', error: error.message });
+      console.error("Backend Error:", error);
+      res.status(400).json({ message: "Error adding owner", error: error.message });
     }
   });
 };
+
 
 const updateOwner = async (req, res) => {
   upload(req, res, async (err) => {

@@ -38,7 +38,10 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toISOString().split("T")[0]; // Returns "YYYY-MM-DD"
+    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
+    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
+    const year = date.getFullYear();  // Get the full year
+    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
 };
 
 const columns = [
@@ -80,7 +83,7 @@ export default function ScheduledEvents() {
     const [error, setError] = useState<string | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
-     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const fetchScheduledEvents = async () => {
         try {
@@ -267,9 +270,8 @@ export default function ScheduledEvents() {
         setIsEditOpen(true);
     };
 
-       // Function to handle delete button click
- const handleDeleteClick = (scheduledEvents: ScheduledEvents) => {
-    setSelectedScheduledEvents(scheduledEvents);
+    const handleDeleteClick = (scheduledEvents: ScheduledEvents) => {
+        setSelectedScheduledEvents(scheduledEvents);
         setIsDeleteDialogOpen(true);
     };
 
@@ -323,8 +325,8 @@ export default function ScheduledEvents() {
             }
 
             toast({
-                title: "Scheduled Updated",
-                description: "The Scheduled has been successfully updated.",
+                title: "Event or meeting Updated",
+                description: "The event or meeting has been successfully updated",
             });
 
             // Close dialog and reset form
@@ -337,7 +339,7 @@ export default function ScheduledEvents() {
         } catch (error) {
             toast({
                 title: "Error",
-                description: error instanceof Error ? error.message : "Failed to update scheduled",
+                description: error instanceof Error ? error.message : "There was an error updating the event or meeting",
                 variant: "destructive",
             });
         } finally {
@@ -348,19 +350,26 @@ export default function ScheduledEvents() {
     const renderCell = React.useCallback((scheduledEvents: ScheduledEvents, columnKey: string) => {
         const cellValue = scheduledEvents[columnKey as keyof ScheduledEvents];
 
-        // Format dates if the column is "date" or "endDate"
+        // Format date fields (date and endDate)
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
             return formatDate(cellValue);
         }
-        // Render note column with a fallback message if there's no note
-        if (columnKey === "notes") {
-            return cellValue || "No note available";
+
+        // Handle fields that should default to "N/A" if empty
+        if (
+            columnKey === "description" ||
+            columnKey === "location" ||
+            columnKey === "assignedUser" ||
+            columnKey === "customer"
+        ) {
+            return cellValue || "N/A";
         }
-        // Render actions column with edit and delete buttons
+
+        // Handle actions column with buttons for editing and deleting
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
-                    <Tooltip content="Update">
+                    <Tooltip>
                         <span
                             className="text-lg text-default-400 cursor-pointer active:opacity-50"
                             onClick={() => handleEditClick(scheduledEvents)}
@@ -368,7 +377,7 @@ export default function ScheduledEvents() {
                             <Edit className="h-4 w-4" />
                         </span>
                     </Tooltip>
-                    <Tooltip color="danger" content="Delete">
+                    <Tooltip>
                         <span
                             className="text-lg text-danger cursor-pointer active:opacity-50"
                             onClick={() => handleDeleteClick(scheduledEvents)}
@@ -380,7 +389,6 @@ export default function ScheduledEvents() {
             );
         }
 
-        // For all other columns, return the raw cell value
         return cellValue;
     }, []);
 
@@ -433,7 +441,7 @@ export default function ScheduledEvents() {
                             onClear={() => setFilterValue("")}
                         />
                     </div>
-<div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
+                    <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
                         <Dropdown>
                             <DropdownTrigger className="w-full sm:w-auto">
                                 <Button
@@ -454,11 +462,11 @@ export default function ScheduledEvents() {
                                     const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
                                     setVisibleColumns(newKeys);
                                 }}
-                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300"
+                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300 hide-scrollbar"
                             >
                                 {columns.map((column) => (
-                                    <DropdownItem 
-                                        key={column.uid} 
+                                    <DropdownItem
+                                        key={column.uid}
                                         className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
                                     >
                                         {column.name}
@@ -545,6 +553,7 @@ export default function ScheduledEvents() {
                     <div className="lg:col-span-12">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Event or Meeting Record</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center"> Make event or meeting, hosted by you or client / customer</h1>
                             <Table
                                 isHeaderSticky
                                 aria-label="Leads table with custom cells, pagination and sorting"
@@ -591,7 +600,7 @@ export default function ScheduledEvents() {
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onEdit)} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField
                                     control={form.control}
                                     name="subject"
@@ -659,8 +668,8 @@ export default function ScheduledEvents() {
                                             <FormControl>
                                                 <select
                                                     {...field}
-                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                                                    >
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                                                >
                                                     <option value="call">Call</option>
                                                     <option value="Meeting">Meeting</option>
                                                     <option value="Demo">Demo</option>
@@ -680,8 +689,8 @@ export default function ScheduledEvents() {
                                             <FormControl>
                                                 <select
                                                     {...field}
-                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                                                    >
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                                                >
                                                     <option value="one-time">One Time</option>
                                                     <option value="Daily">Daily</option>
                                                     <option value="Weekly">Weekly</option>
@@ -705,8 +714,8 @@ export default function ScheduledEvents() {
                                             <FormControl>
                                                 <select
                                                     {...field}
-                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                                                    >
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                                                >
                                                     <option value="Scheduled">Schedule</option>
                                                     <option value="Postpone">Postpone</option>
                                                     <option value="Completed">Complete</option>
@@ -726,8 +735,8 @@ export default function ScheduledEvents() {
                                             <FormControl>
                                                 <select
                                                     {...field}
-                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                                                    >
+                                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
+                                                >
                                                     <option value="High">High</option>
                                                     <option value="Medium">Medium</option>
                                                     <option value="Low">Low</option>
@@ -744,13 +753,20 @@ export default function ScheduledEvents() {
                                     control={form.control}
                                     name="date"
                                     render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Event Date</FormLabel>
-                                            <FormControl>
-                                                <Input type="date" {...field} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
+                                        <div className="form-group">
+                                            <label htmlFor="date" className="text-sm font-medium text-gray-700">
+                                                Event or meeting Date
+                                            </label>
+                                            <input
+                                                type="date"
+                                                name="date"
+                                                id="date"
+                                                value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                                onChange={(e) => field.onChange(new Date(e.target.value))}
+                                                className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                                required
+                                            />
+                                        </div>
                                     )}
                                 />
                             </div>
@@ -765,7 +781,7 @@ export default function ScheduledEvents() {
                                             <textarea
                                                 placeholder="Enter more details here..."
                                                 {...field}
-                                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
                                                 rows={3}
                                             />
                                         </FormControl>
@@ -808,7 +824,7 @@ export default function ScheduledEvents() {
                         <Button
                             variant="destructive"
                             onClick={handleDeleteConfirm}
-                                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
+                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
                         >
                             Delete
                         </Button>

@@ -11,10 +11,11 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { Meteors } from "@/components/ui/meteors";
-import { useRouter } from "next/navigation"; 
+import { useRouter } from "next/navigation";
 import { ModeToggle } from "@/components/ModeToggle"
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
+import { Calendar1 } from "lucide-react";
 interface Lead {
   _id: string;
   companyName: string;
@@ -49,7 +50,7 @@ export default function App() {
   const [draggedOver, setDraggedOver] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const router = useRouter(); 
+  const router = useRouter();
 
   const handleLeadClick = (lead: Lead) => {
     setSelectedLead(lead);
@@ -68,12 +69,12 @@ export default function App() {
         groupLeadsByStatus(fetchedLeads);
       } catch (error) {
         if (error instanceof Error) {
-          setError(error.message); 
+          setError(error.message);
         } else {
           setError("An unknown error occurred");
-      }
-    };
-  }
+        }
+      };
+    }
     fetchLeads();
   }, []);
 
@@ -94,14 +95,14 @@ export default function App() {
     Decided: " text-gray-800 border-2 border-black ",
   };
 
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) {
-    console.warn(`Invalid date: ${dateString}`); 
-    return "Invalid Date"; 
-  }
-  return date.toISOString().split("T")[0]; 
-};
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date: ${dateString}`);
+      return "Invalid Date";
+    }
+    return date.toISOString().split("T")[0];
+  };
 
   const handleDragStart = (e: React.DragEvent, lead: Lead, fromStatus: string) => {
     e.dataTransfer.setData("lead", JSON.stringify(lead));
@@ -125,7 +126,7 @@ const formatDate = (dateString: string): string => {
       [fromStatus]: prev[fromStatus]?.filter((l) => l._id !== lead._id) || [],
       [toStatus]: [...(prev[toStatus] || []), updatedLead as Lead],
     }));
-    
+
 
     try {
       const response = await fetch("http://localhost:8000/api/v1/lead/updateLeadStatus", {
@@ -142,36 +143,42 @@ const formatDate = (dateString: string): string => {
 
   return (
     <SidebarProvider>
-    <AppSidebar />
-    <SidebarInset>
-      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
-        <div className="flex items-center gap-2 px-4">
-          <SidebarTrigger className="-ml-1" />
-          <ModeToggle />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="/dashboard">
-                  Dashboard
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Data</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-        <div className="flex items-center space-x-4 ml-auto mr-4">
-        <div  >
-                <SearchBar/>
+      <AppSidebar />
+      <SidebarInset>
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
+          <div className="flex items-center gap-2 px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Breadcrumb>
+              <BreadcrumbList className="flex items-center space-x-2">
+                <BreadcrumbItem className="hidden sm:block md:block">
+                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden sm:block md:block" />
+                <BreadcrumbItem className="hidden sm:block md:block">
+                  <BreadcrumbLink href="/lead/table">Lead</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden sm:block md:block" />
+                <span className="hidden sm:block md:block">
+                  Drag & Drop
+                </span>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </div>
+          <div className="flex items-center space-x-4 ml-auto mr-4">
+            <div  >
+              <SearchBar />
             </div>
+            <a href="/calendar">
+              <div>
+                <Calendar1 />
+              </div>
+            </a>
             <div>
-              <Notification/>
+              <Notification />
             </div>
-        </div>
-      </header>
+          </div>
+        </header>
         <div className="p-6">
           {error && <p className="text-red-500 text-center">{error}</p>}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
@@ -191,25 +198,25 @@ const formatDate = (dateString: string): string => {
                 >
                   <h2 className={`text-base font-bold mb-4 px-5 py-2 rounded-lg ${statusColors[status]}`}>{status}</h2>
                   <div className="p-4 rounded-lg shadow-sm border border-black mb-4">
-                    <p className="text-sm font-semibold text-gray-800">Total Leads: {leadsInStatus.length}</p>
-                    <p className="text-sm font-semibold text-gray-800">Total Amount: ₹{totalAmount}</p>
+                    <p className="text-sm font-semibold text-gray-800">Total Lead : {leadsInStatus.length}</p>
+                    <p className="text-sm font-semibold text-gray-800">Total Amount : ₹{totalAmount}</p>
                   </div>
-                  <div  className="mt-4 flex flex-col gap-3 min-h-[250px] max-h-[500px] h-[350px] overflow-y-auto scrollbar-hide">
+                  <div className="mt-4 flex flex-col gap-3 min-h-[250px] max-h-[500px] h-[350px] overflow-y-auto scrollbar-hide">
                     {leadsInStatus.length === 0 ? (
-                      <p className="text-gray-500 text-center">No leads available</p>
+                      <p className="text-gray-500 text-center">No lead available</p>
                     ) : (
                       leadsInStatus.map((lead) => (
                         <div
                           key={lead._id}
                           className="p-3 border border-black rounded-lg bg-white shadow-sm cursor-grab"
-                            draggable
-                            onDragStart={(e) => handleDragStart(e, lead, status)}
-                            onClick={() => handleLeadClick(lead)}
-                            >
-                            <p className="text-sm font-semibold text-gray-800">Company Name: <span>{lead.companyName}</span></p>
-                            <p className="text-sm font-semibold text-gray-800">Product: <span>{lead.productName}</span></p>
-                            <p className="text-sm font-semibold text-gray-800">Amount: <span>₹{lead.amount}</span></p>
-                            <p className="text-sm font-semibold text-gray-800">Next Date: <span>{formatDate(lead.endDate)}</span></p>                       
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, lead, status)}
+                          onClick={() => handleLeadClick(lead)}
+                        >
+                          <p className="text-sm font-semibold text-gray-800">Company Name : <span>{lead.companyName}</span></p>
+                          <p className="text-sm font-semibold text-gray-800">Customer Name : <span>{lead.customerName}</span></p>
+                          <p className="text-sm font-semibold text-gray-800">Product : <span>{lead.productName}</span></p>
+                          <p className="text-sm font-semibold text-gray-800">Amount : <span>₹{lead.amount}</span></p>
                         </div>
                       ))
                     )}
@@ -223,24 +230,20 @@ const formatDate = (dateString: string): string => {
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div className="w-full max-w-md h-auto relative">
                 <div className="absolute inset-0 h-full w-full bg-gradient-to-r  rounded-full blur-lg scale-90 opacity-50" />
-
                 <div className="relative bg-white border border-gray-700 rounded-lg p-6 w-[800px] h-700 flex flex-col">
                   <div
                     className="absolute top-3 right-3 h-8 w-8 flex items-center justify-center cursor-pointer"
                     onClick={() => {
-                      setIsModalOpen(false); 
+                      setIsModalOpen(false);
                     }}
                   >
-                    <MdCancel className="text-gray-500 text-2xltext-gray-500 text-2xl"/>
-                      
+                    <MdCancel className="text-gray-500 text-2xltext-gray-500 text-2xl" />
                   </div>
-
-                 
-                  <h1 className="font-bold text-2xl text-gray-900 mb-6 text-center">Lead Details</h1>
- <Separator className="my-4 border-gray-300" />
+                  <h1 className="font-bold text-2xl text-gray-900 mb-6 text-center">Lead Record</h1>
+                  <Separator className="my-4 border-gray-300" />
                   <div className="grid grid-cols-2 gap-4 text-gray-700">
                     {Object.entries(selectedLead)
-                      .filter(([key]) => !["_id", "__v","isActive", "createdAt", "updatedAt"].includes(key))
+                      .filter(([key]) => !["_id", "__v", "isActive", "createdAt", "updatedAt"].includes(key))
                       .map(([key, value]) => (
                         <p key={key} className="text-lg">
                           <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong>{" "}
@@ -250,14 +253,12 @@ const formatDate = (dateString: string): string => {
                         </p>
                       ))}
                   </div>
-
-                  <Meteors number={20} />
                 </div>
               </div>
             </div>
           )}
         </div>
-        </SidebarInset>
-        </SidebarProvider>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

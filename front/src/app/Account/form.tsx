@@ -17,7 +17,7 @@ const accountSchema = z.object({
   accountHolderName: z.string().nonempty({ message: "Bank account holder name is required." }),
   accountNumber: z.string().nonempty({ message: "Bank account number is required." }),
   accountType: z.enum(["Current", "Savings", "Other"], { message: "Account type is required." }),
-  UpiId: z.string().nonempty({ message: "UpiId is required." }),
+  UpiId: z.string().optional(),
 });
 
 export default function AccountForm() {
@@ -43,40 +43,25 @@ export default function AccountForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-      
       const data = await response.json();
-      
       if (!response.ok) {
-        if (response.status === 400 && data.message === "This account already exists.") {
-          toast({
-            title: "Warning",
-            description: "An account with these details already exists.",
-            variant: "destructive",
-          });
-        } else {
-          throw new Error(data.error || "Failed to submit the account.");
-        }
-        return;
+        throw new Error(data.error || "Failed to submit the account.");
       }
-  
       toast({
         title: "Account Submitted",
-        description: "The account has been successfully created.",
+        description: "The account has been successfully created",
       });
-  
       router.push("/Account/table");
-  
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "There was an error creating the account.",
+        description: error instanceof Error ? error.message : "There was an error creating the account",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
-
 
   return (
     <Form {...form}>
@@ -149,7 +134,7 @@ export default function AccountForm() {
                 <FormControl>
                   <select
                     {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                     >
                     <option value="Savings">Savings</option>
                     <option value="Current">Current</option>

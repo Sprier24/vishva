@@ -9,7 +9,6 @@ import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
 import { Selection } from "@nextui-org/react";
 import { Separator } from "@/components/ui/separator";
-import { SortDescriptor } from "@nextui-org/react"
 
 import {
   SidebarInset,
@@ -34,7 +33,7 @@ import {
   styled,
 } from "@mui/material";
 import { Button, Pagination, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Chip, Tooltip, ChipProps, Input } from "@heroui/react"
-import { Pencil, Trash2, Search } from "lucide-react";
+import { Pencil, Trash2, Search, Calendar1 } from "lucide-react";
 
 //Lead//
 const chartConfig = {
@@ -238,57 +237,49 @@ interface CategorizedReminder {
 interface CategorizedScheduled {
   [key: string]: Schedule[];
 }
-//lead//
-const columns = [
-  { name: "COMPANY", uid: "companyName", sortable: true },
-  { name: "CUSTOMER", uid: "customerName", sortable: true },
-  { name: "CONTACT", uid: "contactNumber", sortable: true },
-  { name: "EMAIL", uid: "emailAddress", sortable: true },
-  { name: "ADDRESS", uid: "address", sortable: true },
-  { name: "PRODUCT", uid: "productName", sortable: true },
-  { name: "AMOUNT", uid: "amount", sortable: true },
-  { name: "GST", uid: "gstNumber", sortable: true },
-  { name: "STATUS", uid: "status", sortable: true },
-  { name: "DATE", uid: "date", sortable: true },
-  { name: "END DATE", uid: "endDate", sortable: true },
-  { name: "ACTION", uid: "actions", sortable: true }
-];
 
-//Invoice//
-const columnsInvoice = [
-  { name: "COMPANY", uid: "companyName", sortable: true },
-  { name: "CUSTOMER", uid: "customerName", sortable: true },
-  { name: "EMAIL", uid: "emailAddress", sortable: true },
-  { name: "PRODUCT", uid: "productName", sortable: true },
+const columns = [
+  { name: "Company Name", uid: "companyName", sortable: true },
+  { name: "Product Name", uid: "productName", sortable: true },
+  { name: "Product Amount", uid: "amount", sortable: true },
+  { name: "Status", uid: "status", sortable: true },
 ];
 
 const columnsDeal = [
-  { name: "COMPANY", uid: "companyName", sortable: true },
-  { name: "CUSTOMER", uid: "customerName", sortable: true },
-  { name: "EMAIL", uid: "emailAddress", sortable: true },
-  { name: "PRODUCT", uid: "productName", sortable: true },
+  { name: "Company Name", uid: "companyName", sortable: true },
+  { name: "Product Name", uid: "productName", sortable: true },
+  { name: "Product Amount", uid: "amount", sortable: true },
+  { name: "Status", uid: "status", sortable: true },
 ];
 
-const columnsTask = [
-  { name: "SUBJECT", uid: "subject", sortable: true },
-  { name: "RELATED TO", uid: "relatedTo", sortable: true },
-  { name: "CUSTOMER", uid: "name", sortable: true },
-  { name: "STATUS", uid: "status", sortable: true },
+const columnsInvoice = [
+  { name: "Company Name", uid: "companyName", sortable: true },
+  { name: "Product Name", uid: "productName", sortable: true },
+  { name: "Product Amount", uid: "amount", sortable: true },
+  { name: "Status", uid: "status", sortable: true },
 ];
 
 const columnsReminder = [
-  { name: "COMPANY", uid: "companyName", sortable: true },
-  { name: "CUSTOMER", uid: "customerName", sortable: true },
-  { name: "EMAIL", uid: "emailAddress", sortable: true },
-  { name: "STATUS", uid: "status", sortable: true },
+  { name: "Company Name", uid: "companyName", sortable: true },
+  { name: "Product Name", uid: "productName", sortable: true },
+  { name: "Paid Amount", uid: "paidAmount", sortable: true },
+  { NAME: "Remiaining Amount", uid: "remainingAmount", sortable: true },
+];
+
+const columnsTask = [
+  { name: "Subject", uid: "subject", sortable: true },
+  { name: "Name", uid: "name", sortable: true },
+  { name: "Task Date", uid: "taskDate", sortable: true },
+  { name: "Due Date", uid: "dueDate", sortable: true },
 ];
 
 const columnsSchedule = [
-  { name: "SUBJECT", uid: "subject", sortable: true },
-  { name: "CUSTOMER", uid: "customer", sortable: true },
-  { name: "LOCATION", uid: "location", sortable: true },
-  { name: "STATUS", uid: "status", sortable: true },
+  { name: "Subject", uid: "subject", sortable: true },
+  { name: "Location", uid: "location", sortable: true },
+  { name: "Member", uid: "assignedUser", sortable: true },
+  { name: "Date", uid: "date", sortable: true },
 ];
+
 
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "emailAddress", "productName"];
 
@@ -423,11 +414,6 @@ export default function Page() {
     column: "subject",
     direction: "ascending",
   });
-
-  const [sortDescriptorInvoice, setSortDescriptorInvoice] = useState ({
-    column: "companyName",
-    direction: "ascending",
-  })
 
   const [sortDescriptorReminder, setSortDescriptorReminder] = useState({
     column: "status",
@@ -572,7 +558,7 @@ export default function Page() {
         };
 
         return Object.values(searchableFields).some(value =>
-          String(value || '').toLowerCase().includes(filterValue.toLowerCase())
+          String(value || '').toLowerCase().includes(filterValueReminder.toLowerCase())
         );
       });
     }
@@ -584,7 +570,7 @@ export default function Page() {
     }
 
     return filteredReminder;
-  }, [leads, filterValue, statusFilter]);
+  }, [leads, filterValueReminder, statusFilter]);
 
 
   const filteredItemsSchedule = React.useMemo(() => {
@@ -602,7 +588,7 @@ export default function Page() {
         };
 
         return Object.values(searchableFields).some(value =>
-          String(value || '').toLowerCase().includes(filterValue.toLowerCase())
+          String(value || '').toLowerCase().includes(filterValueSchedule.toLowerCase())
         );
       });
     }
@@ -614,7 +600,7 @@ export default function Page() {
     }
 
     return filteredSchedule;
-  }, [schedule, filterValue, statusFilter]);
+  }, [schedule, filterValueSchedule, statusFilter]);
 
 
   // Add this near the top of your file, where other constants are defined
@@ -714,17 +700,6 @@ export default function Page() {
       return sortDescriptorDeal.direction === "descending" ? -cmp : cmp;
     });
   }, [sortDescriptorDeal, itemsDeal]);
-
-  
-  const sortedInvoice = React.useMemo(() => {
-    return [...itemsInvoice].sort((a, b) => {
-      const first = a[sortDescriptorInvoice.column as keyof Invoice];
-      const second = b[sortDescriptorInvoice.column as keyof Invoice];
-      const cmp = first < second ? -1 : first > second ? 1 : 0;
-
-      return sortDescriptorInvoice.direction === "descending" ? -cmp : cmp;
-    });
-  }, [sortDescriptorInvoice, itemsInvoice]);
 
   const sortedTasks = React.useMemo(() => {
     return [...itemsTask].sort((a, b) => {
@@ -878,14 +853,14 @@ export default function Page() {
       try {
         const response = await fetch('http://localhost:8000/api/v1/task/getAllTasks');
         const result = await response.json();
-  
+
         if (!result || !Array.isArray(result.data)) {
           console.error('Invalid data format received:', result);
           return;
         }
-  
+
         setTasks(result.data);
-  
+
         const categorized = result.data.reduce((acc: CategorizedTasks, task: Task) => {
           if (!acc[task.status]) {
             acc[task.status] = [];
@@ -893,13 +868,13 @@ export default function Page() {
           acc[task.status].push(task);
           return acc;
         }, {} as CategorizedTasks);
-  
+
         setCategorizedTasks(categorized);
       } catch (error) {
         console.error('Error fetching tasks:', error);
       }
     };
-  
+
     fetchTasks();
   }, []);
 
@@ -972,7 +947,6 @@ export default function Page() {
     fetchSchedule();
   }, []);
 
-  //Lead Page
   const onNextPage = React.useCallback(() => {
     if (page < pages) {
       setPage(page + 1);
@@ -985,70 +959,7 @@ export default function Page() {
     }
   }, [page]);
 
-  //Invoice  Page
-  const onNextPageInvoice = React.useCallback(() => {
-    if (pageInvoice < pagesInvoice) {
-      setPageInvoice(pageInvoice + 1);
-    }
-  }, [pageInvoice, pagesInvoice]);
 
-  const onPreviousPageInvoice = React.useCallback(() => {
-    if (pageInvoice > 1) {
-      setPageInvoice(pageInvoice - 1);
-    }
-  }, [pageInvoice]);
-  
-//Deal Page
-const onNextPageDeal = React.useCallback(() => {
-  if (pageDeal < pagesDeal) {
-    setPageDeal(pageDeal + 1);
-  }
-}, [pageDeal, pagesDeal]);
-
-const onPreviousPageDeal = React.useCallback(() => {
-  if (pageDeal > 1) {
-    setPageDeal(pageDeal - 1);
-  }
-}, [pageDeal]);
-
-//Taskk Page
-const onNextPageTask = React.useCallback(() => {
-  if (pageTask < pagesTask) {
-    setPageTask(pageTask + 1);
-  }
-}, [pageTask, pagesTask]);
-
-const onPreviousPageTask = React.useCallback(() => {
-  if (pageTask > 1) {
-    setPageTask(pageTask - 1);
-  }
-}, [pageTask]);
-
-//Reminder Page
-const onNextPageReminder = React.useCallback(() => {
-  if (pageReminder < pagesReminder) {
-    setPageReminder(pageReminder + 1);
-  }
-}, [pageReminder, pagesReminder]);
-
-const onPreviousPageReminder = React.useCallback(() => {
-  if (pageReminder > 1) {
-    setPageReminder(pageReminder - 1);
-  }
-}, [pageReminder]);
-
-//Schedule Page
-const onNextPageSchedule = React.useCallback(() => {
-  if (pageSchedule < pagesSchedule) {
-    setPageSchedule(pageSchedule + 1);
-  }
-}, [pageSchedule, pagesSchedule]);
-
-const onPreviousPageSchedule = React.useCallback(() => {
-  if (pageSchedule > 1) {
-    setPageSchedule(pageSchedule - 1);
-  }
-}, [pageSchedule]);
 
   //Lead Chart//
   const dynamicChartData = useMemo(() => {
@@ -1104,7 +1015,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
       return (
         <Card>
           <CardHeader className="items-center">
-            <CardTitle>Leads Chart</CardTitle>
+            <CardTitle>Lead</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
@@ -1138,7 +1049,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
       return (
         <Card>
           <CardHeader className="items-center">
-            <CardTitle>Pie Chart - Leads</CardTitle>
+            <CardTitle>Lead</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
@@ -1175,7 +1086,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
       return (
         <Card className="flex flex-col">
           <CardHeader className="items-center pb-0">
-            <CardTitle>Radial Chart - Lead</CardTitle>
+            <CardTitle>Lead</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
@@ -1220,7 +1131,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
       return (
         <Card>
           <CardHeader>
-            <CardTitle>Lead Bar Chart</CardTitle>
+            <CardTitle>Lead</CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig}>
@@ -1286,7 +1197,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
       return (
         <Card>
           <CardHeader className="items-center">
-            <CardTitle>Invoice Chart</CardTitle>
+            <CardTitle>Invoice</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
@@ -1320,7 +1231,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
       return (
         <Card>
           <CardHeader className="items-center">
-            <CardTitle>Pie Chart - Invoice</CardTitle>
+            <CardTitle>Invoice</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
@@ -1357,7 +1268,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
       return (
         <Card className="flex flex-col">
           <CardHeader className="items-center pb-0">
-            <CardTitle>Radial Chart - Invoice</CardTitle>
+            <CardTitle>Invoice</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
@@ -1402,7 +1313,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
       return (
         <Card>
           <CardHeader>
-            <CardTitle>Invoice Bar Chart</CardTitle>
+            <CardTitle>Invoice</CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfigInvoice}>
@@ -1468,7 +1379,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
       return (
         <Card>
           <CardHeader className="items-center">
-            <CardTitle>Deals Chart</CardTitle>
+            <CardTitle>Deal</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
@@ -1502,7 +1413,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
       return (
         <Card>
           <CardHeader className="items-center">
-            <CardTitle>Pie Chart - Deals</CardTitle>
+            <CardTitle>Deal</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
@@ -1539,7 +1450,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
       return (
         <Card className="flex flex-col">
           <CardHeader className="items-center pb-0">
-            <CardTitle>Radial Chart - Deal</CardTitle>
+            <CardTitle>Deal</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 pb-0">
             <ChartContainer
@@ -1588,9 +1499,9 @@ const onPreviousPageSchedule = React.useCallback(() => {
           <CardContent>
             <ChartContainer
               config={chartConfigDeal}
-              style={{  padding: "10px", borderRadius: "8px" }}
+              style={{ backgroundColor: "black", padding: "10px", borderRadius: "8px" }}
             >
-              <BarChart width={width} height={height} data={dynamicChartDataDeal} >
+              <BarChart width={width} height={height} data={dynamicChartDataDeal} style={{ backgroundColor: "black" }}>
                 <CartesianGrid stroke="rgba(255, 255, 255, 0.2)" vertical={false} />
                 <XAxis
                   dataKey="browser"
@@ -1607,7 +1518,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
                   content={
                     <ChartTooltipContent
                       hideLabel
-                      style={{  color: "white", border: "1px solid white" }}
+                      style={{ backgroundColor: "black", color: "white", border: "1px solid white" }}
                     />
                   }
                 />
@@ -1700,10 +1611,10 @@ const onPreviousPageSchedule = React.useCallback(() => {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesInvoice === 1} size="sm" variant="flat" onPress={onPreviousPageInvoice}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesInvoice === 1} size="sm" variant="flat" onPress={onPreviousPage}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesInvoice === 1} size="sm" variant="flat" onPress={onNextPageInvoice}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesInvoice === 1} size="sm" variant="flat" onPress={onNextPage}>
             Next
           </Button>
         </div>
@@ -1734,10 +1645,10 @@ const onPreviousPageSchedule = React.useCallback(() => {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onPreviousPageDeal}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onPreviousPage}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onNextPageDeal}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onNextPage}>
             Next
           </Button>
         </div>
@@ -1768,10 +1679,10 @@ const onPreviousPageSchedule = React.useCallback(() => {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onPreviousPageTask}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onPreviousPage}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onNextPageTask}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onNextPage}>
             Next
           </Button>
         </div>
@@ -1802,10 +1713,10 @@ const onPreviousPageSchedule = React.useCallback(() => {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onPreviousPageReminder}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onPreviousPage}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onNextPageReminder}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onNextPage}>
             Next
           </Button>
         </div>
@@ -1838,10 +1749,10 @@ const onPreviousPageSchedule = React.useCallback(() => {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onPreviousPageSchedule}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onPreviousPage}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onNextPageSchedule}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onNextPage}>
             Next
           </Button>
         </div>
@@ -2101,13 +2012,9 @@ const onPreviousPageSchedule = React.useCallback(() => {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/dashboard">
+                  <span>
                     Dashboard
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data</BreadcrumbPage>
+                  </span>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -2116,16 +2023,20 @@ const onPreviousPageSchedule = React.useCallback(() => {
             <div  >
               <SearchBar />
             </div>
+            <a href="/calendar">
+              <div>
+                <Calendar1 />
+              </div>
+            </a>
             <div>
               <Notification />
             </div>
           </div>
         </header>
         <Box sx={{ width: '100%' }}>
-          <h1 className="text-2xl font-semibold mb-8 mt-4" style={{ textAlign: "center" }}>Charts</h1>
+          <h1 className="text-amber-500 font-bold mb-8 mt-4 text-xl" style={{ textAlign: "center" }}>S P R I E R S</h1>
           <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
 
-            {/* Lead */}
             <Grid item xs={12} md={6} lg={4}>
               <Item>
                 <div>
@@ -2143,14 +2054,11 @@ const onPreviousPageSchedule = React.useCallback(() => {
                     </Select>
                   </FormControl>
 
-                  {/* Render Selected Chart */}
                   <div className="mt-4">{renderChartLead()}</div>
                 </div>
               </Item>
             </Grid>
-            {/* End Lead */}
 
-            {/* Invoice */}
             <Grid item xs={12} md={6} lg={4}>
               <Item>
                 <div>
@@ -2167,15 +2075,11 @@ const onPreviousPageSchedule = React.useCallback(() => {
                       <MenuItem value="Bar Chart">Bar Chart</MenuItem>
                     </Select>
                   </FormControl>
-
-                  {/* Render Selected Chart */}
                   <div className="mt-4">{renderChartInvoice()}</div>
                 </div>
               </Item>
             </Grid>
-            {/* End Invoice */}
 
-            {/* Deal */}
             <Grid item xs={12} md={6} lg={4}>
               <Item>
                 <div>
@@ -2192,23 +2096,19 @@ const onPreviousPageSchedule = React.useCallback(() => {
                       <MenuItem value="Bar Chart">Bar Chart</MenuItem>
                     </Select>
                   </FormControl>
-
-                  {/* Render Selected Chart */}
                   <div className="mt-4">{renderChartDeal()}</div>
                 </div>
               </Item>
             </Grid>
-            {/* End Deal */}
 
-            {/* Lead Table */}
-            <Grid item xs={12} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Lead Table</h1>
+            <Grid item xs={12} sm={6} md={6} lg={6}>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Lead Record</h1>
               <Item>
                 <div className="flex justify-between items-center gap-3">
                   <Input
                     isClearable
-                    className="w-full sm:max-w-[44%]"
-                    placeholder="Search by name, email, product..."
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
                     startContent={<Search size={20} />}
                     value={filterValue}
                     onClear={() => setFilterValue("")}
@@ -2240,7 +2140,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
                       </TableColumn>
                     )}
                   </TableHeader>
-                  <TableBody emptyContent={"No leads found"} items={sortedItems}>
+                  <TableBody emptyContent={"No lead available"} items={sortedItems}>
                     {(item) => (
                       <TableRow key={item._id}>
                         {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
@@ -2251,66 +2151,14 @@ const onPreviousPageSchedule = React.useCallback(() => {
               </Item>
             </Grid>
 
-            {/* Invoice Table */}
             <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Invoice Table</h1>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Deal Record</h1>
               <Item>
                 <div className="flex justify-between items-center gap-3">
                   <Input
                     isClearable
-                    className="w-full sm:max-w-[44%]"
-                    placeholder="Search by name, email, product..."
-                    startContent={<Search size={20} />}
-                    value={filterValueInvoice}
-                    onClear={() => setFilterValueInvoice("")}
-                    onValueChange={setFilterValueInvoice}
-                  />
-                </div>
-                <Table
-                  isHeaderSticky
-                  aria-label="Invoices table with custom cells, pagination and sorting"
-                  bottomContent={bottomContentInvoice}
-                  bottomContentPlacement="outside"
-                  classNames={{
-                    wrapper: "max-h-[382px]",
-                  }}
-                  selectedKeys={selectedKeysInvoice}
-                  selectionMode="none"
-                  sortDescriptor={sortDescriptorInvoice}
-                  onSortChange={setSortDescriptorInvoice}
-                  topContentPlacement="outside"
-                >
-                  <TableHeader columns={columnsInvoice}>
-                    {(column) => (
-                      <TableColumn
-                        key={column.uid}
-                        align={column.uid === "actions" ? "center" : "start"}
-                        allowsSorting={column.sortable}
-                      >
-                        {column.name}
-                      </TableColumn>
-                    )}
-                  </TableHeader>
-                  <TableBody emptyContent={"No invoices found"} items={sortedInvoice}>
-                    {(item) => (
-                      <TableRow key={item._id}>
-                        {(columnKey) => <TableCell>{renderCellInvoice(item, columnKey)}</TableCell>}
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </Item>
-            </Grid>
-
-            {/* Deal Table */}
-            <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Deal Table</h1>
-              <Item>
-                <div className="flex justify-between items-center gap-3">
-                  <Input
-                    isClearable
-                    className="w-full sm:max-w-[44%]"
-                    placeholder="Search by name, email, product..."
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
                     startContent={<Search size={20} />}
                     value={filterValueDeal}
                     onClear={() => setFilterValueDeal("")}
@@ -2342,7 +2190,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
                       </TableColumn>
                     )}
                   </TableHeader>
-                  <TableBody emptyContent={"No deals found"} items={sortedDeals}>
+                  <TableBody emptyContent={"No deal available"} items={sortedDeals}>
                     {(item) => (
                       <TableRow key={item._id}>
                         {(columnKey) => <TableCell>{renderCellDeal(item, columnKey)}</TableCell>}
@@ -2353,62 +2201,68 @@ const onPreviousPageSchedule = React.useCallback(() => {
               </Item>
             </Grid>
 
-            {/* Task Table */}
             <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Task Table</h1>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Invoice Record</h1>
               <Item>
                 <div className="flex justify-between items-center gap-3">
                   <Input
                     isClearable
-                    className="w-full sm:max-w-[44%]"
-                    placeholder="Search by name, email, product..."
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
                     startContent={<Search size={20} />}
-                    value={filterValueTask}
-                    onClear={() => setFilterValueTask("")}
-                    onValueChange={setFilterValueTask}
+                    value={filterValueInvoice}
+                    onClear={() => setFilterValueInvoice("")}
+                    onValueChange={setFilterValueInvoice}
                   />
                 </div>
                 <Table
-  isHeaderSticky
-  aria-label="Tasks table with custom cells, pagination and sorting"
-  bottomContent={bottomContentTask}
-  bottomContentPlacement="outside"
-  classNames={{
-    wrapper: "max-h-[382px]",
-  }}
-  selectedKeys={selectedKeysTask}
-  selectionMode="none"
-  sortDescriptor={sortDescriptorTask}
-  onSelectionChange={setSelectedKeysTask}
-  onSortChange={setSortDescriptorTask}
->
-  <TableHeader columns={columnsTask}>
-    {(column) => (
-      <TableColumn
-        key={column.uid}
-        align={column.uid === "actions" ? "center" : "start"}
-        allowsSorting={column.sortable}
-      >
-        {column.name}
-      </TableColumn>
-    )}
-  </TableHeader>
-  <TableBody emptyContent={"No tasks found"} items={sortedTasks}>
-    {(item) => (
-      <TableRow key={item._id}>
-        {(columnKey) => <TableCell>{renderCellTask(item, columnKey)}</TableCell>}
-      </TableRow>
-    )}
-  </TableBody>
-</Table>    
+                  isHeaderSticky
+                  aria-label="Invoices table with custom cells, pagination and sorting"
+                  bottomContent={bottomContentInvoice}
+                  bottomContentPlacement="outside"
+                  classNames={{
+                    wrapper: "max-h-[382px]",
+                  }}
+                  selectedKeys={selectedKeysInvoice}
+                  selectionMode="none"
+                  topContentPlacement="outside"
+                >
+                  <TableHeader columns={columnsInvoice}>
+                    {(column) => (
+                      <TableColumn
+                        key={column.uid}
+                        align={column.uid === "actions" ? "center" : "start"}
+                        allowsSorting={column.sortable}
+                      >
+                        {column.name}
+                      </TableColumn>
+                    )}
+                  </TableHeader>
+                  <TableBody emptyContent={"No invoice available"} items={itemsInvoice}>
+                    {(item) => (
+                      <TableRow key={item._id}>
+                        {(columnKey) => <TableCell>{renderCellInvoice(item, columnKey)}</TableCell>}
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </Item>
-
             </Grid>
 
-            {/* Remainder Table */}
             <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Remainder Table</h1>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Remainder Record</h1>
               <Item>
+                <div className="flex justify-between items-center gap-3">
+                  <Input
+                    isClearable
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
+                    startContent={<Search size={20} />}
+                    value={filterValueReminder}
+                    onClear={() => setFilterValueReminder("")}
+                    onValueChange={setFilterValueReminder}
+                  />
+                </div>
                 <Item>
                   <Table
                     isHeaderSticky
@@ -2434,7 +2288,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
                         </TableColumn>
                       )}
                     </TableHeader>
-                    <TableBody emptyContent={"No reminders found"} items={itemsReminder}>
+                    <TableBody emptyContent={"No reminder available"} items={itemsReminder}>
                       {(item) => (
                         <TableRow key={item._id}>
                           {(columnKey) => <TableCell>{renderCellReminder(item, columnKey)}</TableCell>}
@@ -2446,10 +2300,71 @@ const onPreviousPageSchedule = React.useCallback(() => {
               </Item>
             </Grid>
 
-            {/* Scedule Table */}
             <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Schedule Table</h1>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Task Record</h1>
               <Item>
+                <div className="flex justify-between items-center gap-3">
+                  <Input
+                    isClearable
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
+                    startContent={<Search size={20} />}
+                    value={filterValueTask}
+                    onClear={() => setFilterValueTask("")}
+                    onValueChange={setFilterValueTask}
+                  />
+                </div>
+                <Table
+                  isHeaderSticky
+                  aria-label="Tasks table with custom cells, pagination and sorting"
+                  bottomContent={bottomContentTask}
+                  bottomContentPlacement="outside"
+                  classNames={{
+                    wrapper: "max-h-[382px]",
+                  }}
+                  selectedKeys={selectedKeysTask}
+                  selectionMode="none"
+                  sortDescriptor={sortDescriptorTask}
+                  onSelectionChange={setSelectedKeysTask}
+                  onSortChange={setSortDescriptorTask}
+                >
+                  <TableHeader columns={columnsTask}>
+                    {(column) => (
+                      <TableColumn
+                        key={column.uid}
+                        align={column.uid === "actions" ? "center" : "start"}
+                        allowsSorting={column.sortable}
+                      >
+                        {column.name}
+                      </TableColumn>
+                    )}
+                  </TableHeader>
+                  <TableBody emptyContent={"No task available"} items={sortedTasks}>
+                    {(item) => (
+                      <TableRow key={item._id}>
+                        {(columnKey) => <TableCell>{renderCellTask(item, columnKey)}</TableCell>}
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </Item>
+
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={6} lg={6}>
+              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Event or Meeting Record</h1>
+              <Item>
+                <div className="flex justify-between items-center gap-3">
+                  <Input
+                    isClearable
+                    className="w-full sm:max-w-[30%]"
+                    placeholder="Search"
+                    startContent={<Search size={20} />}
+                    value={filterValueSchedule}
+                    onClear={() => setFilterValueSchedule("")}
+                    onValueChange={setFilterValueSchedule}
+                  />
+                </div>
                 <Item>
                   <Table
                     isHeaderSticky
@@ -2476,7 +2391,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
                         </TableColumn>
                       )}
                     </TableHeader>
-                    <TableBody emptyContent={"No schedule found"} items={sortedSchedule}>
+                    <TableBody emptyContent={"No event or meeting available"} items={sortedSchedule}>
                       {(item) => (
                         <TableRow key={item._id}>
                           {(columnKey) => <TableCell>{renderCellSchedule(item, columnKey)}</TableCell>}
@@ -2487,6 +2402,7 @@ const onPreviousPageSchedule = React.useCallback(() => {
                 </Item>
               </Item>
             </Grid>
+
           </Grid>
         </Box>
       </SidebarInset>

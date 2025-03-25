@@ -84,8 +84,8 @@ const columns = [
     { name: "Product Name", uid: "productName", sortable: true },
     { name: "Product Amount", uid: "amount", sortable: true },
     { name: "Discount", uid: "discount", sortable: true },
-    { name: "GST Rate", uid: "gstRate", sortable: true },
     { name: "Before GST", uid: "totalWithoutGst", sortable: true },
+    { name: "GST Rate", uid: "gstRate", sortable: true },
     { name: "After GST", uid: "totalWithGst", sortable: true },
     {
         name: "Invoice Date",
@@ -359,6 +359,11 @@ export default function InvoiceTable() {
                 return formatDate(cellValue);
             case "endDate":
                 return formatDate(cellValue);
+            case "contactNumber":
+            case "emailAddress":
+            case "address":
+            case "gstNumber":
+                return cellValue ? cellValue : "N/A";
             default:
                 return cellValue;
         }
@@ -413,15 +418,11 @@ export default function InvoiceTable() {
                             onClear={() => setFilterValue("")}
                         />
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
+                    <div className="flex gap-3">
                         <Dropdown>
-                            <DropdownTrigger className="w-full sm:w-auto">
-                                <Button
-                                    endContent={<ChevronDownIcon className="text-small" />}
-                                    variant="default"
-                                    className="px-3 py-2 text-sm sm:text-base w-full sm:w-auto flex items-center justify-between"
-                                >
-                                    Hide Columns
+                            <DropdownTrigger className="flex">
+                                <Button endContent={<ChevronDownIcon className="text-small" />} variant="default" className="px-3 py-2 text-sm sm:text-base">
+                                    Hide Column
                                 </Button>
                             </DropdownTrigger>
                             <DropdownMenu
@@ -434,13 +435,17 @@ export default function InvoiceTable() {
                                     const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
                                     setVisibleColumns(newKeys);
                                 }}
-                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300"
+                                style={{
+                                    backgroundColor: "#f0f0f0",
+                                    color: "#000000",
+                                    height: "400px",
+                                    overflowY: "scroll",
+                                    scrollbarWidth: "none",
+                                    msOverflowStyle: "none"
+                                }}
                             >
                                 {columns.map((column) => (
-                                    <DropdownItem 
-                                        key={column.uid} 
-                                        className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
-                                    >
+                                    <DropdownItem key={column.uid} className="capitalize" style={{ color: "#000000" }}>
                                         {column.name}
                                     </DropdownItem>
                                 ))}
@@ -545,6 +550,7 @@ export default function InvoiceTable() {
                     <div className="lg:col-span-12">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Reminder Record</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Only unpaid data</h1>
                             <Table
                                 isHeaderSticky
                                 aria-label="Leads table with custom cells, pagination and sorting"
@@ -585,13 +591,13 @@ export default function InvoiceTable() {
             </div>
 
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
+                <DialogContent className="sm:max-w-[600px]">
                     <DialogHeader>
                         <DialogTitle>Update Reminder</DialogTitle>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onEdit)} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
                                     name="companyName"

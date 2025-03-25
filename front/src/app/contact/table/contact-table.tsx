@@ -70,6 +70,7 @@ export default function ContactTable() {
     const [error, setError] = useState<string | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     const fetchContacts = async () => {
         try {
@@ -239,13 +240,16 @@ export default function ContactTable() {
 
 
     // Function to handle delete button click
-    const handleDeleteClick = async (contact: Contact) => {
-        if (!window.confirm("Are you sure you want to delete this contact?")) {
-            return;
-        }
+    const handleDeleteClick = (contact: Contact) => {
+        setSelectedContact(contact);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!selectedContact?._id) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/contact/deleteContact/${contact._id}`, {
+            const response = await fetch(`http://localhost:8000/api/v1/contact/deleteContact/${selectedContact._id}`, {
                 method: "DELETE",
             });
 
@@ -266,6 +270,9 @@ export default function ContactTable() {
                 description: error instanceof Error ? error.message : "Failed to delete Contact",
                 variant: "destructive",
             });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setSelectedContact(null);
         }
     };
 
@@ -318,14 +325,14 @@ export default function ContactTable() {
             return formatDate(cellValue);
         }
         // Render note column with a fallback message if there's no note
-        if (columnKey === "notes") {
-            return cellValue || "No note available";
+        if (columnKey === "description") {
+            return cellValue || "N/A";
         }
         // Render actions column with edit and delete buttons
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
-                    <Tooltip content="Update">
+                    <Tooltip>
                         <span
                             className="text-lg text-default-400 cursor-pointer active:opacity-50"
                             onClick={() => handleEditClick(contact)}
@@ -333,7 +340,7 @@ export default function ContactTable() {
                             <Edit className="h-4 w-4" />
                         </span>
                     </Tooltip>
-                    <Tooltip color="danger" content="Delete">
+                    <Tooltip>
                         <span
                             className="text-lg text-danger cursor-pointer active:opacity-50"
                             onClick={() => handleDeleteClick(contact)}
@@ -399,7 +406,7 @@ export default function ContactTable() {
                         />
                     </div>
 
-<div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
+                    <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
                         <Dropdown>
                             <DropdownTrigger className="w-full sm:w-auto">
                                 <Button
@@ -420,11 +427,11 @@ export default function ContactTable() {
                                     const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
                                     setVisibleColumns(newKeys);
                                 }}
-                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300"
+                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300 hide-scrollbar"
                             >
                                 {columns.map((column) => (
-                                    <DropdownItem 
-                                        key={column.uid} 
+                                    <DropdownItem
+                                        key={column.uid}
                                         className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
                                     >
                                         {column.name}
@@ -507,47 +514,48 @@ export default function ContactTable() {
     return (
         <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 max-w-screen-xl">
             <div className="rounded-xl border bg-card text-card-foreground shadow">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-12">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                    <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Contact Record</h1>
-                    <Table
-                        isHeaderSticky
-                        aria-label="Leads table with custom cells, pagination and sorting"
-                        bottomContent={bottomContent}
-                        bottomContentPlacement="outside"
-                        classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
-                        topContent={topContent}
-                        topContentPlacement="outside"
-                        onSelectionChange={setSelectedKeys}
-                        onSortChange={setSortDescriptor}
-                    >
-                    <TableHeader columns={headerColumns}>
-                      {(column) => (
-                        <TableColumn
-                          key={column.uid}
-                          align={column.uid === "actions" ? "center" : "start"}
-                          allowsSorting={column.sortable}
-                        >
-                          {column.name}
-                        </TableColumn>
-                      )}
-                    </TableHeader>
-                    <TableBody emptyContent={"Create contact and add data"} items={sortedItems}>
-                      {(item) => (
-                        <TableRow key={item._id}>
-                          {(columnKey) => (
-                            <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                              {renderCell(item, columnKey)}
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="lg:col-span-12">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                            <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Contact Record</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Store client / customer's contact details</h1>
+                            <Table
+                                isHeaderSticky
+                                aria-label="Leads table with custom cells, pagination and sorting"
+                                bottomContent={bottomContent}
+                                bottomContentPlacement="outside"
+                                classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
+                                topContent={topContent}
+                                topContentPlacement="outside"
+                                onSelectionChange={setSelectedKeys}
+                                onSortChange={setSortDescriptor}
+                            >
+                                <TableHeader columns={headerColumns}>
+                                    {(column) => (
+                                        <TableColumn
+                                            key={column.uid}
+                                            align={column.uid === "actions" ? "center" : "start"}
+                                            allowsSorting={column.sortable}
+                                        >
+                                            {column.name}
+                                        </TableColumn>
+                                    )}
+                                </TableHeader>
+                                <TableBody emptyContent={"Create contact and add data"} items={sortedItems}>
+                                    {(item) => (
+                                        <TableRow key={item._id}>
+                                            {(columnKey) => (
+                                                <TableCell style={{ fontSize: "12px", padding: "8px" }}>
+                                                    {renderCell(item, columnKey)}
+                                                </TableCell>
+                                            )}
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
                 </div>
-              </div>
-            </div>
             </div>
 
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
@@ -557,7 +565,7 @@ export default function ContactTable() {
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit((onEdit))} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField
                                     control={form.control}
                                     name="companyName"
@@ -675,6 +683,34 @@ export default function ContactTable() {
                             </Button>
                         </form>
                     </Form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
+        sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogDescription className="text-sm xs:text-xs">
+                            Are you sure you want to delete this invoice? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end gap-4 mt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsDeleteDialogOpen(false)}
+                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDeleteConfirm}
+                            className="px-4 py-2 text-sm xs:px-3 xs:py-1 xs:text-xs bg-gray-800"
+                        >
+                            Delete
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
 
