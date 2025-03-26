@@ -9,7 +9,6 @@ import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
 import { Selection } from "@nextui-org/react";
 import { Separator } from "@/components/ui/separator";
-
 import {
   SidebarInset,
   SidebarProvider,
@@ -21,7 +20,6 @@ import {
   BarChart,
   CartesianGrid, LabelList, Pie, PieChart, RadialBar, RadialBarChart, Rectangle, XAxis
 } from "recharts"
-
 import {
   Box,
   FormControl,
@@ -33,9 +31,8 @@ import {
   styled,
 } from "@mui/material";
 import { Button, Pagination, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Chip, Tooltip, ChipProps, Input } from "@heroui/react"
-import { Pencil, Trash2, Search, Calendar1 } from "lucide-react";
+import { Pencil, Trash2, Search, Calendar1, Calendar, Filter, Plus } from "lucide-react";
 
-//Lead//
 const chartConfig = {
   visitors: {
     label: "Leads",
@@ -61,10 +58,7 @@ const chartConfig = {
     color: "hsl(var(--chart-5))",
   },
 } satisfies ChartConfig;
-//Lead//
 
-
-//Invoice//
 const chartConfigInvoice = {
   visitors: {
     label: "Invoice",
@@ -83,10 +77,7 @@ const chartConfigInvoice = {
   },
 
 } satisfies ChartConfig;
-//Invoice//
 
-
-//Deal//
 const chartConfigDeal = {
   visitors: {
     label: "Deals",
@@ -108,7 +99,6 @@ const chartConfigDeal = {
     color: "hsl(var(--chart-5))",
   },
 } satisfies ChartConfig;
-//Deal//
 
 interface Lead {
   _id: string;
@@ -139,7 +129,7 @@ interface Invoice {
   amount: number;
   discount: number;
   gstRate: number;
-  status: "Paid" | "Unpaid" | "Pending"; // Update this line
+  status: "Paid" | "Unpaid" | "Pending"; 
   date: Date;
   endDate: Date;
   totalWithoutGst: number;
@@ -160,7 +150,7 @@ interface Reminder {
   amount: number;
   discount: number;
   gstRate: number;
-  status: "Paid" | "Unpaid" | "Pending"; // Update this line
+  status: "Paid" | "Unpaid" | "Pending"; 
   date: Date;
   endDate: Date;
   totalWithoutGst: number;
@@ -192,8 +182,8 @@ interface Task {
   relatedTo: string;
   name: string;
   assigned: string;
-  taskDate: string;
-  dueDate: string;
+  date: string;
+  endDate: string;
   status: "Pending" | "Resolved" | "In Progress";
   priority: "High" | "Medium" | "Low";
   isActive: boolean;
@@ -211,8 +201,6 @@ interface Schedule {
   recurrence: "one-time" | "Daily" | "Weekly" | "Monthly" | "Yearly";
   description: string;
 }
-
-
 
 interface CategorizedLeads {
   [key: string]: Lead[];
@@ -263,14 +251,14 @@ const columnsReminder = [
   { name: "Company Name", uid: "companyName", sortable: true },
   { name: "Product Name", uid: "productName", sortable: true },
   { name: "Paid Amount", uid: "paidAmount", sortable: true },
-  { NAME: "Remiaining Amount", uid: "remainingAmount", sortable: true },
+  { name: "Remiaining Amount", uid: "remainingAmount", sortable: true },
 ];
 
 const columnsTask = [
   { name: "Subject", uid: "subject", sortable: true },
   { name: "Name", uid: "name", sortable: true },
-  { name: "Task Date", uid: "taskDate", sortable: true },
-  { name: "Due Date", uid: "dueDate", sortable: true },
+  { name: "Task Date", uid: "date", sortable: true },
+  { name: "Due Date", uid: "endDate", sortable: true },
 ];
 
 const columnsSchedule = [
@@ -280,20 +268,13 @@ const columnsSchedule = [
   { name: "Date", uid: "date", sortable: true },
 ];
 
-
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "emailAddress", "productName"];
-
 const INITIAL_VISIBLE_COLUMNS_INVOICE = ["companyName", "customerName", "emailAddress", "productName"];
-
 const INITIAL_VISIBLE_COLUMNS_DEAL = ["companyName", "customerName", "emailAddress", "productName"];
-
 const INITIAL_VISIBLE_COLUMNS_TASK = ["subject", "relatedTo", "name", "status"];
-
 const INITIAL_VISIBLE_COLUMNS_REMINDER = ["companyName", "customerName", "emailAddress", "status"];
-
 const INITIAL_VISIBLE_COLUMNS_SCHEDULE = ["subject", "customerName", "location", "status"];
 
-//Lead//
 const chartData = {
   Proposal: "#2a9d90",
   New: "#e76e50",
@@ -301,25 +282,19 @@ const chartData = {
   Demo: "#e8c468",
   Decided: "#f4a462",
 };
-//Lead//
 
-
-//Invoice//
 const chartDataInvoice = {
   Pending: "#2a9d90",
   Unpaid: "#e76e50",
   Paid: "#274754",
 };
-//Invoice//
 
-//Deal//
 const chartDataDeal = {
   Proposal: "#2a9d90",
   Discussion: "#274754",
   Demo: "#e8c468",
   Decided: "#f4a462",
 };
-//Deal//
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: "#fff",
@@ -333,20 +308,18 @@ const Item = styled(Paper)(({ theme }) => ({
 }));
 
 const getChartDimensions = () => {
-  // Return responsive dimensions based on window width
   if (typeof window !== 'undefined') {
-    const width = Math.min(600, window.innerWidth - 40); // 40px for padding
+    const width = Math.min(600, window.innerWidth - 40); 
     const height = Math.min(400, width * 0.8);
     return { width, height };
   }
-  return { width: 600, height: 400 }; // Default dimensions
+  return { width: 600, height: 400 }; 
 };
 
 export default function Page() {
   const [selectedChart, setSelectedChart] = useState("Pie Chart");
   const [selectedChartInvoice, setSelectedChartInvoice] = useState("Pie Chart");
   const [selectedChartDeal, setSelectedChartDeal] = useState("Pie Chart");
-
 
   const [filterValue, setFilterValue] = useState("");
   const [filterValueInvoice, setFilterValueInvoice] = useState("");
@@ -405,6 +378,11 @@ export default function Page() {
     direction: "ascending",
   });
 
+  const [sortDescriptorInvoice, setSortDescriptorInvoice] = useState ({
+    column: "companyName",
+    direction: "ascending",
+  })
+
   const [sortDescriptorDeal, setSortDescriptorDeal] = useState({
     column: "companyName",
     direction: "ascending",
@@ -424,6 +402,7 @@ export default function Page() {
     column: "status",
     direction: "ascending",
   })
+  
   const filteredItems = React.useMemo(() => {
     let filteredLeads = [...leads];
 
@@ -520,8 +499,8 @@ export default function Page() {
           relatedTo: task.relatedTo,
           name: task.name,
           assigned: task.assigned,
-          taskDate: task.taskDate,
-          dueDate: task.dueDate,
+          date: task.date,
+          endDate: task.endDate,
           status: task.status,
           priority: task.priority,
           isActive: task.isActive,
@@ -541,7 +520,6 @@ export default function Page() {
 
     return filteredTasks;
   }, [tasks, filterValueTask, statusFilter]);
-
 
   const filteredItemsReminder = React.useMemo(() => {
     let filteredReminder = [...reminder];
@@ -572,10 +550,8 @@ export default function Page() {
     return filteredReminder;
   }, [leads, filterValueReminder, statusFilter]);
 
-
   const filteredItemsSchedule = React.useMemo(() => {
     let filteredSchedule = [...schedule];
-
 
     if (hasSearchFilter) {
       filteredSchedule = filteredSchedule.filter((schedule) => {
@@ -602,41 +578,16 @@ export default function Page() {
     return filteredSchedule;
   }, [schedule, filterValueSchedule, statusFilter]);
 
-
-  // Add this near the top of your file, where other constants are defined
-  const statusColorMap: Record<string, ChipProps["color"]> = {
-    Pending: "warning",
-    Resolved: "success",
-    "In Progress": "primary",
-    Scheduled: "default",
-    Completed: "success",
-    Cancelled: "danger",
-    Postpone: "warning",
-    Paid: "success",
-    Unpaid: "danger",
-    Demo: "primary",
-    Discussion: "secondary",
-    Decided: "success",
-    Proposal: "primary",
-    New: "warning",
-  };
-
-
   const headerColumns = React.useMemo(() => {
-    if (visibleColumns.size === columns.length) return columns; // Check if all columns are selected
+    if (visibleColumns.size === columns.length) return columns; 
     return columns.filter((column) => visibleColumns.has(column.uid));
   }, [visibleColumns]);
 
   const pages = Math.ceil(filteredItems.length / rowsPerPage);
-
   const pagesInvoice = Math.ceil(invoices.length / rowsPerPage);
-
   const pagesDeal = Math.ceil(deals.length / rowsPerPage);
-
   const pagesTask = Math.ceil(tasks.length / rowsPerPage);
-
   const pagesReminder = Math.ceil(reminder.length / rowsPerPage);
-
   const pagesSchedule = Math.ceil(schedule.length / rowsPerPage);
 
   const items = React.useMemo(() => {
@@ -691,6 +642,16 @@ export default function Page() {
     });
   }, [sortDescriptor, items]);
 
+  const sortedInvoice = React.useMemo(() => {
+    return [...itemsInvoice].sort((a, b) => {
+      const first = a[sortDescriptorInvoice.column as keyof Invoice];
+      const second = b[sortDescriptorInvoice.column as keyof Invoice];
+      const cmp = first < second ? -1 : first > second ? 1 : 0;
+
+      return sortDescriptorInvoice.direction === "descending" ? -cmp : cmp;
+    });
+  }, [sortDescriptorInvoice, itemsInvoice]);
+
   const sortedDeals = React.useMemo(() => {
     return [...itemsDeal].sort((a, b) => {
       const first = a[sortDescriptorDeal.column as keyof Deal];
@@ -711,7 +672,6 @@ export default function Page() {
     });
   }, [sortDescriptorTask, itemsTask]);
 
-
   const sortedReminder = React.useMemo(() => {
     return [...itemsReminder].sort((a, b) => {
       const first = a[sortDescriptorReminder.column as keyof Reminder];
@@ -721,7 +681,6 @@ export default function Page() {
       return sortDescriptorReminder.direction === "descending" ? -cmp : cmp;
     });
   }, [sortDescriptorReminder, itemsReminder]);
-
 
   const sortedSchedule = React.useMemo(() => {
     return [...itemsSchedule].sort((a, b) => {
@@ -733,24 +692,18 @@ export default function Page() {
     });
   }, [sortDescriptorSchedule, itemsSchedule]);
 
-
-  //Lead//
   useEffect(() => {
     const fetchLeads = async () => {
       try {
         const response = await fetch('http://localhost:8000/api/v1/lead/getAllLeads');
         const result = await response.json();
 
-        // Check if result is an object with data property
         if (!result || !Array.isArray(result.data)) {
           console.error('Invalid data format received:', result);
           return;
         }
 
-        // Set the leads data for the table
         setLeads(result.data);
-
-        // Categorize leads by status
         const categorized = result.data.reduce((acc: CategorizedLeads, lead: Lead) => {
           if (!acc[lead.status]) {
             acc[lead.status] = [];
@@ -769,27 +722,22 @@ export default function Page() {
 
     fetchLeads();
   }, []);
-  //Lead//
 
-  //Invoice//
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
         const response = await fetch('http://localhost:8000/api/v1/invoice/getAllInvoices');
         const result = await response.json();
 
-        // Check if result is an object with data property
         if (!result || !Array.isArray(result.data)) {
           console.error('Invalid data format received:', result);
           return;
         }
 
-        // Set the invoices data for the table
         setInvoices(result.data);
 
-        // Categorize invoices by status
         const categorized = result.data.reduce((acc: Record<string, Invoice[]>, invoice: Invoice) => {
-          if (!invoice.status) return acc; // Avoid undefined statuses
+          if (!invoice.status) return acc; 
           if (!acc[invoice.status]) {
             acc[invoice.status] = [];
           }
@@ -808,25 +756,21 @@ export default function Page() {
 
     fetchInvoices();
   }, []);
-  //Invoice//
 
-  //Deal//
+  //Deal
   useEffect(() => {
     const fetchDeals = async () => {
       try {
         const response = await fetch('http://localhost:8000/api/v1/deal/getAllDeals');
         const result = await response.json();
 
-        // Check if result is an object with data property
         if (!result || !Array.isArray(result.data)) {
           console.error('Invalid data format received:', result);
           return;
         }
 
-        // Set the deals data for the table
         setDeals(result.data);
 
-        // Categorize deals by status
         const categorized = result.data.reduce((acc: CategorizedDeals, deal: Deal) => {
           if (!acc[deal.status]) {
             acc[deal.status] = [];
@@ -845,9 +789,8 @@ export default function Page() {
 
     fetchDeals();
   }, []);
-  //Deal//
 
-  //Task//
+  //Task
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -885,16 +828,13 @@ export default function Page() {
         const response = await fetch('http://localhost:8000/api/v1/invoice/getUnpaidInvoices');
         const result = await response.json();
 
-        // Check if result is an object with data property
         if (!result || !Array.isArray(result.data)) {
           console.error('Invalid data format received:', result);
           return;
         }
 
-        // Set the tasks data for the table
         setReminder(result.data);
 
-        // Categorize tasks by status
         const categorized = result.data.reduce((acc: CategorizedReminder, reminder: Reminder) => {
           if (!acc[reminder.status]) {
             acc[reminder.status] = [];
@@ -912,7 +852,6 @@ export default function Page() {
     fetchReminder();
   }, []);
 
-
   //Schedule
   useEffect(() => {
     const fetchSchedule = async () => {
@@ -920,16 +859,13 @@ export default function Page() {
         const response = await fetch('http://localhost:8000/api/v1/scheduledEvents/getAllScheduledEvents');
         const result = await response.json();
 
-        // Check if result is an object with data property
         if (!result || !Array.isArray(result.data)) {
           console.error('Invalid data format received:', result);
           return;
         }
 
-        // Set the tasks data for the table
         setSchedule(result.data);
 
-        // Categorize tasks by status
         const categorized = result.data.reduce((acc: CategorizedScheduled, schedule: Schedule) => {
           if (!acc[schedule.status]) {
             acc[schedule.status] = [];
@@ -959,9 +895,72 @@ export default function Page() {
     }
   }, [page]);
 
+//Invoice  Page
+const onNextPageInvoice = React.useCallback(() => {
+  if (pageInvoice < pagesInvoice) {
+    setPageInvoice(pageInvoice + 1);
+  }
+}, [pageInvoice, pagesInvoice]);
 
+const onPreviousPageInvoice = React.useCallback(() => {
+  if (pageInvoice > 1) {
+    setPageInvoice(pageInvoice - 1);
+  }
+}, [pageInvoice]);
 
-  //Lead Chart//
+//Deal Page
+const onNextPageDeal = React.useCallback(() => {
+if (pageDeal < pagesDeal) {
+  setPageDeal(pageDeal + 1);
+}
+}, [pageDeal, pagesDeal]);
+
+const onPreviousPageDeal = React.useCallback(() => {
+if (pageDeal > 1) {
+  setPageDeal(pageDeal - 1);
+}
+}, [pageDeal]);
+
+//Taskk Page
+const onNextPageTask = React.useCallback(() => {
+if (pageTask < pagesTask) {
+  setPageTask(pageTask + 1);
+}
+}, [pageTask, pagesTask]);
+
+const onPreviousPageTask = React.useCallback(() => {
+if (pageTask > 1) {
+  setPageTask(pageTask - 1);
+}
+}, [pageTask]);
+
+//Reminder Page
+const onNextPageReminder = React.useCallback(() => {
+if (pageReminder < pagesReminder) {
+  setPageReminder(pageReminder + 1);
+}
+}, [pageReminder, pagesReminder]);
+
+const onPreviousPageReminder = React.useCallback(() => {
+if (pageReminder > 1) {
+  setPageReminder(pageReminder - 1);
+}
+}, [pageReminder]);
+
+//Schedule Page
+const onNextPageSchedule = React.useCallback(() => {
+if (pageSchedule < pagesSchedule) {
+  setPageSchedule(pageSchedule + 1);
+}
+}, [pageSchedule, pagesSchedule]);
+
+const onPreviousPageSchedule = React.useCallback(() => {
+if (pageSchedule > 1) {
+  setPageSchedule(pageSchedule - 1);
+}
+}, [pageSchedule]);
+
+  //Lead Chart
   const dynamicChartData = useMemo(() => {
     return Object.entries(categorizedLeads).map(([status, leads]) => ({
       browser: status,
@@ -969,9 +968,8 @@ export default function Page() {
       fill: chartData[status] || "#ccc",
     }));
   }, [categorizedLeads]);
-  //Lead Chart//
 
-  //Invoice Chart//
+  //Invoice Chart
   const dynamicChartDataInvoice = useMemo(() => {
     return Object.entries(categorizedInvoices).map(([status, invoices]) => ({
       browser: status,
@@ -979,9 +977,8 @@ export default function Page() {
       fill: chartDataInvoice[status] || "#ccc",
     }));
   }, [categorizedInvoices]);
-  //Invoice Chart//
 
-  //Deal//
+  //Deal
   const dynamicChartDataDeal = useMemo(() => {
     return Object.entries(categorizedDeals).map(([status, deals]) => ({
       browser: status,
@@ -989,12 +986,8 @@ export default function Page() {
       fill: chartDataDeal[status] || "#ccc",
     }));
   }, [categorizedDeals]);
-  //Deal//
 
-
-
-
-  //Lead//
+  //Lead
   const renderChartLead = () => {
     const { width, height } = getChartDimensions();
 
@@ -1174,9 +1167,8 @@ export default function Page() {
       );
     }
   };
-  //Lead//
 
-  //Invoice//
+  //Invoice
   const renderChartInvoice = () => {
     const { width, height } = getChartDimensions();
 
@@ -1356,9 +1348,8 @@ export default function Page() {
       );
     }
   };
-  //Invoice//
 
-  //Deal//
+  //Deal
   const renderChartDeal = () => {
     const { width, height } = getChartDimensions();
 
@@ -1494,21 +1485,21 @@ export default function Page() {
       return (
         <Card>
           <CardHeader>
-            <CardTitle>Deal Bar Chart</CardTitle>
+            <CardTitle>Deal</CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer
               config={chartConfigDeal}
-              style={{ backgroundColor: "black", padding: "10px", borderRadius: "8px" }}
+              style={{ padding: "10px", borderRadius: "8px" }}
             >
-              <BarChart width={width} height={height} data={dynamicChartDataDeal} style={{ backgroundColor: "black" }}>
-                <CartesianGrid stroke="rgba(255, 255, 255, 0.2)" vertical={false} />
+              <BarChart width={width} height={height} data={dynamicChartDataDeal}>
+                <CartesianGrid vertical={false} />
                 <XAxis
                   dataKey="browser"
                   tickLine={false}
                   tickMargin={10}
                   axisLine={false}
-                  tick={{ fill: "white" }} // 👈 Axis labels white for visibility
+                  tick={{ fill: "white" }} 
                   tickFormatter={(value) =>
                     chartConfigDeal[value as keyof typeof chartConfigDeal]?.label
                   }
@@ -1518,7 +1509,7 @@ export default function Page() {
                   content={
                     <ChartTooltipContent
                       hideLabel
-                      style={{ backgroundColor: "black", color: "white", border: "1px solid white" }}
+                      style={{ color: "white", border: "1px solid white" }}
                     />
                   }
                 />
@@ -1547,10 +1538,8 @@ export default function Page() {
     }
 
   };
-  //Deal//
 
-
-  //lead//
+  //lead
   const bottomContent = React.useMemo(() => {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
@@ -1561,24 +1550,22 @@ export default function Page() {
         </span>
         <Pagination
           isCompact
-          // showControls
           showShadow
           color="success"
           page={page}
           total={pages}
           onChange={setPage}
           classNames={{
-            // base: "gap-2 rounded-2xl shadow-lg p-2 dark:bg-default-100",
             cursor: "bg-[hsl(339.92deg_91.04%_52.35%)] shadow-md",
             item: "data-[active=true]:bg-[hsl(339.92deg_91.04%_52.35%)] data-[active=true]:text-white rounded-lg",
           }}
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pages === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pages === 1} size="sm" variant="flat" onPress={onPreviousPage}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pages === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pages === 1} size="sm" variant="flat" onPress={onNextPage}>
             Next
           </Button>
         </div>
@@ -1586,7 +1573,7 @@ export default function Page() {
     );
   }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
 
-  //Invoice//
+  //Invoice
   const bottomContentInvoice = React.useMemo(() => {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
@@ -1597,24 +1584,22 @@ export default function Page() {
         </span>
         <Pagination
           isCompact
-          // showControls
           showShadow
           color="success"
           page={pageInvoice}
           total={pagesInvoice}
           onChange={setPageInvoice}
           classNames={{
-            // base: "gap-2 rounded-2xl shadow-lg p-2 dark:bg-default-100",
             cursor: "bg-[hsl(339.92deg_91.04%_52.35%)] shadow-md",
             item: "data-[active=true]:bg-[hsl(339.92deg_91.04%_52.35%)] data-[active=true]:text-white rounded-lg",
           }}
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesInvoice === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pagesInvoice === 1} size="sm" variant="flat" onPress={onPreviousPageInvoice}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesInvoice === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pagesInvoice === 1} size="sm" variant="flat" onPress={onNextPageInvoice}>
             Next
           </Button>
         </div>
@@ -1622,7 +1607,7 @@ export default function Page() {
     );
   }, [selectedKeysInvoice, itemsInvoice.length, pageInvoice, pagesInvoice, hasSearchFilterInvoice]);
 
-  //Deal//
+  //Deal
   const bottomContentDeal = React.useMemo(() => {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
@@ -1645,10 +1630,10 @@ export default function Page() {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onPreviousPageDeal}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pagesDeal === 1} size="sm" variant="flat" onPress={onNextPageDeal}>
             Next
           </Button>
         </div>
@@ -1656,7 +1641,7 @@ export default function Page() {
     );
   }, [selectedKeysDeal, deals.length, pageDeal, pagesDeal, hasSearchFilterDeal]);
 
-  //Task//
+  //Task
   const bottomContentTask = React.useMemo(() => {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
@@ -1679,10 +1664,10 @@ export default function Page() {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onPreviousPageTask}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pagesTask === 1} size="sm" variant="flat" onPress={onNextPageTask}>
             Next
           </Button>
         </div>
@@ -1690,7 +1675,7 @@ export default function Page() {
     );
   }, [selectedKeysTask, tasks.length, pageTask, pagesTask, hasSearchFilterTask]);
 
-  //Reminder//
+  //Reminder
   const bottomContentReminder = React.useMemo(() => {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
@@ -1713,10 +1698,10 @@ export default function Page() {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onPreviousPageReminder}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pagesReminder === 1} size="sm" variant="flat" onPress={onNextPageReminder}>
             Next
           </Button>
         </div>
@@ -1724,9 +1709,7 @@ export default function Page() {
     );
   }, [selectedKeysReminder, reminder.length, pageReminder, pagesReminder, hasSearchFilterReminder]);
 
-
-
-  //Reminder//
+  //Schedule
   const bottomContentSchedule = React.useMemo(() => {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
@@ -1749,10 +1732,10 @@ export default function Page() {
         />
 
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onPreviousPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onPreviousPageSchedule}>
             Previous
           </Button>
-          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onNextPage}>
+          <Button className="bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-lg" isDisabled={pagesSchedule === 1} size="sm" variant="flat" onPress={onNextPageSchedule}>
             Next
           </Button>
         </div>
@@ -1779,7 +1762,6 @@ export default function Page() {
         return (
           <Chip
             className="capitalize"
-            color={statusColorMap[lead.status]}
             size="sm"
             variant="flat"
           >
@@ -1824,7 +1806,6 @@ export default function Page() {
         return (
           <Chip
             className="capitalize"
-            color={statusColorMap[invoice.status]}
             size="sm"
             variant="flat"
           >
@@ -1870,7 +1851,6 @@ export default function Page() {
         return (
           <Chip
             className="capitalize"
-            color={statusColorMap[deal.status]}
             size="sm"
             variant="flat"
           >
@@ -1921,6 +1901,21 @@ export default function Page() {
             </Tooltip>
           </div>
         );
+        case "date":
+        case "endDate": {
+          if (!cellValue) return "N/A"; 
+
+          const date = new Date(cellValue);
+          if (isNaN(date.getTime())) return "Invalid Date"; 
+
+          // Format date as dd-mm-yyyy
+          const day = String(date.getDate()).padStart(2, "0");
+          const month = String(date.getMonth() + 1).padStart(2, "0");
+          const year = date.getFullYear();
+
+          return `${day}-${month}-${year}`;
+        }
+
       default:
         return cellValue;
     }
@@ -1955,7 +1950,6 @@ export default function Page() {
     }
   }, []);
 
-
   const renderCellSchedule = React.useCallback((schedule: Schedule, columnKey: React.Key) => {
     const cellValue = schedule[columnKey as keyof Schedule];
 
@@ -1973,7 +1967,6 @@ export default function Page() {
         return (
           <Chip
             className="capitalize"
-            color={statusColorMap[schedule.status]}
             size="sm"
             variant="flat"
           >
@@ -1995,8 +1988,18 @@ export default function Page() {
             </Tooltip>
           </div>
         );
-      default:
-        return cellValue;
+        case "date":{
+          if (!cellValue) return "N/A"; 
+        
+          const date = new Date(cellValue);
+          if (isNaN(date.getTime())) return "Invalid Date"; 
+        
+          const day = String(date.getDate()).padStart(2, "0");
+          const month = String(date.getMonth() + 1).padStart(2, "0"); 
+          const year = date.getFullYear();
+        
+          return `${day}-${month}-${year}`;
+        }
     }
   }, []);
 
@@ -2007,7 +2010,6 @@ export default function Page() {
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
-            <ModeToggle />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
@@ -2033,95 +2035,104 @@ export default function Page() {
             </div>
           </div>
         </header>
-        <Box sx={{ width: '100%' }}>
-          <h1 className="text-amber-500 font-bold mb-8 mt-4 text-xl" style={{ textAlign: "center" }}>S P R I E R S</h1>
-          <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
+        <Box sx={{ width: '100%', maxWidth: '100%' }} className="mx-auto min-w-[360px]">
+        <h1 className="text-amber-500 font-bold mb-8 mt-4 text-xl text-center">S P R I E R S</h1>
+        <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }} className="w-full max-w-[360px] md:max-w-full mx-auto">
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Item>
-                <div>
-                  <FormControl fullWidth>
-                    <InputLabel id="chart-select-label">Select Chart</InputLabel>
+          {/* Chart Sections */}
+          {/* Lead Analytics Chart */}
+          <Grid item xs={12} md={6} lg={4} className="pb-4">
+            <Item className="bg-white shadow-lg rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl">
+              <div className="flex flex-col h-full">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800">Lead Analytics</h2>
+                  <FormControl className="min-w-[120px]" size="small">
                     <Select
-                      labelId="chart-select-label"
                       value={selectedChart}
                       onChange={(e) => setSelectedChart(e.target.value)}
-                      label="Select Chart"
+                      className="text-sm"
                     >
                       <MenuItem value="Pie Chart">Pie Chart</MenuItem>
                       <MenuItem value="Radial Chart">Radial Chart</MenuItem>
                       <MenuItem value="Bar Chart">Bar Chart</MenuItem>
                     </Select>
                   </FormControl>
-
-                  <div className="mt-4">{renderChartLead()}</div>
                 </div>
-              </Item>
-            </Grid>
+                <div className="flex-1 min-h-[300px]">{renderChartLead()}</div>
+              </div>
+            </Item>
+          </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Item>
-                <div>
-                  <FormControl fullWidth>
-                    <InputLabel id="chart-select-label">Select Chart</InputLabel>
+          {/* Invoice Chart */}
+          <Grid item xs={12} md={6} lg={4} className="pb-4">
+            <Item className="bg-white shadow-lg rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl">
+              <div className="flex flex-col h-full">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800">Invoice Analytics</h2>
+                  <FormControl className="min-w-[120px]" size="small">
                     <Select
-                      labelId="chart-select-label"
                       value={selectedChartInvoice}
                       onChange={(e) => setSelectedChartInvoice(e.target.value)}
-                      label="Select Chart"
+                      className="text-sm"
                     >
                       <MenuItem value="Pie Chart">Pie Chart</MenuItem>
                       <MenuItem value="Radial Chart">Radial Chart</MenuItem>
                       <MenuItem value="Bar Chart">Bar Chart</MenuItem>
                     </Select>
                   </FormControl>
-                  <div className="mt-4">{renderChartInvoice()}</div>
                 </div>
-              </Item>
-            </Grid>
+                <div className="flex-1 min-h-[300px]">{renderChartInvoice()}</div>
+              </div>
+            </Item>
+          </Grid>
 
-            <Grid item xs={12} md={6} lg={4}>
-              <Item>
-                <div>
-                  <FormControl fullWidth>
-                    <InputLabel id="chart-select-label">Select Chart</InputLabel>
+          {/* Deal Chart */}
+          <Grid item xs={12} md={6} lg={4} className="pb-4">
+            <Item className="bg-white shadow-lg rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl">
+              <div className="flex flex-col h-full">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800">Deal Analytics</h2>
+                  <FormControl className="min-w-[120px]" size="small">
                     <Select
-                      labelId="chart-select-label"
                       value={selectedChartDeal}
                       onChange={(e) => setSelectedChartDeal(e.target.value)}
-                      label="Select Chart"
+                      className="text-sm"
                     >
                       <MenuItem value="Pie Chart">Pie Chart</MenuItem>
                       <MenuItem value="Radial Chart">Radial Chart</MenuItem>
                       <MenuItem value="Bar Chart">Bar Chart</MenuItem>
                     </Select>
                   </FormControl>
-                  <div className="mt-4">{renderChartDeal()}</div>
                 </div>
-              </Item>
-            </Grid>
+                <div className="flex-1 min-h-[300px]">{renderChartDeal()}</div>
+              </div>
+            </Item>
+          </Grid>
 
-            <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Lead Record</h1>
-              <Item>
-                <div className="flex justify-between items-center gap-3">
-                  <Input
-                    isClearable
-                    className="w-full sm:max-w-[30%]"
-                    placeholder="Search"
-                    startContent={<Search size={20} />}
-                    value={filterValue}
-                    onClear={() => setFilterValue("")}
-                    onValueChange={setFilterValue}
-                  />
-                </div>
+
+          {/* Lead Record Section */}
+          <Grid item xs={12} md={6} lg={6} className="w-full max-w-[360px] md:max-w-full pb-4">
+            <Item className="bg-white shadow-lg rounded-xl p-6">
+              <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Lead Record</h1>
+              <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+                <Input
+                  isClearable
+                  className="w-full focus:ring-1 focus:ring-blue-500 focus:outline-none rounded-lg px-4 py-2 transition duration-200"
+                  placeholder="Search"
+                  startContent={<Search size={20} className="text-gray-500" />}
+                  value={filterValue}
+                  onClear={() => setFilterValue("")}
+                  onValueChange={setFilterValue}
+                />
+              </div>
+              <div className="w-full">
                 <Table
                   isHeaderSticky
                   aria-label="Leads table with custom cells, pagination and sorting"
                   bottomContent={bottomContent}
                   bottomContentPlacement="outside"
                   classNames={{
-                    wrapper: "max-h-[382px]",
+                    wrapper: "w-full rounded-lg shadow-sm max-h-[300px] overflow-y-auto scrollbar-hide",
                   }}
                   selectedKeys={selectedKeys}
                   selectionMode="none"
@@ -2135,6 +2146,7 @@ export default function Page() {
                         key={column.uid}
                         align={column.uid === "actions" ? "center" : "start"}
                         allowsSorting={column.sortable}
+                        className="text-gray-700 font-semibold bg-gray-50 px-2 py-4"
                       >
                         {column.name}
                       </TableColumn>
@@ -2142,36 +2154,92 @@ export default function Page() {
                   </TableHeader>
                   <TableBody emptyContent={"No lead available"} items={sortedItems}>
                     {(item) => (
-                      <TableRow key={item._id}>
-                        {(columnKey) => <TableCell>{renderCell(item, columnKey)}</TableCell>}
+                      <TableRow key={item._id} className="hover:bg-gray-50 transition duration-200">
+                        {(columnKey) => (<TableCell className="px-4 py-3 text-gray-700">{renderCell(item, columnKey)}</TableCell>)}
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+              </div>
+            </Item>
+          </Grid>
+
+          <Grid item xs={12} md={6} lg={6} className="w-full max-w-[360px] md:max-w-full pb-4">
+              <Item className="bg-white shadow-lg rounded-xl p-6">
+              <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Invoice Record</h1>
+              <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+                  <Input
+                    isClearable
+                    className="w-full focus:ring-1 focus:ring-blue-500 focus:outline-none rounded-lg px-4 py-2 transition duration-200"
+                    placeholder="Search"
+                    startContent={<Search size={20} className="text-gray-500" />}
+                    value={filterValueInvoice}
+                    onClear={() => setFilterValueInvoice("")}
+                    onValueChange={setFilterValueInvoice}
+                  />
+                </div>
+                <div className="w-full">
+                <Table
+                  isHeaderSticky
+                  aria-label="Invoices table with custom cells, pagination and sorting"
+                  bottomContent={bottomContentInvoice}
+                  bottomContentPlacement="outside"
+                  classNames={{
+                    wrapper: "w-full rounded-lg shadow-sm max-h-[300px] overflow-y-auto scrollbar-hide",
+                  }}
+                  selectedKeys={selectedKeysInvoice}
+                  selectionMode="none"
+                  sortDescriptor={sortDescriptorInvoice}
+                  onSortChange={setSortDescriptorInvoice}
+                  topContentPlacement="outside"
+                  
+                >
+                  <TableHeader columns={columnsInvoice}>
+                    {(column) => (
+                      <TableColumn
+                        key={column.uid}
+                        align={column.uid === "actions" ? "center" : "start"}
+                        allowsSorting={column.sortable}
+                        className="text-gray-700 font-semibold bg-gray-50 px-2 py-4"
+                      >
+                        {column.name}
+                      </TableColumn>
+                    )}
+                  </TableHeader>
+                  <TableBody emptyContent={"No invoice available"} items={sortedInvoice}>
+                    {(item) => (
+                      <TableRow key={item._id} className="hover:bg-gray-50 transition duration-200">
+                        {(columnKey) => (<TableCell className="px-4 py-3 text-gray-700">{renderCellInvoice(item, columnKey)}</TableCell>)}
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+                </div>
               </Item>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Deal Record</h1>
-              <Item>
-                <div className="flex justify-between items-center gap-3">
+            <Grid item xs={12} md={6} lg={6} className="w-full max-w-[360px] md:max-w-full pb-4">
+              <Item className="bg-white shadow-lg rounded-xl p-6">
+              <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Deal Record</h1>
+              <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
                   <Input
                     isClearable
-                    className="w-full sm:max-w-[30%]"
+                    className="w-full focus:ring-1 focus:ring-blue-500 focus:outline-none rounded-lg px-4 py-2 transition duration-200"
                     placeholder="Search"
-                    startContent={<Search size={20} />}
+                    startContent={<Search size={20} className="text-gray-500" />}
                     value={filterValueDeal}
                     onClear={() => setFilterValueDeal("")}
                     onValueChange={setFilterValueDeal}
                   />
                 </div>
+                <div className="w-full">
                 <Table
                   isHeaderSticky
                   aria-label="Deals table with custom cells, pagination and sorting"
                   bottomContent={bottomContentDeal}
                   bottomContentPlacement="outside"
                   classNames={{
-                    wrapper: "max-h-[382px]",
+                    wrapper: "w-full rounded-lg shadow-sm max-h-[300px] overflow-y-auto scrollbar-hide",
                   }}
                   selectedKeys={selectedKeysDeal}
                   selectionMode="none"
@@ -2185,6 +2253,7 @@ export default function Page() {
                         key={column.uid}
                         align={column.uid === "actions" ? "center" : "start"}
                         allowsSorting={column.sortable}
+                        className="text-gray-700 font-semibold bg-gray-50 px-2 py-4"
                       >
                         {column.name}
                       </TableColumn>
@@ -2192,85 +2261,38 @@ export default function Page() {
                   </TableHeader>
                   <TableBody emptyContent={"No deal available"} items={sortedDeals}>
                     {(item) => (
-                      <TableRow key={item._id}>
-                        {(columnKey) => <TableCell>{renderCellDeal(item, columnKey)}</TableCell>}
+                      <TableRow key={item._id} className="hover:bg-gray-50 transition duration-200">
+                        {(columnKey) => (<TableCell className="px-4 py-3 text-gray-700">{renderCellDeal(item, columnKey)}</TableCell>)}
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
-              </Item>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Invoice Record</h1>
-              <Item>
-                <div className="flex justify-between items-center gap-3">
-                  <Input
-                    isClearable
-                    className="w-full sm:max-w-[30%]"
-                    placeholder="Search"
-                    startContent={<Search size={20} />}
-                    value={filterValueInvoice}
-                    onClear={() => setFilterValueInvoice("")}
-                    onValueChange={setFilterValueInvoice}
-                  />
                 </div>
-                <Table
-                  isHeaderSticky
-                  aria-label="Invoices table with custom cells, pagination and sorting"
-                  bottomContent={bottomContentInvoice}
-                  bottomContentPlacement="outside"
-                  classNames={{
-                    wrapper: "max-h-[382px]",
-                  }}
-                  selectedKeys={selectedKeysInvoice}
-                  selectionMode="none"
-                  topContentPlacement="outside"
-                >
-                  <TableHeader columns={columnsInvoice}>
-                    {(column) => (
-                      <TableColumn
-                        key={column.uid}
-                        align={column.uid === "actions" ? "center" : "start"}
-                        allowsSorting={column.sortable}
-                      >
-                        {column.name}
-                      </TableColumn>
-                    )}
-                  </TableHeader>
-                  <TableBody emptyContent={"No invoice available"} items={itemsInvoice}>
-                    {(item) => (
-                      <TableRow key={item._id}>
-                        {(columnKey) => <TableCell>{renderCellInvoice(item, columnKey)}</TableCell>}
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
               </Item>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Remainder Record</h1>
-              <Item>
-                <div className="flex justify-between items-center gap-3">
+            <Grid item xs={12} md={6} lg={6} className="w-full max-w-[360px] md:max-w-full pb-4">
+              <Item className="bg-white shadow-lg rounded-xl p-6">
+              <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Reminder Record</h1>
+                <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
                   <Input
                     isClearable
-                    className="w-full sm:max-w-[30%]"
+                    className="w-full focus:ring-1 focus:ring-blue-500 focus:outline-none rounded-lg px-4 py-2 transition duration-200"
                     placeholder="Search"
-                    startContent={<Search size={20} />}
+                    startContent={<Search size={20} className="text-gray-500" />}
                     value={filterValueReminder}
                     onClear={() => setFilterValueReminder("")}
                     onValueChange={setFilterValueReminder}
                   />
                 </div>
-                <Item>
+                <div className="w-full">
                   <Table
                     isHeaderSticky
                     aria-label="Invoices table with custom cells, pagination and sorting"
                     bottomContent={bottomContentReminder}
                     bottomContentPlacement="outside"
                     classNames={{
-                      wrapper: "max-h-[382px]",
+                      wrapper: "w-full rounded-lg shadow-sm max-h-[300px] overflow-y-auto scrollbar-hide",
                     }}
                     selectedKeys={selectedKeysReminder}
                     selectionMode="none"
@@ -2283,6 +2305,7 @@ export default function Page() {
                           key={column.uid}
                           align={column.uid === "actions" ? "center" : "start"}
                           allowsSorting={column.sortable}
+                          className="text-gray-700 font-semibold bg-gray-50 px-2 py-4"
                         >
                           {column.name}
                         </TableColumn>
@@ -2290,37 +2313,38 @@ export default function Page() {
                     </TableHeader>
                     <TableBody emptyContent={"No reminder available"} items={itemsReminder}>
                       {(item) => (
-                        <TableRow key={item._id}>
-                          {(columnKey) => <TableCell>{renderCellReminder(item, columnKey)}</TableCell>}
+                        <TableRow key={item._id} className="hover:bg-gray-50 transition duration-200">
+                          {(columnKey) => (<TableCell className="px-4 py-3 text-gray-700">{renderCellReminder(item, columnKey)}</TableCell>)}
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
-                </Item>
+                  </div>
               </Item>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Task Record</h1>
-              <Item>
-                <div className="flex justify-between items-center gap-3">
+            <Grid item xs={12} md={6} lg={6} className="w-full max-w-[360px] md:max-w-full pb-4">
+              <Item className="bg-white shadow-lg rounded-xl p-6">
+              <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Task Record</h1>
+                <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
                   <Input
                     isClearable
-                    className="w-full sm:max-w-[30%]"
+                    className="w-full focus:ring-1 focus:ring-blue-500 focus:outline-none rounded-lg px-4 py-2 transition duration-200"
                     placeholder="Search"
-                    startContent={<Search size={20} />}
+                    startContent={<Search size={20} className="text-gray-500" />}
                     value={filterValueTask}
                     onClear={() => setFilterValueTask("")}
                     onValueChange={setFilterValueTask}
                   />
                 </div>
+                <div className="w-full">
                 <Table
                   isHeaderSticky
                   aria-label="Tasks table with custom cells, pagination and sorting"
                   bottomContent={bottomContentTask}
                   bottomContentPlacement="outside"
                   classNames={{
-                    wrapper: "max-h-[382px]",
+                    wrapper: "w-full rounded-lg shadow-sm max-h-[300px] overflow-y-auto scrollbar-hide",
                   }}
                   selectedKeys={selectedKeysTask}
                   selectionMode="none"
@@ -2334,45 +2358,49 @@ export default function Page() {
                         key={column.uid}
                         align={column.uid === "actions" ? "center" : "start"}
                         allowsSorting={column.sortable}
-                      >
+                        className="text-gray-700 font-semibold bg-gray-50 px-2 py-4"                        >
                         {column.name}
                       </TableColumn>
                     )}
                   </TableHeader>
                   <TableBody emptyContent={"No task available"} items={sortedTasks}>
                     {(item) => (
-                      <TableRow key={item._id}>
-                        {(columnKey) => <TableCell>{renderCellTask(item, columnKey)}</TableCell>}
+                      <TableRow key={item._id} className="hover:bg-gray-50 transition duration-200">
+                        {(columnKey) => (
+                          <TableCell className="px-4 py-3 text-gray-700">{renderCellTask(item, columnKey)}</TableCell>)}
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </Item>
-
             </Grid>
 
-            <Grid item xs={12} sm={6} md={6} lg={6}>
-              <h1 className="text-2xl font-semibold mb-4 mt-4" style={{ textAlign: "center" }}>Event or Meeting Record</h1>
-              <Item>
-                <div className="flex justify-between items-center gap-3">
+            <Grid item xs={12} md={6} lg={6} className="w-full max-w-[360px] md:max-w-full pb-4">
+              <Item className="bg-white shadow-lg rounded-xl p-6">
+                <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Event or Meeting Record</h1>
+
+                <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
                   <Input
                     isClearable
-                    className="w-full sm:max-w-[30%]"
+                    className="w-full focus:ring-1 focus:ring-blue-500 focus:outline-none rounded-lg px-4 py-2 transition duration-200"
                     placeholder="Search"
-                    startContent={<Search size={20} />}
+                    startContent={<Search size={20} className="text-gray-500" />}
                     value={filterValueSchedule}
                     onClear={() => setFilterValueSchedule("")}
                     onValueChange={setFilterValueSchedule}
                   />
                 </div>
-                <Item>
+
+                {/* Table Wrapper with Scroll */}
+                <div className="w-full">
                   <Table
                     isHeaderSticky
                     aria-label="Schedule table with custom cells, pagination and sorting"
                     bottomContent={bottomContentSchedule}
                     bottomContentPlacement="outside"
                     classNames={{
-                      wrapper: "max-h-[382px]",
+                      wrapper: "w-full rounded-lg shadow-sm max-h-[300px] overflow-y-auto scrollbar-hide", 
                     }}
                     selectedKeys={selectedKeysSchedule}
                     selectionMode="none"
@@ -2386,25 +2414,32 @@ export default function Page() {
                           key={column.uid}
                           align={column.uid === "actions" ? "center" : "start"}
                           allowsSorting={column.sortable}
-                        >
+                          className="text-gray-700 font-semibold bg-gray-50 px-2 py-4"                        
+                          >
                           {column.name}
                         </TableColumn>
                       )}
                     </TableHeader>
+
                     <TableBody emptyContent={"No event or meeting available"} items={sortedSchedule}>
                       {(item) => (
-                        <TableRow key={item._id}>
-                          {(columnKey) => <TableCell>{renderCellSchedule(item, columnKey)}</TableCell>}
+                        <TableRow key={item._id} className="hover:bg-gray-50 transition duration-200">
+                          {(columnKey) => (
+                            <TableCell className="px-4 py-3 text-gray-700">{renderCellSchedule(item, columnKey)}</TableCell>
+                          )}
                         </TableRow>
                       )}
                     </TableBody>
+
                   </Table>
-                </Item>
+                </div>
+
               </Item>
             </Grid>
 
-          </Grid>
-        </Box>
+        </Grid>
+      </Box>
+
       </SidebarInset>
     </SidebarProvider>
   )

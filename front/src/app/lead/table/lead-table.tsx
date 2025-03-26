@@ -283,18 +283,18 @@ export default function LeadTable() {
     })
 
     const contactformSchema = contactSchema;
-     const contactform = useForm<z.infer<typeof contactSchema>>({
-            resolver: zodResolver(contactSchema),
-            defaultValues: {
-                companyName: "",
-                customerName: "",
-                contactNumber: "",
-                emailAddress: "",
-                address: "",
-                gstNumber: "",
-                description: "",
-            },
-        });
+    const contactform = useForm<z.infer<typeof contactSchema>>({
+        resolver: zodResolver(contactSchema),
+        defaultValues: {
+            companyName: "",
+            customerName: "",
+            contactNumber: "",
+            emailAddress: "",
+            address: "",
+            gstNumber: "",
+            description: "",
+        },
+    });
 
     const invoiceformSchema = invoiceSchema;
     const invoiceform = useForm<z.infer<typeof invoiceSchema>>({
@@ -637,15 +637,15 @@ export default function LeadTable() {
     const handleContactSubmit = async (values: z.infer<typeof contactSchema>) => {
         try {
             setIsSubmitting(true);
-            
+
             await axios.post(
                 "http://localhost:8000/api/v1/contact/createContact",
                 values
             );
-            
+
             setIsContactFormVisible(false);
             contactform.reset();
-            
+
             toast({
                 title: "Contact Submitted",
                 description: "The contact has been successfully created",
@@ -915,169 +915,183 @@ export default function LeadTable() {
                     </div>
                 </div>
             </div>
-          
 
-            <Dialog open={isContactFormVisible} onOpenChange={(open) => setIsContactFormVisible(open)}>
-    <DialogContent className="w-[100vw] max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
-        <DialogHeader>
-            <DialogTitle>Create Contact</DialogTitle>
-        </DialogHeader>
-        <Form {...contactform}>
-            <form onSubmit={contactform.handleSubmit(handleContactSubmit)} className="space-y-6">
-                {/* First row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                        control={contactform.control}
-                        name="companyName"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Company Name</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        className="w-full"
-                                        placeholder="Enter company name"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={contactform.control}
-                        name="customerName"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Client / Customer Name</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        className="w-full"
-                                        placeholder="Enter client / customer Name"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
 
-                {/* Second row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                        control={contactform.control}
-                        name="contactNumber"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Contact Number</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        className="w-full"
-                                        placeholder="Enter contact number"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={contactform.control}
-                        name="emailAddress"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Email Address</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        className="w-full"
-                                        placeholder="Enter valid email address"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-
-                {/* Third row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField
-                        control={contactform.control}
-                        name="address"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Company Address</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        className="w-full"
-                                        placeholder="Enter company address"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={contactform.control}
-                        name="gstNumber"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>GST Number</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        className="w-full"
-                                        placeholder="Enter GST number"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
-
-                {/* Notes */}
-                <FormField
-                    control={contactform.control}
-                    name="description"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Notes (Optional)</FormLabel>
-                            <FormControl>
-                                <textarea
-                                    placeholder="Enter more details here..."
-                                    {...field}
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
-                                    rows={3}
+            <Dialog open={isContactFormVisible} onOpenChange={(open) => {
+                if (!open) {
+                    setIsContactFormVisible(false);
+                }
+            }}>
+                <DialogContent className="w-[100vw] max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
+                >
+                    <DialogHeader>
+                        <DialogTitle>Create Contact</DialogTitle>
+                    </DialogHeader>
+                    <Form {...contactform}>
+                        <form onSubmit={contactform.handleSubmit(handleContactSubmit)} className="space-y-6">
+                            {/* First row */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField
+                                    control={contactform.control}
+                                    name="companyName"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Company Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter company name"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
                                 />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                                <FormField
+                                    control={contactform.control}
+                                    name="customerName"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Client / Customer Name</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter client / customer Name"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
-                {/* Submit Button */}
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Submitting Contact...
-                        </>
-                    ) : (
-                        "Create Contact"
-                    )}
-                </Button>
-            </form>
-        </Form>
-    </DialogContent>
-</Dialog>
+                            {/* Second row */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField
+                                    control={contactform.control}
+                                    name="contactNumber"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Contact Number</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter contact number"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={contactform.control}
+                                    name="emailAddress"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Email Address</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter valid email address"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
+                            {/* Third row */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <FormField
+                                    control={contactform.control}
+                                    name="address"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Company Address</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter company address"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={contactform.control}
+                                    name="gstNumber"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>GST Number</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    className="w-full"
+                                                    placeholder="Enter GST number"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
+                            {/* Notes */}
+                            <FormField
+                                control={contactform.control}
+                                name="description"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Notes (Optional)</FormLabel>
+                                        <FormControl>
+                                            <textarea
+                                                placeholder="Enter more details here..."
+                                                {...field}
+                                                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
+                                                rows={3}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
-            <Dialog open={isInvoiceFormVisible} onOpenChange={setIsInvoiceFormVisible}>
-                <DialogContent className="w-[100vw] max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
+                            {/* Submit Button */}
+                            <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Submitting Contact...
+                                    </>
+                                ) : (
+                                    "Create Contact"
+                                )}
+                            </Button>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isInvoiceFormVisible} onOpenChange={(open) => {
+                if (!open) {
+                    setIsInvoiceFormVisible(false);
+                }
+            }}>
+                <DialogContent className="w-[100vw] max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle>Create Invoice</DialogTitle>
                     </DialogHeader>
@@ -1351,19 +1365,31 @@ export default function LeadTable() {
                                     control={invoiceform.control}
                                     name="date"
                                     render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Invoice Date</FormLabel>
-                                            <FormControl>
-                                                <Input
-                                                    type="date"
-                                                    {...field}
-                                                    value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
-                                                    onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
+                                        <div className="form-group">
+                                            <label htmlFor="date" className="text-sm font-medium text-gray-700">
+                                                Invoice Date
+                                            </label>
+                                            <input
+                                                type="date"
+                                                name="date"
+                                                id="date"
+                                                value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                                onChange={(e) => field.onChange(new Date(e.target.value))}
+                                                className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
+                                                required
+                                            />
+                                            <style>
+                                                {`
+                                                        .custom-input:focus {
+                                                        border-color: black !important;
+                                                        box-shadow: none !important;
+                                                        outline: none !important;
+                                                        }
+                                                        `}
+                                            </style>
+                                        </div>
                                     )}
+
                                 />
                             </div>
 
@@ -1383,9 +1409,16 @@ export default function LeadTable() {
                 </DialogContent>
             </Dialog>
 
-            
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
+            <Dialog open={isEditOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsEditOpen(false);
+                }
+            }}>
+                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle>Update Lead</DialogTitle>
                     </DialogHeader>
@@ -1561,9 +1594,18 @@ export default function LeadTable() {
                                                 id="date"
                                                 value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
                                                 onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                                className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
                                                 required
                                             />
+                                            <style>
+                                                {`
+                                                    .custom-input:focus {
+                                                        border-color: black !important;
+                                                        box-shadow: none !important;
+                                                        outline: none !important;
+                                                    }
+                                                    `}
+                                            </style>
                                         </div>
                                     )}
                                 />
@@ -1581,9 +1623,18 @@ export default function LeadTable() {
                                                 id="endDate"
                                                 value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
                                                 onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                                className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
                                                 required
                                             />
+                                            <style>
+                                                {`
+                                                    .custom-input:focus {
+                                                        border-color: black !important;
+                                                        box-shadow: none !important;
+                                                        outline: none !important;
+                                                    }
+                                                    `}
+                                            </style>
                                         </div>
                                     )}
                                 />

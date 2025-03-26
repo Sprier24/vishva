@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from 
 import axios from "axios";
 import { format } from "date-fns"
 import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar"
 
@@ -38,10 +38,10 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
-    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
-    const year = date.getFullYear();  // Get the full year
-    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
+    const day = String(date.getDate()).padStart(2, '0');  
+    const month = String(date.getMonth() + 1).padStart(2, '0');  
+    const year = date.getFullYear();  
+    return `${day}/${month}/${year}`;  
 };
 
 const columns = [
@@ -170,8 +170,6 @@ export default function ScheduledEvents() {
         });
     };
 
-
-    // Form setup
     const form = useForm<z.infer<typeof eventSchema>>({
         resolver: zodResolver(eventSchema),
         defaultValues: {
@@ -191,7 +189,7 @@ export default function ScheduledEvents() {
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; // Check if all columns are selected
+        if (visibleColumns.size === columns.length) return columns; 
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
@@ -211,7 +209,6 @@ export default function ScheduledEvents() {
                     description: scheduledEvents.description,
                     recurrence: scheduledEvents.recurrence,
                     date: scheduledEvents.date
-
                 };
 
                 return Object.values(searchableFields).some(value =>
@@ -593,8 +590,16 @@ export default function ScheduledEvents() {
                 </div>
             </div>
 
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
+            <Dialog open={isEditOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsEditOpen(false);
+                }
+            }}>
+                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+                onInteractOutside={(e) => {
+                    e.preventDefault();
+                }}
+                >
                     <DialogHeader>
                         <DialogTitle>Update Event or Meeting</DialogTitle>
                     </DialogHeader>
@@ -763,9 +768,18 @@ export default function ScheduledEvents() {
                                                 id="date"
                                                 value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
                                                 onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                                className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
                                                 required
                                             />
+                                            <style>
+                                                {`
+                                            .custom-input:focus {
+                                                border-color: black !important;
+                                                box-shadow: none !important;
+                                                outline: none !important;
+                                            }
+                                            `}
+                                            </style>
                                         </div>
                                     )}
                                 />

@@ -186,13 +186,20 @@ export default function InvoiceTable() {
                 const searchableFields = {
                     companyName: invoice.companyName,
                     customerName: invoice.customerName,
-                    emailAddress: invoice.emailAddress,
-                    productName: invoice.productName,
-                    status: invoice.status,
-                    gstNumber: invoice.gstNumber,
                     contactNumber: invoice.contactNumber,
+                    emailAddress: invoice.emailAddress,
                     address: invoice.address,
+                    gstNumber: invoice.gstNumber,
+                    productName: invoice.productName,
+                    amount: invoice.amount,
+                    discount: invoice.discount,
+                    totalWithoutGst: invoice.totalWithoutGst,
+                    gstRate: invoice.gstRate,
+                    totalWithGst: invoice.totalWithGst,
                     date: invoice.date,
+                    paidAmount: invoice.paidAmount,
+                    remainingAmount: invoice.remainingAmount,
+                    status: invoice.status,
                 };
 
                 return Object.values(searchableFields).some(value =>

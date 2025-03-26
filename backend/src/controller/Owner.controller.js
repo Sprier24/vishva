@@ -108,6 +108,7 @@ const updateOwner = async (req, res) => {
         documentType: req.body.documentType || existingOwner.documentType,
         documentNumber: req.body.documentNumber || existingOwner.documentNumber,
         logo: logoPath,
+        gstNumber: req.body.gstNumber || existingOwner.gstNumber,
       };
 
       const updatedOwner = await Owner.findByIdAndUpdate(ownerId, updatedData, { new: true });

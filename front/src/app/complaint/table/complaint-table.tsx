@@ -164,12 +164,13 @@ export default function ComplaintTable() {
                 const searchableFields = {
                     companyName: complaint.companyName,
                     complainerName: complaint.complainerName,
-                    emailAddress: complaint.emailAddress,
                     contactNumber: complaint.contactNumber,
-                    date: complaint.date,
-                    caseStatus: complaint.caseStatus,
-                    priority: complaint.priority,
+                    emailAddress: complaint.emailAddress,
+                    subject: complaint.subject,
                     caseOrigin: complaint.caseOrigin,
+                    date: complaint.date,
+                    priority: complaint.priority,
+                    caseStatus: complaint.caseStatus,
                 };
 
                 return Object.values(searchableFields).some(value =>
@@ -540,8 +541,16 @@ export default function ComplaintTable() {
                 </div>
             </div>
 
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
+            <Dialog open={isEditOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsEditOpen(false);
+                }
+            }}>                
+                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+                onInteractOutside={(e) => {
+                    e.preventDefault();
+                }}
+                >
                     <DialogHeader>
                         <DialogTitle>Update Complaint</DialogTitle>
                     </DialogHeader>
@@ -633,9 +642,18 @@ export default function ComplaintTable() {
                                                 id="date"
                                                 value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
                                                 onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                                className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
                                                 required
                                             />
+                                            <style>
+                                                {`
+                                            .custom-input:focus {
+                                                border-color: black !important;
+                                                box-shadow: none !important;
+                                                outline: none !important;
+                                            }
+                                            `}
+                                            </style>
                                         </div>
                                     )}
                                 />

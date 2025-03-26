@@ -151,9 +151,18 @@ export default function Task() {
                   id="date"
                   value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
                   onChange={(e) => field.onChange(new Date(e.target.value))}
-                  className="w-full p-3 border border-gray-300 rounded-md text-black"
+                  className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
                   required
-                />
+              />
+              <style>
+                  {`
+              .custom-input:focus {
+                  border-color: black !important;
+                  box-shadow: none !important;
+                  outline: none !important;
+              }
+              `}
+              </style>
               </div>
             )}
           />
@@ -171,9 +180,18 @@ export default function Task() {
                   id="endDate"
                   value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
                   onChange={(e) => field.onChange(new Date(e.target.value))}
-                  className="w-full p-3 border border-gray-300 rounded-md text-black"
+                  className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
                   required
-                />
+              />
+              <style>
+                  {`
+              .custom-input:focus {
+                  border-color: black !important;
+                  box-shadow: none !important;
+                  outline: none !important;
+              }
+              `}
+              </style>
               </div>
             )}
           />

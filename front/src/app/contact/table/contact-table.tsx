@@ -558,8 +558,15 @@ export default function ContactTable() {
                 </div>
             </div>
 
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
+                <Dialog open={isEditOpen} onOpenChange={(open) => {
+                    if (!open) {
+                        setIsEditOpen(false);
+                        }
+                }}>                
+                    <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}>
                     <DialogHeader>
                         <DialogTitle>Update Contact</DialogTitle>
                     </DialogHeader>

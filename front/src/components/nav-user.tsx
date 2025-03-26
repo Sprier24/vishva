@@ -299,8 +299,17 @@ export function NavUser() {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      <Dialog open={isDeleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent>
+      
+        <Dialog open={isDeleteModalOpen} onOpenChange={(open) => {
+          if (!open) {
+            setDeleteModalOpen(false);
+          }
+        }}>      
+        <DialogContent
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Confirm Account Deletion</DialogTitle>
             <DialogDescription>Are you sure you want to delete your account? This action cannot be undone.</DialogDescription>
@@ -425,7 +434,6 @@ export function NavUser() {
           )}
         </DialogContent>
       </Dialog>
-
 
 
 

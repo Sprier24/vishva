@@ -78,7 +78,7 @@ const taskSchema = z.object({
     assigned: z.string().min(2, { message: "Assigned By is required." }),
     date: z.date().optional(),
     endDate: z.date().optional(),
-    status: z.enum(["Pending", "Resolved", "In Progress"]),
+    status: z.enum(["Pending", "Resolved", "InProgress"]),
     priority: z.enum(["High", "Medium", "Low"]),
     notes: z.string().optional(),
 });
@@ -204,10 +204,14 @@ export default function TaskTable() {
             filteredTasks = filteredTasks.filter((task) => {
                 const searchableFields = {
                     subject: task.subject,
-                    assigned: task.assigned,
                     relatedTo: task.relatedTo,
-                    status: task.status,
+                    name: task.name,
+                    assigned: task.assigned,
+                    notes: task.notes,
+                    date: task.date,
+                    endDate: task.endDate,
                     priority: task.priority,
+                    status: task.status,
                 };
 
                 return Object.values(searchableFields).some(value =>
@@ -551,8 +555,15 @@ export default function TaskTable() {
                 </div>
             </div>
 
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
+            <Dialog open={isEditOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsEditOpen(false);
+                }
+            }}>                
+            <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+                onInteractOutside={(e) => {
+                    e.preventDefault();
+                }}>
                     <DialogHeader>
                         <DialogTitle>Update Task</DialogTitle>
                     </DialogHeader>
@@ -633,9 +644,18 @@ export default function TaskTable() {
                                                 id="date"
                                                 value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
                                                 onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                                className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
                                                 required
                                             />
+                                            <style>
+                                                {`
+                                            .custom-input:focus {
+                                                border-color: black !important;
+                                                box-shadow: none !important;
+                                                outline: none !important;
+                                            }
+                                            `}
+                                            </style>
                                         </div>
                                     )}
                                 />
@@ -653,9 +673,18 @@ export default function TaskTable() {
                                                 id="endDate"
                                                 value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
                                                 onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                                className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
                                                 required
                                             />
+                                            <style>
+                                                {`
+                                            .custom-input:focus {
+                                                border-color: black !important;
+                                                box-shadow: none !important;
+                                                outline: none !important;
+                                            }
+                                            `}
+                                            </style>
                                         </div>
                                     )}
                                 />
@@ -673,7 +702,7 @@ export default function TaskTable() {
                                                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                                                 >
                                                     <option value="Pending">Pending</option>
-                                                    <option value="In Progress">In Progress</option>
+                                                    <option value="InProgress">In Progress</option>
                                                     <option value="Resolved">Resolved</option>
                                                 </select>
                                             </FormControl>

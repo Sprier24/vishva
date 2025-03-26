@@ -190,13 +190,20 @@ export default function InvoiceTable() {
                 const searchableFields = {
                     companyName: invoice.companyName,
                     customerName: invoice.customerName,
-                    emailAddress: invoice.emailAddress,
-                    productName: invoice.productName,
-                    status: invoice.status,
-                    gstNumber: invoice.gstNumber,
                     contactNumber: invoice.contactNumber,
+                    emailAddress: invoice.emailAddress,
                     address: invoice.address,
+                    gstNumber: invoice.gstNumber,
+                    productName: invoice.productName,
+                    amount: invoice.amount,
+                    discount: invoice.discount,
+                    totalWithoutGst: invoice.totalWithoutGst,
+                    gstRate: invoice.gstRate,
+                    totalWithGst: invoice.totalWithGst,
                     date: invoice.date,
+                    paidAmount: invoice.paidAmount,
+                    remainingAmount: invoice.remainingAmount,
+                    status: invoice.status,
                 };
 
                 return Object.values(searchableFields).some(value =>
@@ -614,9 +621,17 @@ export default function InvoiceTable() {
                     </div>
                 </div>
             </div>
-
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
+            
+            <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsEditDialogOpen(false);
+                }
+            }}>
+                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+                onInteractOutside={(e) => {
+                    e.preventDefault();
+                }}
+                >
                     <DialogHeader>
                         <DialogTitle>Update Invoice</DialogTitle>
                     </DialogHeader>
@@ -828,8 +843,8 @@ export default function InvoiceTable() {
                                                     {...field}
                                                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                                                 >
-                                                    <option value="Paid">Paid</option>
                                                     <option value="Unpaid">Unpaid</option>
+                                                    <option value="Paid">Paid</option>
                                                 </select>
                                             </FormControl>
                                             <FormMessage />
@@ -850,9 +865,18 @@ export default function InvoiceTable() {
                                                 id="date"
                                                 value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
                                                 onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                className="w-full p-3 border border-gray-300 rounded-md text-black"
+                                                className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
                                                 required
                                             />
+                                            <style>
+                                                {`
+                                            .custom-input:focus {
+                                                border-color: black !important;
+                                                box-shadow: none !important;
+                                                outline: none !important;
+                                            }
+                                            `}
+                                            </style>
                                         </div>
                                     )}
                                 />
