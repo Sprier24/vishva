@@ -5,20 +5,7 @@ const multer = require('multer');
 
 const createComplaint = async (req, res) => {
   try {
-    const { companyName, complainerName, contactNumber, emailAddress, subject, date, caseStatus, priority, caseOrigin } = req.body;
-
-    // Check for an existing complaint with the same key details
-    const existingComplaint = await Complaint.findOne({
-      companyName,
-      complainerName,
-      contactNumber,
-      emailAddress,
-      subject,
-    });
-
-    if (existingComplaint) {
-      return res.status(400).json({ success: false, message: "This complaint already exists." });
-    }
+    const { companyName, complainerName, contactNumber, emailAddress, subject, date, caseStatus, priority, caseOrigin,} = req.body;
 
     const newComplaint = new Complaint({
       companyName,
@@ -37,7 +24,7 @@ const createComplaint = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: 'Complaint created successfully',
-      complaint: savedComplaint,
+      complaint: savedComplaint, 
     });
   } catch (error) {
     console.error('Error creating complaint:', error);
@@ -47,7 +34,6 @@ const createComplaint = async (req, res) => {
     });
   }
 };
-
 
 const getAllComplaints = async (req, res) => {
   try {

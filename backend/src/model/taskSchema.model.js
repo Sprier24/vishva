@@ -4,15 +4,15 @@ const taskSchema = new mongoose.Schema({
   subject: { type: String },
   name: { type: String },
   relatedTo: { type: String },
-  taskDate: {
+  date: {
     type: Date,
   },
-  dueDate: { 
+  endDate: { 
     type: Date,
   },
   status: {
     type: String,
-    enum: ["Pending", "Resolved", "In Progress"],
+    enum: ["Pending", "InProgress", "Resolved"],
     default: "Pending",
   },
   priority: {

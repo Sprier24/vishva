@@ -12,21 +12,6 @@ const transporter = nodemailer.createTransport({
 const createContact = async (req, res) => {
   const { companyName, customerName, emailAddress, contactNumber, address, gstNumber, description } = req.body;
 
-  // Check for an existing complaint with the same key details
-      const existingContact = await Contact.findOne({
-        companyName, 
-        customerName, 
-        emailAddress, 
-        contactNumber, 
-        address, 
-        gstNumber, 
-        description
-      });
-  
-      if (existingContact) {
-        return res.status(400).json({ success: false, message: "This contact already exists." });
-      }
-  
   try {
     const newContact = new Contact({ companyName, customerName, emailAddress, contactNumber, address, gstNumber, description });
     const contact = await newContact.save();

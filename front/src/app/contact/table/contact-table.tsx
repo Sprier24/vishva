@@ -694,8 +694,9 @@ export default function ContactTable() {
             </Dialog>
 
             <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
-        sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]"
+                
+                >
                     <DialogHeader>
                         <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">

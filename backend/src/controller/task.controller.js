@@ -5,17 +5,6 @@ const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 const createTask = async (req, res) => {
   try {
     const taskData = req.body;
-
-    // Check if a task with the same title already exists
-    const existingTask = await Task.findOne({ title: taskData.title });
-    if (existingTask) {
-      return res.status(400).json({
-        success: false,
-        message: "Task with this title already exists",
-      });
-    }
-
-    // Create a new task if no duplicate is found
     const newTask = await Task.create(taskData);
 
     res.status(201).json({
@@ -31,7 +20,6 @@ const createTask = async (req, res) => {
     });
   }
 };
-
 
 const getAllTasks = async (req, res) => {
   try {
@@ -122,40 +110,24 @@ const deleteTask = async (req, res) => {
   }
 };
 
-
-const normalizeStatus = (status) => {
-  const statusMap = {
-    "inprogress": "In Progress",
-    "pending": "Pending",
-    "resolved": "Resolved"
-  };
-  return statusMap[status.toLowerCase()] || "Pending"; // Default to "Pending"
-};
-
 const updateStatus = async (req, res) => {
   const { taskId, status } = req.body;
 
-  if (!mongoose.Types.ObjectId.isValid(taskId)) {
-    return res.status(400).json({ success: false, message: "Invalid task ID" });
-  }
-
   try {
-    const task = await Task.findById(taskId);
-    if (!task) {
-      return res.status(404).json({ success: false, message: "Task not found" });
-    }
+      const task = await Task.findById(taskId);
+      if (!task) {
+          return res.status(404).json({ success: false, message: 'Task not found' });
+      }
 
-    task.status = normalizeStatus(status);
-    await task.save();
+      task.status = status;
+      await task.save();
 
-    res.json({ success: true, message: "Task status updated successfully" });
+      res.json({ success: true, message: 'Task status updated successfully' });
   } catch (error) {
-    console.error("Error updating task status:", error);
-    res.status(500).json({ success: false, message: "Server error" });
+      console.error(error);
+      res.status(500).json({ success: false, message: 'Server error' });
   }
 };
-
-
 
 module.exports = {
   createTask,

@@ -37,15 +37,15 @@ const ownerSchema = new mongoose.Schema(
       type: String,
       enum: ["1-10", "11-50", "51-100", ">100"],
     },
-    gstNumber: {
-      type: String,
-   },
     businessRegistration: {
       type: String,
       enum: ["Sole proprietorship", "One person Company", "Partnership", "Private Limited"],
     },
     dataFilled: {
       type: Boolean,
+    },
+    gstNumber: {
+      type: String,
     },
   },
   { timestamps: true }

@@ -127,20 +127,6 @@ const invoiceAdd = async (req, res) => {
             paidAmount
         } = req.body;
 
-        // Check if an invoice with the same companyName, customerName, productName, and date exists
-        const existingInvoice = await Invoice.findOne({ 
-            companyName, 
-            customerName, 
-            productName, 
-            date 
-        });
-
-        if (existingInvoice) {
-            return res.status(400).json({ 
-                message: "Duplicate invoice detected. An invoice with these details already exists." 
-            });
-        }
-
         const parsedAmount = parseFloat(amount) || 0;
         const parsedDiscount = parseFloat(discount) || 0;
         const parsedGstRate = parseFloat(gstRate) || 0;

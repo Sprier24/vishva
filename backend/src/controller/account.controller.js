@@ -5,20 +5,6 @@ const accountAdd = async (req, res) => {
     try {
         const { accountHolderName, accountNumber, bankName, accountType, IFSCCode, UpiId } = req.body;
 
-        // Check if the account already exists with the same details
-        const existingAccount = await Account.findOne({
-            accountHolderName,
-            accountNumber,
-            bankName,
-            accountType,
-            IFSCCode,
-            UpiId
-        });
-
-        if (existingAccount) {
-            return res.status(400).json({ message: "This account already exists." });
-        }
-
         const newAccount = new Account({
             accountHolderName,
             accountNumber,
