@@ -15,6 +15,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import * as z from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from "@/hooks/use-toast"
 
 interface Owner {
   _id: string;
@@ -36,6 +39,38 @@ interface Owner {
   incorporationCertificate?: string;
 }
 
+const profileFormSchema = z.object({
+  companyName: z.string()
+    .min(2, { message: 'Company name must be at least 2 characters' })
+    .max(100, { message: 'Company name must be less than 100 characters' }),
+  ownerName: z.string()
+    .min(2, { message: 'Owner name must be at least 2 characters' })
+    .max(50, { message: 'Owner name must be less than 50 characters' }),
+  contactNumber: z.string()
+    .min(10, { message: 'Contact number must be at least 10 digits' })
+    .max(15, { message: 'Contact number must be less than 15 digits' }),
+  emailAddress: z.string()
+    .email({ message: 'Please enter a valid email address' }),
+  website: z.string()
+    .url({ message: 'Please enter a valid URL' })
+    .optional(),
+  panNumber: z.string()
+    .length(10, { message: 'PAN number must be exactly 10 characters' }),
+  documentType: z.string()
+    .min(1, { message: 'Please select a document type' }),
+  documentNumber: z.string()
+    .min(1, { message: 'Document number is required' }),
+  companyType: z.string()
+    .min(1, { message: 'Company type is required' }),
+  employeeSize: z.string()
+    .min(1, { message: 'Please select employee size' }),
+  businessRegistration: z.string()
+    .min(1, { message: 'Please select business registration type' }),
+  gstNumber: z.string()
+    .optional(),
+  logo: z.any().optional() // No validation for logo
+});
+
 export function NavUser() {
   const { isMobile } = useSidebar();
   const [open, setOpen] = useState(false);
@@ -54,7 +89,8 @@ export function NavUser() {
   const [dialogKey, setDialogKey] = useState(0);
   const storageValue = 33;
 
-  const form = useForm<Owner>({
+  const form = useForm<z.infer<typeof profileFormSchema>>({
+    resolver: zodResolver(profileFormSchema),
     defaultValues: {
       companyName: '',
       ownerName: '',
@@ -68,11 +104,10 @@ export function NavUser() {
       documentType: '',
       documentNumber: '',
       gstNumber: '',
-      udhayamAadhar: '',
-      stateCertificate: '',
-      incorporationCertificate: '',
     },
+    mode: 'onBlur',
   });
+
 
   useEffect(() => {
     const fetchOwners = async () => {
@@ -168,43 +203,66 @@ export function NavUser() {
     }
   };
 
-  const onSubmit = async (data: Owner) => {
+  const onSubmit = async (values: z.infer<typeof profileFormSchema>) => {
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-      Object.keys(data).forEach((key) => {
-        if (key !== 'logo') {
-          const value = data[key as keyof Owner];
-          if (value !== undefined && value !== null) {
-            formData.append(key, value as string);
-          }
+
+      // Append all fields except logo
+      Object.entries(values).forEach(([key, value]) => {
+        if (key !== 'logo' && value !== undefined && value !== null) {
+          formData.append(key, String(value));
         }
       });
 
+      // Handle logo separately
       if (logoPreview && logoPreview.startsWith('data:image')) {
-        const blob = await fetch(logoPreview).then((res) => res.blob());
+        const response = await fetch(logoPreview);
+        const blob = await response.blob();
         formData.append('logo', blob, 'logo.png');
+      } else if (currentOwner?.logo && !logoPreview) {
+        // Keep existing logo if no new one was selected
+        formData.append('logo', currentOwner.logo);
       }
 
+      // Debug: Log form data before sending
       for (const [key, value] of formData.entries()) {
         console.log(key, value);
       }
 
-      await axios.put(`http://localhost:8000/api/v1/owner/updateOwner/${editOwner?._id}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      setIsEditing(false);
-      setEditOwner(null);
-      const response = await axios.get("http://localhost:8000/api/v1/owner/getAllOwners");
-      setOwners(response.data.data);
-      setFilteredOwners(
-        response.data.data.filter((owner: { emailAddress: string | null }) => owner.emailAddress === localStorage.getItem("userEmail"))
+      const response = await axios.put(
+        `http://localhost:8000/api/v1/owner/updateOwner/${editOwner?._id}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
       );
+
+      if (response.status === 200) {
+        // Refresh owner data
+        const updatedResponse = await axios.get("http://localhost:8000/api/v1/owner/getAllOwners");
+        setOwners(updatedResponse.data.data);
+        setFilteredOwners(
+          updatedResponse.data.data.filter(
+            (owner: { emailAddress: string | null }) =>
+              owner.emailAddress === localStorage.getItem("userEmail")
+          )
+        );
+        setIsEditing(false);
+        setEditOwner(null);
+        toast({
+          title: "Profile Updated",
+          description: "The profile has been successfully updated",
+        });
+      }
     } catch (error) {
       console.error("Failed to update owner:", error);
+      toast({
+        title: "Error Updated",
+        description: "The profile has been not updated",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -299,12 +357,12 @@ export function NavUser() {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      
-        <Dialog open={isDeleteModalOpen} onOpenChange={(open) => {
-          if (!open) {
-            setDeleteModalOpen(false);
-          }
-        }}>      
+
+      <Dialog open={isDeleteModalOpen} onOpenChange={(open) => {
+        if (!open) {
+          setDeleteModalOpen(false);
+        }
+      }}>
         <DialogContent
           onInteractOutside={(e) => {
             e.preventDefault();
@@ -478,9 +536,14 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Company Name</FormLabel>
                       <FormControl>
-                        <Input className="w-full p-2 border rounded-md" {...field} />
+                        <Input
+                          className="w-full p-2 border rounded-md"
+                          placeholder="Enter company name"
+                          {...field}
+                          onBlur={field.onBlur} // Ensure onBlur is called for validation
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -491,9 +554,13 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Owner Name</FormLabel>
                       <FormControl>
-                        <Input className="w-full p-2 border rounded-md" {...field} />
+                        <Input className="w-full p-2 border rounded-md"
+                          placeholder="Enter owner name"
+                          {...field}
+                          onBlur={field.onBlur} // Ensure onBlur is called for validation
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -507,9 +574,14 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Contact Number</FormLabel>
                       <FormControl>
-                        <Input className="w-full p-2 border rounded-md" {...field} />
+                        <Input
+                          className="w-full p-2 border rounded-md"
+                          placeholder="Enter contact number"
+                          {...field}
+                          onBlur={field.onBlur} // Ensure onBlur is called for validation
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -536,9 +608,14 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Website</FormLabel>
                       <FormControl>
-                        <Input className="w-full p-2 border rounded-md" {...field} />
+                        <Input
+                          className="w-full p-2 border rounded-md"
+                          placeholder="Enter Website "
+                          {...field}
+                          onBlur={field.onBlur} // Ensure onBlur is called for validation
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -547,9 +624,13 @@ export function NavUser() {
                   name="panNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>PAN Number</FormLabel>
+                      <FormLabel>Pan Number </FormLabel>
                       <FormControl>
-                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                        <Input
+                          readOnly
+                          className="w-full p-2 border rounded-md bg-gray-100"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -565,7 +646,14 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Business Registration</FormLabel>
                       <FormControl>
-                        <select className="w-full p-2 border rounded-md bg-white" {...field}>
+                        <select
+                          className="w-full p-2 border rounded-md bg-white"
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            form.trigger('businessRegistration');
+                          }}
+                        >
                           <option value="">Select Business Registration</option>
                           <option value="Sole proprietorship">Sole proprietorship</option>
                           <option value="One person Company">One person Company</option>
@@ -573,7 +661,7 @@ export function NavUser() {
                           <option value="Private Limited">Private Limited</option>
                         </select>
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -584,9 +672,14 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>GST Number</FormLabel>
                       <FormControl>
-                        <Input className="w-full p-2 border rounded-md cursor-not-allowed bg-gray-100" {...field} />
+                        <Input
+                          className="w-full p-2 border rounded-md"
+                          placeholder="Enter GST Number "
+                          {...field}
+                          onBlur={field.onBlur} // Ensure onBlur is called for validation
+                        />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -635,7 +728,11 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Document Type</FormLabel>
                       <FormControl>
-                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                        <Input
+                          readOnly
+                          className="w-full p-2 border rounded-md bg-gray-100"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -648,7 +745,11 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Document Number</FormLabel>
                       <FormControl>
-                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                        <Input
+                          readOnly
+                          className="w-full p-2 border rounded-md bg-gray-100"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -656,12 +757,15 @@ export function NavUser() {
                 />
               </div>
 
-              {/* Buttons */}
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Save Changes...
+                    Saving...
                   </>
                 ) : (
                   "Save Changes"
