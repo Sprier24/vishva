@@ -17,7 +17,7 @@ import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
 import { Calendar1 } from "lucide-react";
 
-interface Lead {
+interface Deal {
   _id: string;
   companyName: string;
   customerName: string;
@@ -33,41 +33,41 @@ interface Lead {
   isActive: boolean;
 }
 
-const getAllLeads = async (): Promise<Lead[]> => {
+const getAllDeals = async (): Promise<Deal[]> => {
   try {
-    const response = await fetch("http://localhost:8000/api/v1/lead/getAllLeads");
+    const response = await fetch("http://localhost:8000/api/v1/deal/getAllDeals");
     const data = await response.json();
     if (data.success) return data.data;
     throw new Error(data.message);
   } catch (error) {
-    console.error("Error fetching leads:", error);
-    throw new Error("Failed to fetch leads");
+    console.error("Error fetching Deals:", error);
+    throw new Error("Failed to fetch Deals");
   }
 };
 
 export default function App() {
-  const [groupedLeads, setGroupedLeads] = useState<Record<string, Lead[]>>({});
+  const [groupedDeals, setGroupedDeals] = useState<Record<string, Deal[]>>({});
   const [error, setError] = useState("");
   const [draggedOver, setDraggedOver] = useState<string | null>(null);
-  const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
+  const [selectedDeal, setSelectedDeal] = React.useState<Deal | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const router = useRouter();
 
-  const handleLeadClick = (lead: Lead) => {
-    setSelectedLead(lead);
+  const handleDealClick = (deal: Deal) => {
+    setSelectedDeal(deal);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setSelectedLead(null);
+    setSelectedDeal(null);
   };
 
   useEffect(() => {
-    const fetchLeads = async () => {
+    const fetchDeals = async () => {
       try {
-        const fetchedLeads = await getAllLeads();
-        groupLeadsByStatus(fetchedLeads);
+        const fetchedDeals = await getAllDeals();
+        groupDealsByStatus(fetchedDeals);
       } catch (error) {
         if (error instanceof Error) {
           setError(error.message);
@@ -76,16 +76,16 @@ export default function App() {
         }
       };
     }
-    fetchLeads();
+    fetchDeals();
   }, []);
 
-  const groupLeadsByStatus = (leads: Lead[]) => {
-    const grouped = leads.reduce((acc, lead) => {
-      if (!acc[lead.status]) acc[lead.status] = [];
-      acc[lead.status].push(lead);
+  const groupDealsByStatus = (deal: Deal[]) => {
+    const grouped = deal.reduce((acc, deal) => {
+      if (!acc[deal.status]) acc[deal.status] = [];
+      acc[deal.status].push(deal);
       return acc;
-    }, {} as Record<string, Lead[]>);
-    setGroupedLeads(grouped);
+    }, {} as Record<string, Deal[]>);
+    setGroupedDeals(grouped);
   };
 
   const statusColors: Record<string, string> = {
@@ -105,8 +105,8 @@ export default function App() {
     return date.toISOString().split("T")[0];
   };
 
-  const handleDragStart = (e: React.DragEvent, lead: Lead, fromStatus: string) => {
-    e.dataTransfer.setData("lead", JSON.stringify(lead));
+  const handleDragStart = (e: React.DragEvent, deal: Deal, fromStatus: string) => {
+    e.dataTransfer.setData("Deal", JSON.stringify(deal));
     e.dataTransfer.setData("fromStatus", fromStatus);
     e.dataTransfer.effectAllowed = "move";
   };
@@ -114,31 +114,31 @@ export default function App() {
   const handleDrop = async (e: React.DragEvent, toStatus: string) => {
     e.preventDefault();
     setDraggedOver(null);
-    const leadData = e.dataTransfer.getData("lead");
+    const DealData = e.dataTransfer.getData("Deal");
     const fromStatus = e.dataTransfer.getData("fromStatus");
 
-    if (!leadData || !fromStatus || fromStatus === toStatus) return;
+    if (!DealData || !fromStatus || fromStatus === toStatus) return;
 
-    const lead: Lead = JSON.parse(leadData);
-    const updatedLead = { ...lead, status: toStatus };
+    const deal: Deal = JSON.parse(DealData);
+    const updatedDeal = { ...deal, status: toStatus };
 
-    setGroupedLeads((prev) => ({
+    setGroupedDeals((prev) => ({
       ...prev,
-      [fromStatus]: prev[fromStatus]?.filter((l) => l._id !== lead._id) || [],
-      [toStatus]: [...(prev[toStatus] || []), updatedLead as Lead],
+      [fromStatus]: prev[fromStatus]?.filter((l) => l._id !== deal._id) || [],
+      [toStatus]: [...(prev[toStatus] || []), updatedDeal as Deal],
     }));
 
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/lead/updateLeadStatus", {
+      const response = await fetch("http://localhost:8000/api/v1/deal/updateDealStatus", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId: lead._id, status: toStatus }),
+        body: JSON.stringify({ dealId: deal._id, status: toStatus }),
       });
       const data = await response.json();
-      if (!data.success) throw new Error("Failed to update lead status on server.");
+      if (!data.success) throw new Error("Failed to update Deal status on server.");
     } catch (error) {
-      console.error("Error updating status:", error);
+      console.error("handleError updating status:", error);
     }
   };
 
@@ -184,8 +184,8 @@ export default function App() {
           {error && <p className="text-red-500 text-center">{error}</p>}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
             {Object.keys(statusColors).map((status) => {
-              const leadsInStatus = groupedLeads[status] || [];
-              const totalAmount = leadsInStatus.reduce((sum, lead) => sum + lead.amount, 0);
+              const DealsInStatus = groupedDeals[status] || [];
+              const totalAmount = DealsInStatus.reduce((sum, Deal) => sum + Deal.amount, 0);
 
               return (
                 <div
@@ -199,25 +199,25 @@ export default function App() {
                 >
                   <h2 className={`text-base font-bold mb-4 px-5 py-2 rounded-lg ${statusColors[status]}`}>{status}</h2>
                   <div className="p-4 rounded-lg shadow-sm border border-black mb-4">
-                    <p className="text-sm font-semibold text-gray-800">Total Deal : {leadsInStatus.length}</p>
+                    <p className="text-sm font-semibold text-gray-800">Total Deal : {DealsInStatus.length}</p>
                     <p className="text-sm font-semibold text-gray-800">Total Amount : ₹{totalAmount}</p>
                   </div>
                   <div className="mt-4 flex flex-col gap-3 min-h-[250px] max-h-[500px] h-[350px] overflow-y-auto scrollbar-hide">
-                    {leadsInStatus.length === 0 ? (
+                    {DealsInStatus.length === 0 ? (
                       <p className="text-gray-500 text-center">No deal available</p>
                     ) : (
-                      leadsInStatus.map((lead) => (
+                      DealsInStatus.map((Deal) => (
                         <div
-                          key={lead._id}
+                          key={Deal._id}
                           className="p-3 border border-black rounded-lg bg-white shadow-sm cursor-grab"
                           draggable
-                          onDragStart={(e) => handleDragStart(e, lead, status)}
-                          onClick={() => handleLeadClick(lead)}
+                          onDragStart={(e) => handleDragStart(e, Deal, status)}
+                          onClick={() => handleDealClick(Deal)}
                         >
-                          <p className="text-sm font-semibold text-gray-800">Company Name : <span>{lead.companyName}</span></p>
-                          <p className="text-sm font-semibold text-gray-800">Customer Name : <span>{lead.customerName}</span></p>
-                          <p className="text-sm font-semibold text-gray-800">Product : <span>{lead.productName}</span></p>
-                          <p className="text-sm font-semibold text-gray-800">Amount : <span>₹{lead.amount}</span></p>
+                          <p className="text-sm font-semibold text-gray-800">Company Name : <span>{Deal.companyName}</span></p>
+                          <p className="text-sm font-semibold text-gray-800">Customer Name : <span>{Deal.customerName}</span></p>
+                          <p className="text-sm font-semibold text-gray-800">Product : <span>{Deal.productName}</span></p>
+                          <p className="text-sm font-semibold text-gray-800">Amount : <span>₹{Deal.amount}</span></p>
                         </div>
                       ))
                     )}
@@ -227,7 +227,7 @@ export default function App() {
             })}
           </div>
 
-          {isModalOpen && selectedLead && (
+          {isModalOpen && selectedDeal && (
             <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
               <div className="w-full max-w-md h-auto relative">
                 <div className="absolute inset-0 h-full w-full bg-gradient-to-r  rounded-full blur-lg scale-90 opacity-50" />
@@ -247,7 +247,7 @@ export default function App() {
                   <h1 className="font-bold text-2xl text-gray-900 mb-6 text-center">Deal Record</h1>
                   <Separator className="my-4 border-gray-300" />
                   <div className="grid grid-cols-2 gap-4 text-gray-700">
-                    {Object.entries(selectedLead)
+                    {Object.entries(selectedDeal)
                       .filter(([key]) => !["_id", "__v", "isActive", "createdAt", "updatedAt"].includes(key))
                       .map(([key, value]) => (
                         <p key={key} className="text-lg">

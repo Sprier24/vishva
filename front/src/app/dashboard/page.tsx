@@ -394,7 +394,7 @@ export default function Page() {
   });
 
   const [sortDescriptorReminder, setSortDescriptorReminder] = useState({
-    column: "status",
+    column: "companyName",
     direction: "ascending",
   })
 
@@ -623,7 +623,7 @@ export default function Page() {
     const end = start + rowsPerPage;
 
     return filteredItemsReminder.slice(start, end);
-  }, [pageTask, filteredItemsReminder, rowsPerPage]);
+  }, [pageReminder, filteredItemsReminder, rowsPerPage]);
 
   const itemsSchedule = React.useMemo(() => {
     const start = (pageSchedule - 1) * rowsPerPage;

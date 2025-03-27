@@ -1,8 +1,22 @@
 "use client"
 
 import { ChevronRight, type LucideIcon } from "lucide-react"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from "@/components/ui/sidebar"
+
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import {
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+} from "@/components/ui/sidebar"
 
 export function NavMain({
   items,
@@ -20,14 +34,7 @@ export function NavMain({
 }) {
   return (
     <SidebarGroup>
-      <div className="logo-container mb-4 flex flex-col justify-center items-center bg-gray-200 p-4">
-        <div className="logo-wrapper flex justify-center items-center p-2 rounded">
-          <img src="1500px.png" alt="Logo" className="w-full h-auto max-w-[150px]" />
-        </div>
-        <div className="text-center mt-4">
-          <SidebarGroupLabel className="text-amber-500 font-bold text-xl">S P R I E R S</SidebarGroupLabel>
-        </div>
-      </div>
+      <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <Collapsible

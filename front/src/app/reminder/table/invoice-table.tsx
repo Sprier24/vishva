@@ -425,40 +425,40 @@ export default function InvoiceTable() {
                             onClear={() => setFilterValue("")}
                         />
                     </div>
-                    <div className="flex gap-3">
-                        <Dropdown>
-                            <DropdownTrigger className="flex">
-                                <Button endContent={<ChevronDownIcon className="text-small" />} variant="default" className="px-3 py-2 text-sm sm:text-base">
-                                    Hide Column
-                                </Button>
-                            </DropdownTrigger>
-                            <DropdownMenu
-                                disallowEmptySelection
-                                aria-label="Table Columns"
-                                closeOnSelect={false}
-                                selectedKeys={visibleColumns}
-                                selectionMode="multiple"
-                                onSelectionChange={(keys) => {
-                                    const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
-                                    setVisibleColumns(newKeys);
-                                }}
-                                style={{
-                                    backgroundColor: "#f0f0f0",
-                                    color: "#000000",
-                                    height: "400px",
-                                    overflowY: "scroll",
-                                    scrollbarWidth: "none",
-                                    msOverflowStyle: "none"
-                                }}
-                            >
-                                {columns.map((column) => (
-                                    <DropdownItem key={column.uid} className="capitalize" style={{ color: "#000000" }}>
-                                        {column.name}
-                                    </DropdownItem>
-                                ))}
-                            </DropdownMenu>
-                        </Dropdown>
-                    </div>
+                     <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
+                                           <Dropdown>
+                                               <DropdownTrigger className="w-full sm:w-auto">
+                                                   <Button
+                                                       endContent={<ChevronDownIcon className="text-small" />}
+                                                       variant="default"
+                                                       className="px-3 py-2 text-sm sm:text-base w-full sm:w-auto flex items-center justify-between"
+                                                   >
+                                                       Hide Columns
+                                                   </Button>
+                                               </DropdownTrigger>
+                                               <DropdownMenu
+                                                   disallowEmptySelection
+                                                   aria-label="Table Columns"
+                                                   closeOnSelect={false}
+                                                   selectedKeys={visibleColumns}
+                                                   selectionMode="multiple"
+                                                   onSelectionChange={(keys) => {
+                                                       const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
+                                                       setVisibleColumns(newKeys);
+                                                   }}
+                                                   className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300 hide-scrollbar"
+                                               >
+                                                   {columns.map((column) => (
+                                                       <DropdownItem
+                                                           key={column.uid}
+                                                           className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
+                                                       >
+                                                           {column.name}
+                                                       </DropdownItem>
+                                                   ))}
+                                               </DropdownMenu>
+                                           </Dropdown>
+                                       </div>
                 </div>
                 <div className="flex justify-between items-center">
                     <span className="text-default-400 text-small">Total {invoices.length} reminder</span>

@@ -26,7 +26,7 @@ const formSchema = z.object({
     address: z.string().nonempty({ message: "Company address is required" }),
     productName: z.string().nonempty({ message: "Product name is required" }),
     amount: z.number().positive({ message: "Product amount is required" }),
-    gstNumber: z.string().nonempty({ message: "GST number is required" }),
+    gstNumber: z.string().optional(),
     status: z.enum(["Proposal", "New", "Discussion", "Demo", "Decided"]),
     date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Lead Date is required" }),
     endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Final Date is required" }),
@@ -211,7 +211,7 @@ export default function LeadForm() {
                         name="gstNumber"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>GST Number</FormLabel>
+                                <FormLabel>GST Number (Optional)</FormLabel>
                                 <FormControl>
                                     <Input placeholder="Enter GST number" {...field} />
                                 </FormControl>

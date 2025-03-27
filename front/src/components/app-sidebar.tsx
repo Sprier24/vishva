@@ -15,16 +15,28 @@ import {
   UserX,
 } from "lucide-react"
 
+import icon from "../../public/logo icon.ico"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
+// import { TeamSwitcher } from "@/components/team-switcher"
+
 import {
   Sidebar,
+  SidebarHeader,
   SidebarContent,
   SidebarFooter,
   SidebarRail,
 } from "@/components/ui/sidebar"
 
 const data = {
+  teams: [
+    {
+      name: "Spriers",
+      logo: icon,
+      plan: "Information Technology",
+    },
+    
+  ],
   navMain: [
     {
       title: "Dashboard",
@@ -177,6 +189,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        {/* <TeamSwitcher teams={data.teams} /> */}
+      </SidebarHeader>
       <SidebarContent>
         <NavMain items={updatedNavMain} />
       </SidebarContent>

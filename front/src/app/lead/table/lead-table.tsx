@@ -158,7 +158,7 @@ const formSchema = z.object({
     address: z.string().nonempty({ message: "Company address is required" }),
     productName: z.string().nonempty({ message: "Product name is required" }),
     amount: z.number().positive({ message: "Product amount is required" }),
-    gstNumber: z.string().nonempty({ message: "GST number is required" }),
+    gstNumber: z.string().optional(),
     status: z.enum(["Proposal", "New", "Discussion", "Demo", "Decided"]),
     date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Lead Date is required" }),
     endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Final Date is required" }),
@@ -519,7 +519,7 @@ export default function LeadTable() {
 
         return filteredItems.slice(start, end);
     }, [page, filteredItems, rowsPerPage]);
-
+    
     const sortedItems = React.useMemo(() => {
         return [...items].sort((a, b) => {
             const first = a[sortDescriptor.column as keyof Lead];
@@ -667,6 +667,10 @@ export default function LeadTable() {
 
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
             return formatDate(cellValue);
+        }
+
+        if (columnKey === "gstNumber") {
+            return cellValue || "N/A";
         }
 
         if (columnKey === "notes") {
@@ -1032,7 +1036,7 @@ export default function LeadTable() {
                                     name="gstNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Number</FormLabel>
+                                            <FormLabel>GST Number (Optional)</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     className="w-full"
