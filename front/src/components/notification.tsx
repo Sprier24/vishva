@@ -48,9 +48,9 @@ const Notification = () => {
         console.error("Error fetching notifications:", error);
       }
     };
-    fetchNotifications(); 
-    const interval = setInterval(fetchNotifications, 10000); 
-    return () => clearInterval(interval); 
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleDelete = async (id: string) => {
@@ -119,7 +119,12 @@ const Notification = () => {
     <>
       <div className="flex-1 flex justify-end space-x-4">
         <button onClick={toggleNotificationPanel} className="relative">
-          <Bell className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+          <div className="relative group">
+            <Bell className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+            <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              Bell
+            </div>
+          </div>
           {unreadNotificationCount > 0 && (
             <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full px-1">
               {unreadNotificationCount}
@@ -162,20 +167,19 @@ const Notification = () => {
                     notification.type === "reminder"
                       ? "/reminder/table"
                       : notification.type === "calendar"
-                      ? "/calendar"
-                      : "#";
+                        ? "/calendar"
+                        : "#";
                   return (
                     <li
                       key={notification._id}
-                      className={`flex justify-between items-start p-4 rounded-lg shadow-[4px_4px_10px_rgba(0,0,0,0.1),-2px_-2px_5px_rgba(0,0,0,0.05)] border border-gray-300 dark:border-gray-700 transition-all cursor-pointer ${
-                        notification.starred
-                          ? "bg-yellow-50 text-yellow-800 border-l-4 border-yellow-500 dark:bg-yellow-900 dark:text-yellow-100"
-                          : notification.type === "reminder"
+                      className={`flex justify-between items-start p-4 rounded-lg shadow-[4px_4px_10px_rgba(0,0,0,0.1),-2px_-2px_5px_rgba(0,0,0,0.05)] border border-gray-300 dark:border-gray-700 transition-all cursor-pointer ${notification.starred
+                        ? "bg-yellow-50 text-yellow-800 border-l-4 border-yellow-500 dark:bg-yellow-900 dark:text-yellow-100"
+                        : notification.type === "reminder"
                           ? "bg-gray-50 text-gray-800 border-l-4 border-gray-500 dark:bg-gray-900 dark:text-gray-100"
                           : notification.type === "calendar"
-                          ? "bg-gray-50 text-gray-800 border-l-4 border-gray-500 dark:bg-gray-900 dark:text-gray-100"
-                          : "bg-gray-50 text-gray-800 border-l-4 border-gray-400 dark:bg-gray-800 dark:text-gray-200"
-                      }`}
+                            ? "bg-gray-50 text-gray-800 border-l-4 border-gray-500 dark:bg-gray-900 dark:text-gray-100"
+                            : "bg-gray-50 text-gray-800 border-l-4 border-gray-400 dark:bg-gray-800 dark:text-gray-200"
+                        }`}
                     >
                       <Link href={targetPage}>
                         <div className="flex-1">
@@ -197,7 +201,7 @@ const Notification = () => {
                           {notification.starred ? "★" : "☆"}
                         </button>
                         <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 hidden group-hover:block text-xs bg-gray-800 text-white px-2 py-1 rounded shadow-md">
-                        Mark as Important
+                          Mark as Important
                         </span>
                       </div>
                       <button

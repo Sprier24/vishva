@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { ModeToggle } from "@/components/ModeToggle"
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
-import { Calendar1 } from "lucide-react";
+import { Calendar1 , Mail } from "lucide-react";
 
 interface Deal {
   _id: string;
@@ -170,9 +170,18 @@ export default function App() {
             <div  >
               <SearchBar />
             </div>
-            <a href="/calendar">
-              <div>
-                <Calendar1 />
+            <a href="/email" className="relative group">
+              <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                Email
+              </div>
+            </a>
+
+            {/* Calendar Icon with Tooltip */}
+            <a href="/calendar" className="relative group">
+              <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                Calendar
               </div>
             </a>
             <div>
@@ -204,7 +213,7 @@ export default function App() {
                   </div>
                   <div className="mt-4 flex flex-col gap-3 min-h-[250px] max-h-[500px] h-[350px] overflow-y-auto scrollbar-hide">
                     {DealsInStatus.length === 0 ? (
-                      <p className="text-gray-500 text-center">No deal available</p>
+                      <h1 className="text-1xl mb-4 mt-4 text-center">No deal available</h1>
                     ) : (
                       DealsInStatus.map((Deal) => (
                         <div

@@ -15,9 +15,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import * as z from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from "@/hooks/use-toast"
+import { z } from "zod";
+import { LuLoader } from "react-icons/lu";
 
 interface Owner {
   _id: string;
@@ -39,38 +38,6 @@ interface Owner {
   incorporationCertificate?: string;
 }
 
-const profileFormSchema = z.object({
-  companyName: z.string()
-    .min(2, { message: 'Company name must be at least 2 characters' })
-    .max(100, { message: 'Company name must be less than 100 characters' }),
-  ownerName: z.string()
-    .min(2, { message: 'Owner name must be at least 2 characters' })
-    .max(50, { message: 'Owner name must be less than 50 characters' }),
-  contactNumber: z.string()
-    .min(10, { message: 'Contact number must be at least 10 digits' })
-    .max(15, { message: 'Contact number must be less than 15 digits' }),
-  emailAddress: z.string()
-    .email({ message: 'Please enter a valid email address' }),
-  website: z.string()
-    .url({ message: 'Please enter a valid URL' })
-    .optional(),
-  panNumber: z.string()
-    .length(10, { message: 'PAN number must be exactly 10 characters' }),
-  documentType: z.string()
-    .min(1, { message: 'Please select a document type' }),
-  documentNumber: z.string()
-    .min(1, { message: 'Document number is required' }),
-  companyType: z.string()
-    .min(1, { message: 'Company type is required' }),
-  employeeSize: z.string()
-    .min(1, { message: 'Please select employee size' }),
-  businessRegistration: z.string()
-    .min(1, { message: 'Please select business registration type' }),
-  gstNumber: z.string()
-    .optional(),
-  logo: z.any().optional() // No validation for logo
-});
-
 export function NavUser() {
   const { isMobile } = useSidebar();
   const [open, setOpen] = useState(false);
@@ -89,8 +56,32 @@ export function NavUser() {
   const [dialogKey, setDialogKey] = useState(0);
   const storageValue = 33;
 
-  const form = useForm<z.infer<typeof profileFormSchema>>({
-    resolver: zodResolver(profileFormSchema),
+  const formSchema = z.object({
+    companyName: z.string().nonempty({ message: "Required" }),
+    ownerName: z.string().nonempty({ message: "Required" }),
+    contactNumber: z
+      .string()
+      .regex(/^\d*$/, { message: "Contact number must be numeric" })
+      .nonempty({ message: "Required" }),
+    companyType: z.string().nonempty({ message: "Required" }),
+    businessRegistration: z.string().nonempty({ message: "Required" }),
+    employeeSize: z.string().nonempty({ message: "Required" }),
+    panNumber: z.string().nonempty({ message: "Required" }),
+    gstNumber: z.string().optional(),
+    website: z.string().optional(),
+    documentType: z.string().nonempty({ message: "Required" }),
+    documentNumber: z.string().nonempty({ message: "Required" }),
+    logo: z.instanceof(File)
+      .refine(file => file.size <= 5 * 1024 * 1024, {
+        message: "Logo must be less than 5MB.",
+      })
+      .refine(file => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type), {
+        message: "Only .jpg, .png, and .webp formats are supported.",
+      })
+      .optional(),
+  });
+
+  const form = useForm<Owner>({
     defaultValues: {
       companyName: '',
       ownerName: '',
@@ -104,10 +95,11 @@ export function NavUser() {
       documentType: '',
       documentNumber: '',
       gstNumber: '',
+      udhayamAadhar: '',
+      stateCertificate: '',
+      incorporationCertificate: '',
     },
-    mode: 'onBlur',
   });
-
 
   useEffect(() => {
     const fetchOwners = async () => {
@@ -203,66 +195,51 @@ export function NavUser() {
     }
   };
 
-  const onSubmit = async (values: z.infer<typeof profileFormSchema>) => {
+  const handleLogout = () => {
+    setLoading(true);
+    // Simulate logout process (Replace with actual logout logic)
+    setTimeout(() => {
+      setLoading(false);
+    }, 2000);
+  };
+
+  const onSubmit = async (data: Owner) => {
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-
-      // Append all fields except logo
-      Object.entries(values).forEach(([key, value]) => {
-        if (key !== 'logo' && value !== undefined && value !== null) {
-          formData.append(key, String(value));
+      Object.keys(data).forEach((key) => {
+        if (key !== 'logo') {
+          const value = data[key as keyof Owner];
+          if (value !== undefined && value !== null) {
+            formData.append(key, value as string);
+          }
         }
       });
 
-      // Handle logo separately
       if (logoPreview && logoPreview.startsWith('data:image')) {
-        const response = await fetch(logoPreview);
-        const blob = await response.blob();
+        const blob = await fetch(logoPreview).then((res) => res.blob());
         formData.append('logo', blob, 'logo.png');
-      } else if (currentOwner?.logo && !logoPreview) {
-        // Keep existing logo if no new one was selected
-        formData.append('logo', currentOwner.logo);
       }
 
-      // Debug: Log form data before sending
       for (const [key, value] of formData.entries()) {
         console.log(key, value);
       }
 
-      const response = await axios.put(
-        `http://localhost:8000/api/v1/owner/updateOwner/${editOwner?._id}`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      await axios.put(`http://localhost:8000/api/v1/owner/updateOwner/${editOwner?._id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-      if (response.status === 200) {
-        // Refresh owner data
-        const updatedResponse = await axios.get("http://localhost:8000/api/v1/owner/getAllOwners");
-        setOwners(updatedResponse.data.data);
-        setFilteredOwners(
-          updatedResponse.data.data.filter(
-            (owner: { emailAddress: string | null }) =>
-              owner.emailAddress === localStorage.getItem("userEmail")
-          )
-        );
-        setIsEditing(false);
-        setEditOwner(null);
-        toast({
-          title: "Profile Updated",
-          description: "The profile has been successfully updated",
-        });
-      }
+      setIsEditing(false);
+      setEditOwner(null);
+      const response = await axios.get("http://localhost:8000/api/v1/owner/getAllOwners");
+      setOwners(response.data.data);
+      setFilteredOwners(
+        response.data.data.filter((owner: { emailAddress: string | null }) => owner.emailAddress === localStorage.getItem("userEmail"))
+      );
     } catch (error) {
       console.error("Failed to update owner:", error);
-      toast({
-        title: "Error Updated",
-        description: "The profile has been not updated",
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -278,7 +255,7 @@ export function NavUser() {
           <div className="px-4 py-3 space-y-1">
             <div className="flex items-center gap-2 text-sm text-gray-600">
 
-              <span className="font-medium">Storage</span>
+              <span className="font-medium">Your Cloud Storage</span>
             </div>  <Cloud className="size-4 text-gray-500" />
             <div
               className="relative group"
@@ -313,9 +290,11 @@ export function NavUser() {
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" side={isMobile ? "bottom" : "right"} align="end" sideOffset={4}>
-              <DropdownMenuItem>
-                <LogOut />
-                <Link href="/login">Log out</Link>
+            <DropdownMenuItem onClick={handleLogout} disabled={loading}>
+                {loading ? <LuLoader className="animate-spin mr-2" /> : <LogOut />}
+                <Link href="/login" className="ml-2">
+                  Log out
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setDeleteModalOpen(true)} className="text-red-500">
                 <Trash2 className="size-4 mr-2" />
@@ -398,7 +377,6 @@ export function NavUser() {
                 {currentOwner.logo ? (
                   <img
                     src={`http://localhost:8000/uploads/${currentOwner.logo}`}
-                    alt="Company Logo"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -419,52 +397,48 @@ export function NavUser() {
               {/* Two-column grid for other details */}
               <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-gray-700 dark:text-gray-300 py-4 md:py-6 text-base md:text-sm text-center">
                 <div>
-                  <span className="font-bold text-xl md:text-2xl font-semibold">Owner Name</span>
-                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.ownerName}</span>
+                  <span className="md:text-2xl text-black">Company Name</span>
+                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.companyName}</span>
                 </div>
                 <div>
-                  <span className="font-bold text-xl md:text-2xl font-semibold">Company Name</span>
-                  <span className="block text-lg md:text-xl py-2 px-3 mr-2 ">{currentOwner.companyName}</span>
+                  <span className="md:text-2xl text-black">Owner Name</span>
+                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.ownerName}</span>
                 </div>
                 <div>
-                  <span className="font-bold text-xl md:text-2xl font-semibold">Company Type</span>
-                  <span className="block text-lg md:text-xl py-2 px-3 mr-2 ">{currentOwner.companyType}</span>
+                  <span className="md:text-2xl text-black">Contact Number</span>
+                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.contactNumber}</span>
                 </div>
                 <div>
-                  <span className="font-bold text-xl md:text-2xl font-semibold">Employee Size</span>
-                  <span className="block text-lg md:text-xl py-2 px-3 mr-2 ">{currentOwner.employeeSize}</span>
+                  <span className="md:text-2xl text-black">Company Type</span>
+                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.companyType}</span>
                 </div>
                 <div>
-                  <span className="font-bold text-xl md:text-2xl font-semibold">Contact Number</span>
-                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.contactNumber}</span>
+                  <span className="md:text-2xl text-black">Business Registration</span>
+                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.businessRegistration}</span>
                 </div>
                 <div>
-                  <span className="font-bold text-xl md:text-2xl font-semibold">Email Address</span>
-                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.emailAddress}</span>
+                  <span className="md:text-2xl text-black">Employee Size</span>
+                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.employeeSize}</span>
                 </div>
                 <div>
-                  <span className="font-bold text-xl md:text-2xl font-semibold">Document Type</span>
-                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.documentType}</span>
+                  <span className="md:text-2xl text-black">PAN Number</span>
+                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.panNumber}</span>
                 </div>
                 <div>
-                  <span className="font-bold text-xl md:text-2xl font-semibold">Document Number</span>
-                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.documentNumber || "N/A"}</span>
+                  <span className="md:text-2xl text-black">GST Number</span>
+                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.gstNumber}</span>
                 </div>
                 <div>
-                  <span className="font-bold text-xl md:text-2xl font-semibold">PAN Number</span>
-                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.panNumber}</span>
+                  <span className="md:text-2xl text-black">Document Type</span>
+                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.documentType}</span>
                 </div>
                 <div>
-                  <span className="font-bold text-xl md:text-2xl font-semibold">Business Registration</span>
-                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.businessRegistration}</span>
-                </div>
-                <div>
-                  <span className="font-bold text-xl md:text-2xl font-semibold">GST Number</span>
-                  <span className="block text-lg md:text-xl py-2 px-3 mr-2">{currentOwner.gstNumber}</span>
+                  <span className="md:text-2xl text-black">Document Number</span>
+                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.documentNumber || "N/A"}</span>
                 </div>
                 {currentOwner.website && (
                   <div>
-                    <span className="font-bold text-xl md:text-2xl font-semibold">Company Website</span>
+                    <span className="md:text-2xl text-black">Company Website</span>
                     <br />
                     <a
                       href={currentOwner.website}
@@ -477,15 +451,11 @@ export function NavUser() {
                   </div>
                 )}
               </div>
-              <div className="flex justify-end mt-6">
-                <button
-                  type="submit"
-                  className="bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-400 w-full sm:w-auto text-sm sm:text-base"
-                  onClick={() => handleEditClick(currentOwner)}
-                >
-                  Update Profile
-                </button>
-              </div>
+              <Button type="submit"
+                className="w-full" onClick={() => handleEditClick(currentOwner)}
+              >
+                Update Profile
+              </Button>
             </div>
           ) : (
             <div className="text-center text-gray-600 dark:text-gray-400 text-lg">No profile found</div>
@@ -493,19 +463,15 @@ export function NavUser() {
         </DialogContent>
       </Dialog>
 
-
-
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
           <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogTitle>Update Profile</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-6 w-full">
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <label htmlFor="logo" style={{ textAlign: 'center' }}>
-                  Logo
-                  <br />
                   <img
                     src={logoPreview || (currentOwner?.logo ? `http://localhost:8000/uploads/${currentOwner.logo}` : "/default-logo.png")}
                     style={{
@@ -514,7 +480,6 @@ export function NavUser() {
                       borderRadius: '50%',
                       border: '1px solid #ccc',
                     }}
-                    alt="Logo Preview"
                   />
 
                 </label>
@@ -527,7 +492,6 @@ export function NavUser() {
                 />
               </div>
 
-              {/* Form Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
@@ -536,14 +500,9 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Company Name</FormLabel>
                       <FormControl>
-                        <Input
-                          className="w-full p-2 border rounded-md"
-                          placeholder="Enter company name"
-                          {...field}
-                          onBlur={field.onBlur} // Ensure onBlur is called for validation
-                        />
+                        <Input className="w-full p-2 border rounded-md" {...field} placeholder="Enter company name" />
                       </FormControl>
-                      <FormMessage className="text-red-500 text-sm" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -554,13 +513,9 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Owner Name</FormLabel>
                       <FormControl>
-                        <Input className="w-full p-2 border rounded-md"
-                          placeholder="Enter owner name"
-                          {...field}
-                          onBlur={field.onBlur} // Ensure onBlur is called for validation
-                        />
+                        <Input className="w-full p-2 border rounded-md" {...field} placeholder="Enter owner name" />
                       </FormControl>
-                      <FormMessage className="text-red-500 text-sm" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -574,63 +529,20 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Contact Number</FormLabel>
                       <FormControl>
-                        <Input
-                          className="w-full p-2 border rounded-md"
-                          placeholder="Enter contact number"
-                          {...field}
-                          onBlur={field.onBlur} // Ensure onBlur is called for validation
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 text-sm" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="emailAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email Address</FormLabel>
-                      <FormControl>
-                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                        <Input className="w-full p-2 border rounded-md" {...field} placeholder="Enter contact number" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="website"
+                  name="companyType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Website</FormLabel>
+                      <FormLabel>Company Type</FormLabel>
                       <FormControl>
-                        <Input
-                          className="w-full p-2 border rounded-md"
-                          placeholder="Enter Website "
-                          {...field}
-                          onBlur={field.onBlur} // Ensure onBlur is called for validation
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 text-sm" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="panNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Pan Number </FormLabel>
-                      <FormControl>
-                        <Input
-                          readOnly
-                          className="w-full p-2 border rounded-md bg-gray-100"
-                          {...field}
-                        />
+                        <Input className="w-full p-2 border rounded-md" {...field} placeholder="Enter company type" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -646,54 +558,13 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Business Registration</FormLabel>
                       <FormControl>
-                        <select
-                          className="w-full p-2 border rounded-md bg-white"
-                          {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            form.trigger('businessRegistration');
-                          }}
-                        >
+                        <select className="w-full p-2 border rounded-md bg-white" {...field}>
                           <option value="">Select Business Registration</option>
                           <option value="Sole proprietorship">Sole proprietorship</option>
                           <option value="One person Company">One person Company</option>
                           <option value="Partnership">Partnership</option>
                           <option value="Private Limited">Private Limited</option>
                         </select>
-                      </FormControl>
-                      <FormMessage className="text-red-500 text-sm" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="gstNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>GST Number</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="w-full p-2 border rounded-md"
-                          placeholder="Enter GST Number "
-                          {...field}
-                          onBlur={field.onBlur} // Ensure onBlur is called for validation
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 text-sm" />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="companyType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Company Type</FormLabel>
-                      <FormControl>
-                        <Input className="w-full p-2 border rounded-md" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -723,16 +594,41 @@ export function NavUser() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
+                  name="panNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>PAN Number</FormLabel>
+                      <FormControl>
+                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="gstNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>GST Number</FormLabel>
+                      <FormControl>
+                        <Input className="w-full p-2 border rounded-md" {...field} placeholder="Enter GST number" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
                   name="documentType"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Document Type</FormLabel>
                       <FormControl>
-                        <Input
-                          readOnly
-                          className="w-full p-2 border rounded-md bg-gray-100"
-                          {...field}
-                        />
+                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -745,11 +641,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Document Number</FormLabel>
                       <FormControl>
-                        <Input
-                          readOnly
-                          className="w-full p-2 border rounded-md bg-gray-100"
-                          {...field}
-                        />
+                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -757,18 +649,29 @@ export function NavUser() {
                 />
               </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isSubmitting}
-              >
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input className="w-full p-2 border rounded-md" {...field} placeholder="Provide website link" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Buttons */}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
+                    Save Changes...
                   </>
                 ) : (
-                  "Save Changes"
+                  "Update Profile"
                 )}
               </Button>
             </form>

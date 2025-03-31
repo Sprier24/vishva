@@ -33,6 +33,7 @@ interface Deal {
     endDate: string;
     notes: string;
     isActive: string;
+    createdAt: string;
 }
 
 interface Contact {
@@ -66,8 +67,8 @@ interface Invoice {
 }
 
 export const invoiceSchema = z.object({
-    companyName: z.string().nonempty({ message: "Company name is required" }),
-    customerName: z.string().nonempty({ message: "Customer name is required" }),
+    companyName: z.string().nonempty({ message: "Required" }),
+    customerName: z.string().nonempty({ message: "Required" }),
     contactNumber: z
         .string()
         .regex(/^\d*$/, { message: "Contact number must be numeric" })
@@ -75,28 +76,28 @@ export const invoiceSchema = z.object({
     emailAddress: z.string().optional(),
     address: z.string().optional(),
     gstNumber: z.string().optional(),
-    productName: z.string().nonempty({ message: "Product name is required" }),
-    amount: z.coerce.number().positive({ message: "Product amount is required" }),
-    discount: z.coerce.number().optional(),
-    gstRate: z.coerce.number().optional(),
+    productName: z.string().nonempty({ message: "Required" }),
+    amount: z.number().positive({ message: "Required" }),
+    discount: z.number().optional(),
+    gstRate: z.number().optional(),
     status: z.enum(["Paid", "Unpaid"]),
-    date: z.coerce.date({ message: "Invoice Date is required" }),
-    paidAmount: z.coerce.number().optional(),
-    remainingAmount: z.coerce.number().optional(),
-    totalWithoutGst: z.coerce.number().optional(),
-    totalWithGst: z.coerce.number().optional(),
+    date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
+    paidAmount: z.number().optional(),
+    remainingAmount: z.number().optional(),
+    totalWithoutGst: z.number().optional(),
+    totalWithGst: z.number().optional(),
 });
 
 const contactSchema = z.object({
-    companyName: z.string().min(2, { message: "Company name is required." }),
-    customerName: z.string().min(2, { message: "Customer name is required." }),
+    companyName: z.string().nonempty({ message: "Required" }),
+    customerName: z.string().nonempty({ message: "Required" }),
     contactNumber: z
         .string()
         .regex(/^\d*$/, { message: "Contact number must be numeric" })
-        .nonempty({ message: "Contact number is required" }),
-    emailAddress: z.string().email({ message: "Invalid email address." }),
-    address: z.string().min(2, { message: "Company address is required." }),
-    gstNumber: z.string().min(1, { message: "GST number is required." }),
+        .nonempty({ message: "Required" }),
+    emailAddress: z.string().email({ message: "Required" }),
+    address: z.string().nonempty({ message: "Required" }),
+    gstNumber: z.string().nonempty({ message: "Required" }),
     description: z.string().optional(),
 });
 
@@ -149,20 +150,20 @@ const columns = [
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "contactNumber", "emailAddress", "address", "productName", "amount", "gstNumber", "status", "date", "endDate", "notes", "actions"];
 
 const formSchema = z.object({
-    companyName: z.string().nonempty({ message: "Company name is required" }),
-    customerName: z.string().nonempty({ message: "Customer name is required" }),
+    companyName: z.string().nonempty({ message: "Required" }),
+    customerName: z.string().nonempty({ message: "Required" }),
     contactNumber: z
         .string()
         .regex(/^\d*$/, { message: "Contact number must be numeric" })
-        .nonempty({ message: "Contact number is required" }),
+        .nonempty({ message: "Required" }),
     emailAddress: z.string().email({ message: "Invalid email address" }),
-    address: z.string().nonempty({ message: "Company address is required" }),
-    productName: z.string().nonempty({ message: "Product name is required" }),
-    amount: z.number().positive({ message: "Product amount is required" }),
+    address: z.string().nonempty({ message: "Required" }),
+    productName: z.string().nonempty({ message: "Required" }),
+    amount: z.number().positive({ message: "Required" }),
     gstNumber: z.string().optional(),
     status: z.enum(["Proposal", "New", "Discussion", "Demo", "Decided"]),
-    date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Deal Date is required" }),
-    endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Final Date is required" }),
+    date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
+    endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
     notes: z.string().optional(),
     isActive: z.boolean(),
 });
@@ -212,7 +213,6 @@ export default function DealTable() {
                 'http://localhost:8000/api/v1/deal/getAllDeals'
             );
 
-            // Log the response structure
             console.log('Full API Response:', {
                 status: response.status,
                 data: response.data,
@@ -220,32 +220,31 @@ export default function DealTable() {
                 hasData: 'data' in response.data
             });
 
-            // Handle the response based on its structure
             let leadsData;
             if (typeof response.data === 'object' && 'data' in response.data) {
-                // Response format: { data: [...leads] }
                 leadsData = response.data.data;
             } else if (Array.isArray(response.data)) {
-                // Response format: [...leads]
                 leadsData = response.data;
             } else {
                 console.error('Unexpected response format:', response.data);
                 throw new Error('Invalid response format');
             }
 
-            // Ensure leadsData is an array
             if (!Array.isArray(leadsData)) {
                 leadsData = [];
             }
 
-            // Map the data with safe key generation
-            const leadsWithKeys = leadsData.map((deal: Deal) => ({
+            const sortedDeals = [...leadsData].sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+
+            const leadsWithKeys = sortedDeals.map((deal: Deal) => ({
                 ...deal,
                 key: deal._id || generateUniqueId()
             }));
 
             setDeals(leadsWithKeys);
-            setError(null); // Clear any previous errors
+            setError(null);
         } catch (error) {
             console.error("Error fetching deals:", error);
             if (axios.isAxiosError(error)) {
@@ -253,7 +252,7 @@ export default function DealTable() {
             } else {
                 setError("Failed to fetch deals.");
             }
-            setDeals([]); // Set empty array on error
+            setDeals([]);
         }
     };
 
@@ -267,14 +266,14 @@ export default function DealTable() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [sortDescriptor, setSortDescriptor] = useState({
-        column: "companyName",
-        direction: "ascending",
+        column: "createdAt",
+        direction: "descending",
     });
     const [page, setPage] = useState(1);
     const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
     const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
 
- 
+
     // Form setup
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -295,184 +294,87 @@ export default function DealTable() {
         },
     })
 
-       const contactformSchema = contactSchema;
-         const contactform = useForm<z.infer<typeof contactSchema>>({
-                resolver: zodResolver(contactSchema),
-                defaultValues: {
-                    companyName: "",
-                    customerName: "",
-                    contactNumber: "",
-                    emailAddress: "",
-                    address: "",
-                    gstNumber: "",
-                    description: "",
-                },
-            });
-    
-        const invoiceformSchema = invoiceSchema;
-        const invoiceform = useForm<z.infer<typeof invoiceSchema>>({
-            resolver: zodResolver(invoiceformSchema),
-            defaultValues: {
-                companyName: "",
-                customerName: "",
-                contactNumber: "",
-                emailAddress: "",
-                address: "",
-                gstNumber: "",
-                productName: "",
-                amount: 0,
-                discount: 0,
-                gstRate: 0,
-                status: "Unpaid",
-                date: new Date(),
-                totalWithoutGst: 0,
-                totalWithGst: 0,
-                paidAmount: "",
-                remainingAmount: 0,
-            }
-        })
-    
-        const handleAddContactClick = (deal: Deal) => {
-            setIsContactFormVisible(true);
-    
-            // Pre-populate the contact form with the lead's information
-            contactform.reset({
-                companyName: deal.companyName,
-                customerName: deal.customerName,
-                contactNumber: deal.contactNumber || "", // Default to empty if not available
-                emailAddress: deal.emailAddress,
-                address: deal.address,
-                gstNumber: deal.gstNumber, // Optional, you can leave this empty or populate based on your needs
-                description: "", // Optional, same as above
-            });
-        };
-    
-        const handleAddInvoice = (deal: Deal) => {
-            setIsInvoiceFormVisible(true);
-    
-            // Pre-populate the invoice form with the lead's information
-            invoiceform.reset({
-                companyName: deal.companyName,
-                customerName: deal.customerName,
-                contactNumber: deal.contactNumber || "",
-                emailAddress: deal.emailAddress,
-                address: deal.address,
-                gstNumber: deal.gstNumber,
-                productName: deal.productName,
-                amount: parseFloat(deal.amount) || 0,
-                discount: 0,
-                gstRate: 0,
-                status: "Unpaid",
-                date: new Date(),
-                totalWithoutGst: 0,
-                totalWithGst: 0,
-                paidAmount: 0,
-                remainingAmount: 0,
-            });
-        };
-    
-        const handleInvoiceSubmit = async (values: z.infer<typeof invoiceSchema>) => {
-            try {
-                setIsSubmitting(true);
-    
-                // Calculate all values
-                const {
-                    totalWithoutGst,
-                    totalWithGst,
-                    remainingAmount
-                } = calculateGST(
-                    values.amount,
-                    values.discount,
-                    values.gstRate,
-                    values.paidAmount
-                );
-    
-                const invoiceData = {
-                    ...values,
-                    totalWithoutGst,
-                    totalWithGst,
-                    remainingAmount,
-                    date: format(values.date, "yyyy-MM-dd")
-                };
-    
-                await axios.post(
-                    "http://localhost:8000/api/v1/invoice/invoiceAdd",
-                    invoiceData
-                );
-    
-                toast({
-                    title: "Invoice Created",
-                    description: "The invoice has been successfully created",
-                });
-    
-                setIsInvoiceFormVisible(false);
-                invoiceform.reset();
-            } catch (error) {
-                console.error("Error creating invoice:", error);
-                toast({
-                    title: "Error",
-                    description: "There was an error creating the invoice",
-                    variant: "destructive",
-                });
-            } finally {
-                setIsSubmitting(false);
-            }
-        };
-    
-        const calculateGST = (
-            amount: number,
-            discount: number,
-            gstRate: number,
-            paidAmount: number
-        ) => {
-            // Subtract the discount from the amount to get the discounted amount
-            const discountedAmount = amount - (amount * (discount / 100));
-            const gstAmount = discountedAmount * (gstRate / 100);
-            const totalWithoutGst = discountedAmount;
-            const totalWithGst = discountedAmount + gstAmount;
-            const remainingAmount = totalWithGst - paidAmount;
-    
-            return {
-                discountedAmount,
-                gstAmount,
-                totalWithoutGst,
-                totalWithGst,
-                remainingAmount
-            };
-        };
-    
-        const handleChange = (
-            e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-        ) => {
-            const { name, value } = e.target;
-            const updatedInvoice = { ...newInvoice, [name]: value };
-    
-            if (
-                name === "amount" ||
-                name === "discount" ||
-                name === "gstRate" ||
-                name === "paidAmount"
-            ) {
-                const { totalWithoutGst, totalWithGst, remainingAmount } = calculateGST(
-                    updatedInvoice.amount,
-                    updatedInvoice.discount,
-                    updatedInvoice.gstRate,
-                    updatedInvoice.paidAmount
-                );
-    
-                setNewInvoice({
-                    ...updatedInvoice,
-                    totalWithoutGst,
-                    totalWithGst,
-                    remainingAmount,
-                });
-            } else {
-                setNewInvoice(updatedInvoice);
-            }
-        };
-    
-        const updateCalculatedFields = () => {
-            const values = invoiceform.getValues();
+    const contactformSchema = contactSchema;
+    const contactform = useForm<z.infer<typeof contactSchema>>({
+        resolver: zodResolver(contactSchema),
+        defaultValues: {
+            companyName: "",
+            customerName: "",
+            contactNumber: "",
+            emailAddress: "",
+            address: "",
+            gstNumber: "",
+            description: "",
+        },
+    });
+
+    const invoiceformSchema = invoiceSchema;
+    const invoiceform = useForm<z.infer<typeof invoiceSchema>>({
+        resolver: zodResolver(invoiceformSchema),
+        defaultValues: {
+            companyName: "",
+            customerName: "",
+            contactNumber: "",
+            emailAddress: "",
+            address: "",
+            gstNumber: "",
+            productName: "",
+            amount: 0,
+            discount: 0,
+            gstRate: 0,
+            status: "Unpaid",
+            date: new Date(),
+            totalWithoutGst: 0,
+            totalWithGst: 0,
+            paidAmount: "",
+            remainingAmount: 0,
+        }
+    })
+
+    const handleAddContactClick = (deal: Deal) => {
+        setIsContactFormVisible(true);
+
+        // Pre-populate the contact form with the lead's information
+        contactform.reset({
+            companyName: deal.companyName,
+            customerName: deal.customerName,
+            contactNumber: deal.contactNumber || "", // Default to empty if not available
+            emailAddress: deal.emailAddress,
+            address: deal.address,
+            gstNumber: deal.gstNumber, // Optional, you can leave this empty or populate based on your needs
+            description: "", // Optional, same as above
+        });
+    };
+
+    const handleAddInvoice = (deal: Deal) => {
+        setIsInvoiceFormVisible(true);
+
+        // Pre-populate the invoice form with the lead's information
+        invoiceform.reset({
+            companyName: deal.companyName,
+            customerName: deal.customerName,
+            contactNumber: deal.contactNumber || "",
+            emailAddress: deal.emailAddress,
+            address: deal.address,
+            gstNumber: deal.gstNumber,
+            productName: deal.productName,
+            amount: parseFloat(deal.amount) || 0,
+            discount: 0,
+            gstRate: 0,
+            status: "Unpaid",
+            date: new Date(),
+            totalWithoutGst: 0,
+            totalWithGst: 0,
+            paidAmount: 0,
+            remainingAmount: 0,
+        });
+    };
+
+    const handleInvoiceSubmit = async (values: z.infer<typeof invoiceSchema>) => {
+        try {
+            setIsSubmitting(true);
+
+            // Calculate all values
             const {
                 totalWithoutGst,
                 totalWithGst,
@@ -483,40 +385,137 @@ export default function DealTable() {
                 values.gstRate,
                 values.paidAmount
             );
-    
-            invoiceform.setValue('totalWithoutGst', totalWithoutGst);
-            invoiceform.setValue('totalWithGst', totalWithGst);
-            invoiceform.setValue('remainingAmount', remainingAmount);
-        };
 
-          const handleContactSubmit = async (values: z.infer<typeof contactSchema>) => {
-                try {
-                    setIsSubmitting(true);
-                    
-                    await axios.post(
-                        "http://localhost:8000/api/v1/contact/createContact",
-                        values
-                    );
-                    
-                    setIsContactFormVisible(false);
-                    contactform.reset();
-                    
-                    toast({
-                        title: "Contact Submitted",
-                        description: "The contact has been successfully created",
-                    });
-                } catch (error) {
-                    console.error("Error saving contact:", error);
-                    toast({
-                        title: "Error",
-                        description: "There was an error creating the contact",
-                        variant: "destructive",
-                    });
-                } finally {
-                    setIsSubmitting(false);
-                }
+            const invoiceData = {
+                ...values,
+                totalWithoutGst,
+                totalWithGst,
+                remainingAmount,
+                date: format(values.date, "yyyy-MM-dd")
             };
-        
+
+            await axios.post(
+                "http://localhost:8000/api/v1/invoice/invoiceAdd",
+                invoiceData
+            );
+
+            toast({
+                title: "Invoice Created",
+                description: "The invoice has been successfully created",
+            });
+
+            setIsInvoiceFormVisible(false);
+            invoiceform.reset();
+        } catch (error) {
+            console.error("Error creating invoice:", error);
+            toast({
+                title: "Error",
+                description: "There was an error creating the invoice",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const calculateGST = (
+        amount: number,
+        discount: number,
+        gstRate: number,
+        paidAmount: number
+    ) => {
+        // Subtract the discount from the amount to get the discounted amount
+        const discountedAmount = amount - (amount * (discount / 100));
+        const gstAmount = discountedAmount * (gstRate / 100);
+        const totalWithoutGst = discountedAmount;
+        const totalWithGst = discountedAmount + gstAmount;
+        const remainingAmount = totalWithGst - paidAmount;
+
+        return {
+            discountedAmount,
+            gstAmount,
+            totalWithoutGst,
+            totalWithGst,
+            remainingAmount
+        };
+    };
+
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    ) => {
+        const { name, value } = e.target;
+        const updatedInvoice = { ...newInvoice, [name]: value };
+
+        if (
+            name === "amount" ||
+            name === "discount" ||
+            name === "gstRate" ||
+            name === "paidAmount"
+        ) {
+            const { totalWithoutGst, totalWithGst, remainingAmount } = calculateGST(
+                updatedInvoice.amount,
+                updatedInvoice.discount,
+                updatedInvoice.gstRate,
+                updatedInvoice.paidAmount
+            );
+
+            setNewInvoice({
+                ...updatedInvoice,
+                totalWithoutGst,
+                totalWithGst,
+                remainingAmount,
+            });
+        } else {
+            setNewInvoice(updatedInvoice);
+        }
+    };
+
+    const updateCalculatedFields = () => {
+        const values = invoiceform.getValues();
+        const {
+            totalWithoutGst,
+            totalWithGst,
+            remainingAmount
+        } = calculateGST(
+            values.amount,
+            values.discount,
+            values.gstRate,
+            values.paidAmount
+        );
+
+        invoiceform.setValue('totalWithoutGst', totalWithoutGst);
+        invoiceform.setValue('totalWithGst', totalWithGst);
+        invoiceform.setValue('remainingAmount', remainingAmount);
+    };
+
+    const handleContactSubmit = async (values: z.infer<typeof contactSchema>) => {
+        try {
+            setIsSubmitting(true);
+
+            await axios.post(
+                "http://localhost:8000/api/v1/contact/createContact",
+                values
+            );
+
+            setIsContactFormVisible(false);
+            contactform.reset();
+
+            toast({
+                title: "Contact Submitted",
+                description: "The contact has been successfully created",
+            });
+        } catch (error) {
+            console.error("Error saving contact:", error);
+            toast({
+                title: "Error",
+                description: "There was an error creating the contact",
+                variant: "destructive",
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
@@ -532,10 +531,16 @@ export default function DealTable() {
                 const searchableFields = {
                     companyName: Deals.companyName,
                     customerName: Deals.customerName,
+                    contactNumber: Deals.contactNumber,
                     emailAddress: Deals.emailAddress,
+                    address: Deals.address,
+                    gstNumber: Deals.gstNumber,
                     productName: Deals.productName,
-                    status: Deals.status,
+                    amount: Deals.amount,
+                    date: Deals.date,
+                    endDate: Deals.endDate,
                     notes: Deals.notes,
+                    status: Deals.status,
                 };
 
                 return Object.values(searchableFields).some(value =>
@@ -931,9 +936,16 @@ export default function DealTable() {
                 </div>
             </div>
 
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
-                    sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsDeleteDialogOpen(false);
+                }
+            }}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
@@ -965,9 +977,9 @@ export default function DealTable() {
                 }
             }}>
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
-                onInteractOutside={(e) => {
-                    e.preventDefault();
-                }}
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
                 >
                     <DialogHeader>
                         <DialogTitle>Update Deal</DialogTitle>
@@ -1097,7 +1109,7 @@ export default function DealTable() {
                                     name="gstNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Number (Optional) </FormLabel>
+                                            <FormLabel>GST Number (Optional)</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="Enter GST number" {...field} />
                                             </FormControl>
@@ -1231,9 +1243,9 @@ export default function DealTable() {
                 }
             }}>
                 <DialogContent className="w-[100vw] max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
-                onInteractOutside={(e) => {
-                    e.preventDefault();
-                }}
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
                 >
                     <DialogHeader>
                         <DialogTitle>Create Contact</DialogTitle>
@@ -1396,9 +1408,9 @@ export default function DealTable() {
                 }
             }}>
                 <DialogContent className="w-[100vw] max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
-                onInteractOutside={(e) => {
-                    e.preventDefault();
-                }}
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
                 >
                     <DialogHeader>
                         <DialogTitle>Create Invoice</DialogTitle>
@@ -1544,7 +1556,7 @@ export default function DealTable() {
                                                     placeholder="Enter amount"
                                                     {...field}
                                                     onChange={(e) => {
-                                                        const value = e.target.valueAsNumber || 0;
+                                                        const value = e.target.valueAsNumber || "";
                                                         field.onChange(value);
                                                         updateCalculatedFields();
                                                     }}
@@ -1560,14 +1572,14 @@ export default function DealTable() {
                                     name="discount"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Discount (%) (Optional)</FormLabel>
+                                            <FormLabel>Discount (%)</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     type="number"
                                                     placeholder="Enter discount"
                                                     {...field}
                                                     onChange={(e) => {
-                                                        const value = e.target.valueAsNumber || 0;
+                                                        const value = e.target.valueAsNumber || "";
                                                         field.onChange(value);
                                                         updateCalculatedFields();
                                                     }}
@@ -1583,7 +1595,7 @@ export default function DealTable() {
                                     name="gstRate"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Rate (%) (Optional)</FormLabel>
+                                            <FormLabel>GST Rate (%)</FormLabel>
                                             <FormControl>
                                                 <select
                                                     {...field}
@@ -1599,6 +1611,7 @@ export default function DealTable() {
                                                     <option value="12">12%</option>
                                                     <option value="18">18%</option>
                                                     <option value="28">28%</option>
+                                                    <option value="35">35%</option>
                                                 </select>
                                             </FormControl>
                                             <FormMessage />
@@ -1618,7 +1631,7 @@ export default function DealTable() {
                                                     placeholder="Enter paid amount"
                                                     {...field}
                                                     onChange={(e) => {
-                                                        const value = e.target.valueAsNumber || 0;
+                                                        const value = e.target.valueAsNumber || "";
                                                         field.onChange(value);
                                                         updateCalculatedFields();
                                                     }}
@@ -1672,32 +1685,31 @@ export default function DealTable() {
                                 <FormField
                                     control={invoiceform.control}
                                     name="date"
-                                              render={({ field }) => (
-                                                <div className="form-group">
-                                                  <label htmlFor="date" className="text-sm font-medium text-gray-700">
-                                                    Invoice Date
-                                                  </label>
-                                                  <input
-                                                    type="date"
-                                                    name="date"
-                                                    id="date"
-                                                    value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
-                                                    onChange={(e) => field.onChange(new Date(e.target.value))}
-                                                    className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
-                                                    required
-                                                />
-                                                <style>
-                                                    {`
-                                                .custom-input:focus {
-                                                    border-color: black !important;
-                                                    box-shadow: none !important;
-                                                    outline: none !important;
-                                                }
-                                                `}
-                                                </style>
-                                                </div>
-                                              )}
-                                  
+                                    render={({ field }) => (
+                                        <div className="form-group">
+                                            <label htmlFor="date" className="text-sm font-medium text-gray-700">
+                                                Invoice Date
+                                            </label>
+                                            <input
+                                                type="date"
+                                                name="endDate"
+                                                id="endDate"
+                                                value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
+                                                onChange={(e) => field.onChange(new Date(e.target.value))}
+                                                className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
+                                                required
+                                            />
+                                            <style>
+                                                {`
+                                            .custom-input:focus {
+                                                border-color: black !important;
+                                                box-shadow: none !important;
+                                                outline: none !important;
+                                            }
+                                            `}
+                                            </style>
+                                        </div>
+                                    )}
                                 />
                             </div>
 

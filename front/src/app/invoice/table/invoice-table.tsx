@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
+import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon, Printer } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
@@ -36,11 +36,12 @@ interface Invoice {
     totalWithGst: number;
     paidAmount: number;
     remainingAmount: number;
+    createdAt: string;
 }
 
 export const invoiceSchema = z.object({
-    companyName: z.string().nonempty({ message: "Company name is required" }),
-    customerName: z.string().nonempty({ message: "Customer name is required" }),
+    companyName: z.string().nonempty({ message: "Required" }),
+    customerName: z.string().nonempty({ message: "Required" }),
     contactNumber: z
         .string()
         .regex(/^\d*$/, { message: "Contact number must be numeric" })
@@ -48,16 +49,16 @@ export const invoiceSchema = z.object({
     emailAddress: z.string().optional(),
     address: z.string().optional(),
     gstNumber: z.string().optional(),
-    productName: z.string().nonempty({ message: "Product name is required" }),
-    amount: z.coerce.number().positive({ message: "Product amount is required" }),
-    discount: z.coerce.number().optional(),
-    gstRate: z.coerce.number().optional(),
+    productName: z.string().nonempty({ message: "Required" }),
+    amount: z.number().positive({ message: "Required" }),
+    discount: z.number().optional(),
+    gstRate: z.number().optional(),
     status: z.enum(["Paid", "Unpaid"]),
-    date: z.coerce.date({ message: "Invoice Date is required" }),
-    paidAmount: z.coerce.number().optional(),
-    remainingAmount: z.coerce.number().optional(),
-    totalWithoutGst: z.coerce.number().optional(),
-    totalWithGst: z.coerce.number().optional(),
+    date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
+    paidAmount: z.number().optional(),
+    remainingAmount: z.number().optional(),
+    totalWithoutGst: z.number().optional(),
+    totalWithGst: z.number().optional(),
 });
 
 const generateUniqueId = () => {
@@ -116,24 +117,49 @@ export default function InvoiceTable() {
     const fetchInvoices = async () => {
         setIsLoading(true);
         try {
-            const response = await axios.get("http://localhost:8000/api/v1/invoice/getAllInvoices");
-            const invoicesData = Array.isArray(response.data) ? response.data : response.data.data || [];
-            setInvoices(invoicesData);
+            const response = await axios.get(
+                "http://localhost:8000/api/v1/invoice/getAllInvoices"
+            );
+
+            let invoicesData;
+            if (typeof response.data === 'object' && 'data' in response.data) {
+                invoicesData = response.data.data;
+            } else if (Array.isArray(response.data)) {
+                invoicesData = response.data;
+            } else {
+                console.error('Unexpected response format:', response.data);
+                throw new Error('Invalid response format');
+            }
+
+            if (!Array.isArray(invoicesData)) {
+                invoicesData = [];
+            }
+
+            const sortedInvoices = [...invoicesData].sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+
+            const invoicesWithKeys = sortedInvoices.map((invoice: Invoice) => ({
+                ...invoice,
+                key: invoice._id || generateUniqueId()
+            }));
+
+            setInvoices(invoicesWithKeys);
             setError(null);
         } catch (error) {
             console.error("Error fetching invoices:", error);
-            setError(error instanceof Error ? error.message : "Failed to fetch invoices");
+            if (axios.isAxiosError(error)) {
+                setError(`Failed to fetch invoices: ${error.response?.data?.message || error.message}`);
+            } else {
+                setError("Failed to fetch invoice.");
+            }
             setInvoices([]);
-        } finally {
-            setIsLoading(false);
         }
     };
-
 
     useEffect(() => {
         fetchInvoices();
     }, []);
-
 
     const [isAddNewOpen, setIsAddNewOpen] = useState(false);
     const [filterValue, setFilterValue] = useState("");
@@ -143,13 +169,178 @@ export default function InvoiceTable() {
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [currentPage, setCurrentPage] = useState(1);
     const [sortDescriptor, setSortDescriptor] = useState({
-        column: "companyName",
-        direction: "ascending",
+        column: "createdAt",
+        direction: "descending",
     });
     const [page, setPage] = useState(1);
 
+    const fetchBase64Image = async (imageUrl: string): Promise<string> => {
+        try {
+            console.log("Fetching logo from:", imageUrl);
+            const response = await fetch(imageUrl);
+            if (!response.ok) throw new Error("Failed to fetch image");
 
+            const blob = await response.blob();
+            return new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+        } catch (error) {
+            console.error("Error loading image:", error);
+            return "";
+        }
+    };
 
+    const printInvoice = async (invoiceId: string) => {
+        try {
+            // Fetch owner details
+            const ownerResponse = await fetch("http://localhost:8000/api/v1/owner/getOwnerForInvoice");
+            const ownerResult = await ownerResponse.json();
+            if (!ownerResponse.ok) throw new Error(ownerResult.message);
+
+            const owner = ownerResult.data;
+
+            // Fetch the logo (convert to Base64)
+            let ownerLogoBase64 = "";
+            if (owner.logo) {
+                const imageUrl = `http://localhost:8000/uploads/${currentOwner.logo}`;
+                ownerLogoBase64 = await fetchBase64Image(imageUrl);
+                console.log("Base64 Encoded Logo:", ownerLogoBase64 ? "Logo loaded successfully" : "Failed to load logo");
+            }
+
+            // Find the invoice
+            const invoiceToPrint = invoices.find((invoice) => invoice._id === invoiceId);
+            if (!invoiceToPrint) {
+                console.error("Invoice not found");
+                return;
+            }
+
+            // Extract invoice details
+            const { companyName, customerName, contactNumber, emailAddress, address, productName, amount, discount, totalWithoutGst, totalWithGst, paidAmount, remainingAmount, } = invoiceToPrint;
+
+            const gstAmount = totalWithGst - totalWithoutGst;
+            const cgst = gstAmount / 2;
+            const sgst = cgst;
+
+            // Generate Invoice HTML
+            const invoiceContent = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Invoice</title>
+                    <style>
+                        body { font-family: 'Arial', sans-serif; background-color: #f4f4f9; padding: 20px; }
+                        .invoice-container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); }
+                        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #004080; padding-bottom: 15px; }
+                        .header h1 { color: #004080; font-size: 28px; }
+                        .company-info, .client-info { margin-top: 20px; }
+                        .company-info p, .client-info p { margin: 4px 0; }
+                        .table-container { margin-top: 20px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+                        th { background-color: #004080; color: white; }
+                        .total-section { text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold; }
+                        .footer { margin-top: 30px; text-align: center; font-size: 14px; color: #666; }
+                        .logo-container { text-align: right; margin-bottom: 10px; }
+                        .logo-container img { max-width: 150px; height: auto; display: block; }
+                    </style>
+                </head>
+                <body>
+                    <div class="invoice-container">
+                        <div class="header">
+                            <h1>INVOICE</h1>
+                            <div>
+                                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="company-info">
+                            <h3>Company Information</h3>
+                            <div class="logo-container">
+                                ${ownerLogoBase64 ? `<img id="logo-img" src="${ownerLogoBase64}" style="width: 150px; height: auto;">` : ""}
+                            </div>
+                            <p><strong>${owner.companyName ?? "N/A"}</strong></p>
+                            <p>${owner.contactNumber ?? "N/A"} | ${owner.emailAddress ?? "N/A"}</p>
+                            <p>GST No: ${owner.gstNumber ?? "N/A"}</p>
+                        </div>
+                        
+                        <div class="client-info">
+                            <h3>Invoice To:</h3>
+                            <p><strong>Company Name: ${companyName}</strong></p>
+                            <p>Customer Name: ${customerName}</p>
+                            <p>Email: ${emailAddress}</p>
+                            <p>Contact Number: ${contactNumber}</p>
+                            <p>Address: ${address}</p>
+                        </div>
+                        
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Price (₹)</th>
+                                        <th>Discount (%)</th>
+                                        <th>Total (₹)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>${productName}</td>
+                                        <td>${amount.toFixed(2)}</td>
+                                        <td>${discount}</td>
+                                        <td>${totalWithoutGst.toFixed(2)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="total-section">
+                            <p>GST (CGST + SGST): ₹${(cgst + sgst).toFixed(2)}</p>
+                            <p>Grand Total: ₹${totalWithGst.toFixed(2)}</p>
+                            <p>Paid: ₹${paidAmount.toFixed(2)}</p>
+                            <p>Remaining: ₹${remainingAmount.toFixed(2)}</p>
+                        </div>
+                        
+                        <div class="footer">
+                            <p>Thank you for your business!</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            // Create an iframe for printing
+            const iframe = document.createElement("iframe");
+            document.body.appendChild(iframe);
+            const doc = iframe.contentWindow?.document;
+            if (!doc) return;
+
+            doc.open();
+            doc.write(invoiceContent);
+            doc.close();
+
+            // Wait for the logo to load, then print
+            const logoImg = doc.getElementById("logo-img") as HTMLImageElement;
+            if (logoImg) {
+                logoImg.onload = () => {
+                    setTimeout(() => {
+                        iframe.contentWindow?.print();
+                        document.body.removeChild(iframe);
+                    }, 1000); // Increased delay for better loading
+                };
+            } else {
+                setTimeout(() => {
+                    iframe.contentWindow?.print();
+                    document.body.removeChild(iframe);
+                }, 1000);
+            }
+        } catch (error) {
+            console.error("Error generating invoice:", error);
+        }
+    };
 
 
     const form = useForm<z.infer<typeof formSchema>>({
@@ -368,6 +559,14 @@ export default function InvoiceTable() {
                                 onClick={() => handleDeleteClick(invoice)}
                             >
                                 <Trash2 className="h-4 w-4" />
+                            </span>
+                        </Tooltip>
+                        <Tooltip color="danger">
+                            <span
+                                className="text-lg text-danger cursor-pointer active:opacity-50"
+                                onClick={() => printInvoice(invoice._id)}  // Ensure this triggers the print function
+                            >
+                                <Printer className="h-4 w-4" />
                             </span>
                         </Tooltip>
                     </div>
@@ -621,16 +820,16 @@ export default function InvoiceTable() {
                     </div>
                 </div>
             </div>
-            
+
             <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
                 if (!open) {
                     setIsEditDialogOpen(false);
                 }
             }}>
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
-                onInteractOutside={(e) => {
-                    e.preventDefault();
-                }}
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
                 >
                     <DialogHeader>
                         <DialogTitle>Update Invoice</DialogTitle>
@@ -767,7 +966,7 @@ export default function InvoiceTable() {
                                     name="discount"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Discount (Optional)</FormLabel>
+                                            <FormLabel>Discount (%)</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="Enter discount" type="number" {...field} />
                                             </FormControl>
@@ -780,7 +979,7 @@ export default function InvoiceTable() {
                                     name="gstRate"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Rate (Optional)</FormLabel>
+                                            <FormLabel>GST Rate (%)</FormLabel>
                                             <FormControl>
                                                 <select
                                                     {...field}
@@ -897,9 +1096,16 @@ export default function InvoiceTable() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
-        sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsDeleteDialogOpen(false);
+                }
+            }}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">

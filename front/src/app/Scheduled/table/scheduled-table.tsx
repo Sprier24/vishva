@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from 
 import axios from "axios";
 import { format } from "date-fns"
 import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar"
 
@@ -30,6 +30,7 @@ interface ScheduledEvents {
     description: string;
     recurrence: string;
     date: string;
+    createdAt: string;
 }
 
 const generateUniqueId = () => {
@@ -38,10 +39,10 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');  
-    const month = String(date.getMonth() + 1).padStart(2, '0');  
-    const year = date.getFullYear();  
-    return `${day}/${month}/${year}`;  
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 };
 
 const columns = [
@@ -66,14 +67,14 @@ const columns = [
 const INITIAL_VISIBLE_COLUMNS = ["subject", "assignedUser", "customer", "location", "status", "eventType", "priority", "description", "recurrence", "date", "actions"];
 
 const eventSchema = z.object({
-    subject: z.string().min(2, { message: "Subject is required." }),
+    subject: z.string().nonempty({ message: "Required" }),
     assignedUser: z.string().optional(),
     location: z.string().optional(),
     customer: z.string().optional(),
-    eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "Follow-Up", "follow-up"], { message: "Event type is required." }),
-    recurrence: z.enum(["one-time", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Recurrence is required." }),
-    status: z.enum(["Scheduled", "Completed", "Cancelled", "Postpone"], { message: "Status is required." }),
-    priority: z.enum(["Low", "low", "Medium", "medium", "High", "high"], { message: "Priority is required." }),
+    eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "Follow-Up", "follow-up"], { message: "Required" }),
+    recurrence: z.enum(["one-time", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
+    status: z.enum(["Scheduled", "Completed", "Cancelled", "Postpone"], { message: "Required" }),
+    priority: z.enum(["Low", "low", "Medium", "medium", "High", "high"], { message: "Required" }),
     date: z.date().optional(),
     description: z.string().optional(),
 });
@@ -91,40 +92,31 @@ export default function ScheduledEvents() {
                 `http://localhost:8000/api/v1/scheduledevents/getAllScheduledEvents`
             );
 
-            // Log the response structure
-            console.log('Full API Response:', {
-                status: response.status,
-                data: response.data,
-                type: typeof response.data,
-                hasData: 'data' in response.data
-            });
-
-            // Handle the response based on its structure
             let scheduledEventsData;
             if (typeof response.data === 'object' && 'data' in response.data) {
-                // Response format: { data: [...leads] }
                 scheduledEventsData = response.data.data;
             } else if (Array.isArray(response.data)) {
-                // Response format: [...leads]
                 scheduledEventsData = response.data;
             } else {
                 console.error('Unexpected response format:', response.data);
                 throw new Error('Invalid response format');
             }
 
-            // Ensure leadsData is an array
             if (!Array.isArray(scheduledEventsData)) {
                 scheduledEventsData = [];
             }
 
-            // Map the data with safe key generation
-            const ScheduledEventsWithKeys = scheduledEventsData.map((scheduledEvents: ScheduledEvents) => ({
+            const sortedSchedules = [...scheduledEventsData].sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+
+            const ScheduledEventsWithKeys = sortedSchedules.map((scheduledEvents: ScheduledEvents) => ({
                 ...scheduledEvents,
-                key: scheduledEvents.id || generateUniqueId()
+                key: scheduledEvents._id || generateUniqueId()
             }));
 
             setScheduledEvents(ScheduledEventsWithKeys);
-            setError(null); // Clear any previous errors
+            setError(null);
         } catch (error) {
             console.error("Error fetching ScheduledEvents:", error);
             if (axios.isAxiosError(error)) {
@@ -146,8 +138,8 @@ export default function ScheduledEvents() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [sortDescriptor, setSortDescriptor] = useState({
-        column: "companyName",
-        direction: "ascending",
+        column: "createdAt",
+        direction: "descending",
     });
     const [page, setPage] = useState(1);
 
@@ -189,7 +181,7 @@ export default function ScheduledEvents() {
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; 
+        if (visibleColumns.size === columns.length) return columns;
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
@@ -596,9 +588,9 @@ export default function ScheduledEvents() {
                 }
             }}>
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
-                onInteractOutside={(e) => {
-                    e.preventDefault();
-                }}
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
                 >
                     <DialogHeader>
                         <DialogTitle>Update Event or Meeting</DialogTitle>
@@ -818,9 +810,16 @@ export default function ScheduledEvents() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
-                    sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsDeleteDialogOpen(false);
+                }
+            }}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">

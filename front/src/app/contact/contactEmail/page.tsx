@@ -207,20 +207,20 @@ const sendEmail = async () => {
                 )}
 
                 
-                <div className="p-6 w-full max-w-lg mx-auto">
+                <div className="p-6 w-full mx-auto">
                     <Card className="border border-gray-300 shadow-md rounded-lg">
                         <CardContent className="p-6 space-y-4">
                             <h2 className="text-lg font-semibold">New Message</h2>
                             <Separator className="my-2 border-gray-300" />
                             <div className="flex items-center space-x-4">
                                 <label className="text-sm font-medium w-20">To:</label>
-                                <Input type="email" placeholder="Recipient's email" value={to} onChange={(e) => setTo(e.target.value)} />
+                                <Input type="email" placeholder="" value={to} onChange={(e) => setTo(e.target.value)} />
                             </div>
                             <div className="flex items-center space-x-4">
                                 <label className="text-sm font-medium w-20">Subject:</label>
-                                <Input type="text" placeholder="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
+                                <Input type="text" placeholder="" value={subject} onChange={(e) => setSubject(e.target.value)} />
                             </div>
-                            <div className="border border-gray-300 rounded-md h-40 p-2 overflow-y-auto" contentEditable ref={messageRef} />  {attachments.length > 0 && (
+                            <div className="border border-gray-300 rounded-md h-60 p-2 overflow-y-auto" contentEditable ref={messageRef} />  {attachments.length > 0 && (
                                 <div className="mt-2 border border-gray-300 rounded-md p-2">
                                     <h4 className="text-sm font-medium">Attachments:</h4>
                                     <ul className="space-y-1">

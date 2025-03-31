@@ -12,15 +12,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useRouter } from "next/navigation";
 
 const contactSchema = z.object({
-  companyName: z.string().nonempty({ message: "Company name is required." }),
-  customerName: z.string().nonempty({ message: "Customer name is required." }),
+  companyName: z.string().nonempty({ message: "Required" }),
+  customerName: z.string().nonempty({ message: "Required" }),
   contactNumber: z
     .string()
     .regex(/^\d*$/, { message: "Contact number must be numeric" })
-    .nonempty({ message: "Contact number is required" }),
-  emailAddress: z.string().email({ message: "Invalid email address." }),
-  address: z.string().nonempty({ message: "Company address is required." }),
-  gstNumber: z.string().nonempty({ message: "GST number is required." }),
+    .nonempty({ message: "Required" }),
+  emailAddress: z.string().email({ message: "Required" }),
+  address: z.string().nonempty({ message: "Required" }),
+  gstNumber: z.string().nonempty({ message: "Required" }),
   description: z.string().optional(),
 });
 

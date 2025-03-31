@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { LuLoader } from "react-icons/lu";
 
 // Enhanced form schema with better validation
 const formSchema = z.object({
@@ -66,6 +67,7 @@ const NewProfile: React.FC = () => {
   const router = useRouter();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -179,7 +181,7 @@ const NewProfile: React.FC = () => {
         title: "Profile Created",
         description: "Your profile has been created successfully.",
       });
-  
+      setIsRedirecting(true);
       router.push("/dashboard");
     } catch (error) {
       console.error("Error submitting profile:", error);
@@ -194,6 +196,12 @@ const NewProfile: React.FC = () => {
   };
   
   return (
+    <div >
+            {isRedirecting ? (
+          <div className="flex items-center justify-center h-screen">
+            <LuLoader  className="animate-spin text-gray-600 dark:text-gray-300" size={50} />
+          </div>
+        ) : (
     <div style={{ display: 'flex', flexDirection: 'column', padding: '50px', height: '100vh' }}>
       {/* Centered Header */}
       <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold', textAlign: 'center' }}>Create Profile</h1>
@@ -472,6 +480,8 @@ const NewProfile: React.FC = () => {
         </form>
       </Form>
     </div>
+        )}
+        </div>
   );
 };
 

@@ -16,10 +16,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const taskSchema = z.object({
-  subject: z.string().nonempty({ message: "Subject is required." }),
-  relatedTo: z.string().nonempty({ message: "Related to  is required." }),
-  name: z.string().nonempty({ message: "Name is required." }),
-  assigned: z.string().nonempty({ message: "Assigned By is required." }),
+  subject: z.string().nonempty({ message: "Required" }),
+  relatedTo: z.string().nonempty({ message: "Required" }),
+  name: z.string().nonempty({ message: "Required" }),
+  assigned: z.string().nonempty({ message: "Required" }),
   date: z.date().optional(),
   endDate: z.date().optional(),
   status: z.enum(["Pending", "Resolved", "InProgress"]),

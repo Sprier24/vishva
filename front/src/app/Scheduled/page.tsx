@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
-import { Calendar1 } from "lucide-react"
+import { Calendar1, Mail } from "lucide-react"
 
 export default function CertificatePage() {
     return (
@@ -18,19 +18,19 @@ export default function CertificatePage() {
                         <SidebarTrigger className="-ml-1" />
                         <Separator orientation="vertical" className="mr-2 h-4" />
                         <Breadcrumb>
-                        <BreadcrumbList className="flex items-center space-x-2">
-                            <BreadcrumbItem className="hidden sm:block md:block">
-                            <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-                            </BreadcrumbItem>
+                            <BreadcrumbList className="flex items-center space-x-2">
+                                <BreadcrumbItem className="hidden sm:block md:block">
+                                    <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                                </BreadcrumbItem>
 
-                            <BreadcrumbSeparator className="hidden sm:block md:block"/>
+                                <BreadcrumbSeparator className="hidden sm:block md:block" />
 
-                            <BreadcrumbItem className="hidden sm:block md:block">
-                            <BreadcrumbLink href="/Scheduled/table">Event or Meeting</BreadcrumbLink>
-                            </BreadcrumbItem>
+                                <BreadcrumbItem className="hidden sm:block md:block">
+                                    <BreadcrumbLink href="/Scheduled/table">Event or Meeting</BreadcrumbLink>
+                                </BreadcrumbItem>
 
-                            <BreadcrumbSeparator className="hidden sm:block md:block"/>
-                                <span  className="hidden sm:block md:block">
+                                <BreadcrumbSeparator className="hidden sm:block md:block" />
+                                <span className="hidden sm:block md:block">
                                     Create Event or Meeting
                                 </span>
                             </BreadcrumbList>
@@ -40,11 +40,21 @@ export default function CertificatePage() {
                         <div  >
                             <SearchBar />
                         </div>
-                        <a href="/calendar">
-                            <div>
-                                <Calendar1 />
+                        <a href="/email" className="relative group">
+                            <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+                            <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                Email
                             </div>
                         </a>
+
+                        {/* Calendar Icon with Tooltip */}
+                        <a href="/calendar" className="relative group">
+                            <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+                            <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                Calendar
+                            </div>
+                        </a>
+
                         <div>
                             <Notification />
                         </div>
@@ -54,9 +64,7 @@ export default function CertificatePage() {
                     <Card className="max-w-8xl mx-auto border-none shadow-none">
                         <CardHeader>
                             <CardTitle className="text-3xl font-bold text-center">Create Event or Meeting</CardTitle>
-                            <CardDescription className="text-center">
-                                Make event or meeting, hosted by you or client / customer
-                            </CardDescription>
+                            <h1 className="text-1xl mb-4 mt-4 text-center"> Make event or meeting, hosted by you or client / customer</h1>
                         </CardHeader>
                         <CardContent>
                             <ScheduledEventForm />

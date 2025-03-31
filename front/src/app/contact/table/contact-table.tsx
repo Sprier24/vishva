@@ -27,6 +27,7 @@ interface Contact {
     address: string;
     gstNumber: string;
     description: string;
+    createdAt: string;
 }
 
 const generateUniqueId = () => {
@@ -53,15 +54,15 @@ const columns = [
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "contactNumber", "emailAddress", "address", "gstNumber", "description", "actions"];
 
 const contactSchema = z.object({
-    companyName: z.string().min(2, { message: "Company name is required." }),
-    customerName: z.string().min(2, { message: "Customer name is required." }),
+    companyName: z.string().nonempty({ message: "Required" }),
+    customerName: z.string().nonempty({ message: "Required" }),
     contactNumber: z
         .string()
         .regex(/^\d*$/, { message: "Contact number must be numeric" })
-        .nonempty({ message: "Contact number is required" }),
-    emailAddress: z.string().email({ message: "Invalid email address." }),
-    address: z.string().min(2, { message: "Company address is required." }),
-    gstNumber: z.string().min(1, { message: "GST number is required." }),
+        .nonempty({ message: "Required" }),
+    emailAddress: z.string().email({ message: "Required" }),
+    address: z.string().nonempty({ message: "Required" }),
+    gstNumber: z.string().nonempty({ message: "Required" }),
     description: z.string().optional(),
 });
 
@@ -78,7 +79,6 @@ export default function ContactTable() {
                 "http://localhost:8000/api/v1/contact/getallContacts"
             );
 
-            // Log the response structure
             console.log('Full API Response:', {
                 status: response.status,
                 data: response.data,
@@ -86,7 +86,6 @@ export default function ContactTable() {
                 hasData: 'data' in response.data
             });
 
-            // Handle the response based on its structure
             let TaskData;
             if (typeof response.data === 'object' && 'data' in response.data) {
 
@@ -99,19 +98,21 @@ export default function ContactTable() {
                 throw new Error('Invalid response format');
             }
 
-            // Ensure leadsData is an array
             if (!Array.isArray(TaskData)) {
                 TaskData = [];
             }
 
-            // Map the data with safe key generation
-            const ContactWithKeys = TaskData.map((contact: Contact) => ({
+            const sortedContacts = [...TaskData].sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+
+            const ContactWithKeys = sortedContacts.map((contact: Contact) => ({
                 ...contact,
                 key: contact._id || generateUniqueId()
             }));
 
             setContact(ContactWithKeys);
-            setError(null); // Clear any previous errors
+            setError(null);
         } catch (error) {
             console.error("Error fetching Contacts:", error);
             if (axios.isAxiosError(error)) {
@@ -119,7 +120,7 @@ export default function ContactTable() {
             } else {
                 setError("Failed to fetch Contacts.");
             }
-            setContact([]); // Set empty array on error
+            setContact([]);
         }
     };
 
@@ -133,8 +134,8 @@ export default function ContactTable() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [sortDescriptor, setSortDescriptor] = useState({
-        column: "subject",
-        direction: "ascending",
+        column: "createdAt",
+        direction: "descending",
     });
     const [page, setPage] = useState(1);
 
@@ -558,12 +559,12 @@ export default function ContactTable() {
                 </div>
             </div>
 
-                <Dialog open={isEditOpen} onOpenChange={(open) => {
-                    if (!open) {
-                        setIsEditOpen(false);
-                        }
-                }}>                
-                    <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+            <Dialog open={isEditOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsEditOpen(false);
+                }
+            }}>
+                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
                     onInteractOutside={(e) => {
                         e.preventDefault();
                     }}>
@@ -693,9 +694,15 @@ export default function ContactTable() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsDeleteDialogOpen(false);
+                }
+            }}>
                 <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]"
-                
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
                 >
                     <DialogHeader>
                         <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>

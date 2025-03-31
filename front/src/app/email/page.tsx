@@ -149,11 +149,7 @@ const EmailInput: React.FC = () => {
                                     <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator className="hidden sm:block md:block" />
-                                <BreadcrumbItem className="hidden sm:block md:block">
-                                    <BreadcrumbLink href="/reminder/table">Reminder</BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden sm:block md:block" />
-                                <span className="hidden sm:block md:block">Reminder Email</span>
+                                <span className="hidden sm:block md:block">Email</span>
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>

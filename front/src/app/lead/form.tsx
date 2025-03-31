@@ -16,20 +16,20 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const formSchema = z.object({
-    companyName: z.string().nonempty({ message: "Company name is required" }),
-    customerName: z.string().nonempty({ message: "Customer name is required" }),
+    companyName: z.string().nonempty({ message: "Required" }),
+    customerName: z.string().nonempty({ message: "Required" }),
     contactNumber: z
         .string()
         .regex(/^\d*$/, { message: "Contact number must be numeric" })
-        .nonempty({ message: "Contact number is required" }),
+        .nonempty({ message: "Required" }),
     emailAddress: z.string().email({ message: "Invalid email address" }),
-    address: z.string().nonempty({ message: "Company address is required" }),
-    productName: z.string().nonempty({ message: "Product name is required" }),
-    amount: z.number().positive({ message: "Product amount is required" }),
+    address: z.string().nonempty({ message: "Required" }),
+    productName: z.string().nonempty({ message: "Required" }),
+    amount: z.number().positive({ message: "Required" }),
     gstNumber: z.string().optional(),
     status: z.enum(["Proposal", "New", "Discussion", "Demo", "Decided"]),
-    date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Lead Date is required" }),
-    endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Final Date is required" }),
+    date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
+    endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
     notes: z.string().optional(),
     isActive: z.boolean(),
 });

@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
-import { Calendar1 } from "lucide-react";
+import { Calendar1, Mail } from "lucide-react";
 import Select from "react-select";
 
 interface Event {
@@ -150,23 +150,20 @@ export default function CalendarPage() {
       days.push(
         <div
           key={day}
-          className={`p-1 xs:p-2 sm:p-3 md:p-4 lg:p-5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors ${
-            isToday ? 'relative bg-blue-50' : ''
-          }`}
+          className={`p-1 xs:p-2 sm:p-3 md:p-4 lg:p-5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors ${isToday ? 'relative bg-blue-50' : ''
+            }`}
         >
           <div
-            className={`font-bold text-center ${
-              isToday ? 'flex items-center justify-center w-6 h-6 bg-blue-500 text-white rounded-full mx-auto' : ''
-            }`}
+            className={`font-bold text-center ${isToday ? 'flex items-center justify-center w-6 h-6 bg-blue-500 text-white rounded-full mx-auto' : ''
+              }`}
           >
             {day}
           </div>
           {dayEvents.map((event) => (
             <div
               key={event._id}
-              className={`${
-                calendars.find((cal) => cal.id === event.calendarId)?.color
-              } text-white p-1 mb-1 rounded cursor-pointer text-sm leading-tight truncate hover:opacity-90 transition-opacity`}
+              className={`${calendars.find((cal) => cal.id === event.calendarId)?.color
+                } text-white p-1 mb-1 rounded cursor-pointer text-sm leading-tight truncate hover:opacity-90 transition-opacity`}
               style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
               onClick={() => {
                 setSelectedEvent(event);
@@ -252,6 +249,11 @@ export default function CalendarPage() {
             <div>
               <SearchBar />
             </div>
+            <a href="/email">
+              <div>
+                <Mail />
+              </div>
+            </a>
             <div>
               <Notification />
             </div>
@@ -324,19 +326,6 @@ const EventModal = ({ event, onSave, onClose, onDelete, calendars }: { event: Ev
   const [date, setDate] = useState<string>(event ? new Date(event.date).toISOString().split('T')[0] : '');
   const [calendarId, setCalendarId] = useState<number>(event ? event.calendarId : calendars[0].id);
   const modalRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [onClose]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

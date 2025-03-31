@@ -34,6 +34,7 @@ interface Lead {
     endDate: string;
     notes: string;
     isActive: string;
+    createdAt: string;
 }
 
 interface Contact {
@@ -67,8 +68,8 @@ interface Invoice {
 }
 
 export const invoiceSchema = z.object({
-    companyName: z.string().nonempty({ message: "Company name is required" }),
-    customerName: z.string().nonempty({ message: "Customer name is required" }),
+    companyName: z.string().nonempty({ message: "Required" }),
+    customerName: z.string().nonempty({ message: "Required" }),
     contactNumber: z
         .string()
         .regex(/^\d*$/, { message: "Contact number must be numeric" })
@@ -76,28 +77,28 @@ export const invoiceSchema = z.object({
     emailAddress: z.string().optional(),
     address: z.string().optional(),
     gstNumber: z.string().optional(),
-    productName: z.string().nonempty({ message: "Product name is required" }),
-    amount: z.coerce.number().positive({ message: "Product amount is required" }),
-    discount: z.coerce.number().optional(),
-    gstRate: z.coerce.number().optional(),
+    productName: z.string().nonempty({ message: "Required" }),
+    amount: z.number().positive({ message: "Required" }),
+    discount: z.number().optional(),
+    gstRate: z.number().optional(),
     status: z.enum(["Paid", "Unpaid"]),
-    date: z.coerce.date({ message: "Invoice Date is required" }),
-    paidAmount: z.coerce.number().optional(),
-    remainingAmount: z.coerce.number().optional(),
-    totalWithoutGst: z.coerce.number().optional(),
-    totalWithGst: z.coerce.number().optional(),
+    date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
+    paidAmount: z.number().optional(),
+    remainingAmount: z.number().optional(),
+    totalWithoutGst: z.number().optional(),
+    totalWithGst: z.number().optional(),
 });
 
 const contactSchema = z.object({
-    companyName: z.string().min(2, { message: "Company name is required." }),
-    customerName: z.string().min(2, { message: "Customer name is required." }),
+    companyName: z.string().nonempty({ message: "Required" }),
+    customerName: z.string().nonempty({ message: "Required" }),
     contactNumber: z
         .string()
         .regex(/^\d*$/, { message: "Contact number must be numeric" })
-        .nonempty({ message: "Contact number is required" }),
-    emailAddress: z.string().email({ message: "Invalid email address." }),
-    address: z.string().min(2, { message: "Company address is required." }),
-    gstNumber: z.string().min(1, { message: "GST number is required." }),
+        .nonempty({ message: "Required" }),
+    emailAddress: z.string().email({ message: "Required" }),
+    address: z.string().nonempty({ message: "Required" }),
+    gstNumber: z.string().nonempty({ message: "Required" }),
     description: z.string().optional(),
 });
 
@@ -148,20 +149,20 @@ const columns = [
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "contactNumber", "emailAddress", "address", "productName", "amount", "gstNumber", "status", "date", "endDate", "notes", "actions"];
 
 const formSchema = z.object({
-    companyName: z.string().nonempty({ message: "Company name is required" }),
-    customerName: z.string().nonempty({ message: "Customer name is required" }),
+    companyName: z.string().nonempty({ message: "Required" }),
+    customerName: z.string().nonempty({ message: "Required" }),
     contactNumber: z
         .string()
         .regex(/^\d*$/, { message: "Contact number must be numeric" })
-        .nonempty({ message: "Contact number is required" }),
+        .nonempty({ message: "Required" }),
     emailAddress: z.string().email({ message: "Invalid email address" }),
-    address: z.string().nonempty({ message: "Company address is required" }),
-    productName: z.string().nonempty({ message: "Product name is required" }),
-    amount: z.number().positive({ message: "Product amount is required" }),
+    address: z.string().nonempty({ message: "Required" }),
+    productName: z.string().nonempty({ message: "Required" }),
+    amount: z.number().positive({ message: "Required" }),
     gstNumber: z.string().optional(),
     status: z.enum(["Proposal", "New", "Discussion", "Demo", "Decided"]),
-    date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Lead Date is required" }),
-    endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Final Date is required" }),
+    date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
+    endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
     notes: z.string().optional(),
     isActive: z.boolean(),
 });
@@ -183,15 +184,15 @@ export default function LeadTable() {
         address: "",
         gstNumber: "",
         productName: "",
-        amount: 0, // Initialize as a number
-        discount: 0, // Initialize as a number
-        gstRate: 0, // Initialize as a number
+        amount: 0,
+        discount: 0,
+        gstRate: 0,
         status: "",
         date: "",
-        totalWithGst: 0, // Initialize as a number
-        totalWithoutGst: 0, // Initialize as a number
-        paidAmount: 0, // Initialize as a number
-        remainingAmount: 0, // Initialize as a number
+        totalWithGst: 0,
+        totalWithoutGst: 0,
+        paidAmount: 0,
+        remainingAmount: 0,
     });
 
     const [newContact, setNewContact] = useState<Contact>({
@@ -227,7 +228,12 @@ export default function LeadTable() {
             if (!Array.isArray(leadsData)) {
                 leadsData = [];
             }
-            const leadsWithKeys = leadsData.map((lead: Lead) => ({
+
+            const sortedLeads = [...leadsData].sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+
+            const leadsWithKeys = sortedLeads.map((lead: Lead) => ({
                 ...lead,
                 key: lead._id || generateUniqueId()
             }));
@@ -254,8 +260,8 @@ export default function LeadTable() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [sortDescriptor, setSortDescriptor] = useState({
-        column: "companyName",
-        direction: "ascending",
+        column: "createdAt",
+        direction: "descending",
     });
     const [page, setPage] = useState(1);
     const router = useRouter();
@@ -490,10 +496,16 @@ export default function LeadTable() {
                 const searchableFields = {
                     companyName: lead.companyName,
                     customerName: lead.customerName,
+                    contactNumber: lead.contactNumber,
                     emailAddress: lead.emailAddress,
+                    address: lead.address,
+                    gstNumber: lead.gstNumber,
                     productName: lead.productName,
-                    status: lead.status,
+                    amount: lead.amount,
+                    date: lead.date,
+                    endDate: lead.endDate,
                     notes: lead.notes,
+                    status: lead.status,
                 };
 
                 return Object.values(searchableFields).some(value =>
@@ -519,7 +531,7 @@ export default function LeadTable() {
 
         return filteredItems.slice(start, end);
     }, [page, filteredItems, rowsPerPage]);
-    
+
     const sortedItems = React.useMemo(() => {
         return [...items].sort((a, b) => {
             const first = a[sortDescriptor.column as keyof Lead];
@@ -768,7 +780,7 @@ export default function LeadTable() {
                             onClear={() => setFilterValue("")}
                         />
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
+                    <div className="flex gap-3">
                         <Dropdown>
                             <DropdownTrigger className="w-full sm:w-auto">
                                 <Button
@@ -880,7 +892,7 @@ export default function LeadTable() {
                     <div className="lg:col-span-12">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Lead Record</h1>
-                            <h1 className="text-1xl mb-4 mt-4 text-center">Create client / customer leads here</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Create client / customer lead here</h1>
                             <Table
                                 isHeaderSticky
                                 aria-label="Leads table with custom cells, pagination and sorting"
@@ -1036,7 +1048,7 @@ export default function LeadTable() {
                                     name="gstNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Number (Optional)</FormLabel>
+                                            <FormLabel>GST Number</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     className="w-full"
@@ -1240,7 +1252,7 @@ export default function LeadTable() {
                                                     placeholder="Enter amount"
                                                     {...field}
                                                     onChange={(e) => {
-                                                        const value = e.target.valueAsNumber || 0;
+                                                        const value = e.target.valueAsNumber || "";
                                                         field.onChange(value);
                                                         updateCalculatedFields();
                                                     }}
@@ -1256,14 +1268,14 @@ export default function LeadTable() {
                                     name="discount"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Discount (%) (Optional)</FormLabel>
+                                            <FormLabel>Discount (%)</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     type="number"
                                                     placeholder="Enter discount"
                                                     {...field}
                                                     onChange={(e) => {
-                                                        const value = e.target.valueAsNumber || 0;
+                                                        const value = e.target.valueAsNumber || "";
                                                         field.onChange(value);
                                                         updateCalculatedFields();
                                                     }}
@@ -1279,7 +1291,7 @@ export default function LeadTable() {
                                     name="gstRate"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Rate (%) (Optional)</FormLabel>
+                                            <FormLabel>GST Rate (%)</FormLabel>
                                             <FormControl>
                                                 <select
                                                     {...field}
@@ -1295,6 +1307,7 @@ export default function LeadTable() {
                                                     <option value="12">12%</option>
                                                     <option value="18">18%</option>
                                                     <option value="28">28%</option>
+                                                    <option value="35">35%</option>
                                                 </select>
                                             </FormControl>
                                             <FormMessage />
@@ -1314,7 +1327,7 @@ export default function LeadTable() {
                                                     placeholder="Enter paid amount"
                                                     {...field}
                                                     onChange={(e) => {
-                                                        const value = e.target.valueAsNumber || 0;
+                                                        const value = e.target.valueAsNumber || "";
                                                         field.onChange(value);
                                                         updateCalculatedFields();
                                                     }}
@@ -1375,8 +1388,8 @@ export default function LeadTable() {
                                             </label>
                                             <input
                                                 type="date"
-                                                name="date"
-                                                id="date"
+                                                name="endDate"
+                                                id="endDate"
                                                 value={field.value ? format(field.value, "yyyy-MM-dd") : ""}
                                                 onChange={(e) => field.onChange(new Date(e.target.value))}
                                                 className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
@@ -1384,16 +1397,15 @@ export default function LeadTable() {
                                             />
                                             <style>
                                                 {`
-                                                        .custom-input:focus {
-                                                        border-color: black !important;
-                                                        box-shadow: none !important;
-                                                        outline: none !important;
-                                                        }
-                                                        `}
+                                            .custom-input:focus {
+                                                border-color: black !important;
+                                                box-shadow: none !important;
+                                                outline: none !important;
+                                            }
+                                            `}
                                             </style>
                                         </div>
                                     )}
-
                                 />
                             </div>
 
@@ -1551,7 +1563,7 @@ export default function LeadTable() {
                                     name="gstNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Number</FormLabel>
+                                            <FormLabel>GST Number (Optional)</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="Enter GST number" {...field} />
                                             </FormControl>
@@ -1678,9 +1690,17 @@ export default function LeadTable() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
-              sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsDeleteDialogOpen(false);
+                }
+            }}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">

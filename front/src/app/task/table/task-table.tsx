@@ -29,6 +29,7 @@ interface Task {
     priority: string;
     assigned: string;
     notes: string;
+    createdAt: string;
 }
 
 const generateUniqueId = () => {
@@ -72,10 +73,10 @@ const columns = [
 const INITIAL_VISIBLE_COLUMNS = ["subject", "name", "assigned", "relatedTo", "date", "endDate", "status", "priority", "notes", "actions"];
 
 const taskSchema = z.object({
-    subject: z.string().min(2, { message: "Subject is required." }),
-    relatedTo: z.string().min(2, { message: "Related to  is required." }),
-    name: z.string().min(2, { message: "Name is required." }),
-    assigned: z.string().min(2, { message: "Assigned By is required." }),
+    subject: z.string().nonempty({ message: "Required" }),
+    relatedTo: z.string().nonempty({ message: "Required" }),
+    name: z.string().nonempty({ message: "Required" }),
+    assigned: z.string().nonempty({ message: "Required" }),
     date: z.date().optional(),
     endDate: z.date().optional(),
     status: z.enum(["Pending", "Resolved", "InProgress"]),
@@ -95,7 +96,6 @@ export default function TaskTable() {
                 "http://localhost:8000/api/v1/task/getAllTasks"
             );
 
-            // Log the response structure
             console.log('Full API Response:', {
                 status: response.status,
                 data: response.data,
@@ -103,7 +103,6 @@ export default function TaskTable() {
                 hasData: 'data' in response.data
             });
 
-            // Handle the response based on its structure
             let TaskData;
             if (typeof response.data === 'object' && 'data' in response.data) {
 
@@ -116,19 +115,21 @@ export default function TaskTable() {
                 throw new Error('Invalid response format');
             }
 
-            // Ensure leadsData is an array
             if (!Array.isArray(TaskData)) {
                 TaskData = [];
             }
 
-            // Map the data with safe key generation
-            const TaskWithKeys = TaskData.map((task: Task) => ({
+            const sortedTasks = [...TaskData].sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+
+            const TaskWithKeys = sortedTasks.map((task: Task) => ({
                 ...task,
                 key: task._id || generateUniqueId()
             }));
 
             setTasks(TaskWithKeys);
-            setError(null); // Clear any previous errors
+            setError(null);
         } catch (error) {
             console.error("Error fetching tasks:", error);
             if (axios.isAxiosError(error)) {
@@ -136,7 +137,7 @@ export default function TaskTable() {
             } else {
                 setError("Failed to fetch tasks.");
             }
-            setTasks([]); // Set empty array on error
+            setTasks([]);
         }
     };
 
@@ -150,8 +151,8 @@ export default function TaskTable() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [sortDescriptor, setSortDescriptor] = useState({
-        column: "subject",
-        direction: "ascending",
+        column: "createdAt",
+        direction: "descending",
     });
     const [page, setPage] = useState(1);
     const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
@@ -559,11 +560,11 @@ export default function TaskTable() {
                 if (!open) {
                     setIsEditOpen(false);
                 }
-            }}>                
-            <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
-                onInteractOutside={(e) => {
-                    e.preventDefault();
-                }}>
+            }}>
+                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}>
                     <DialogHeader>
                         <DialogTitle>Update Task</DialogTitle>
                     </DialogHeader>
@@ -765,8 +766,16 @@ export default function TaskTable() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isDeleteConfirmationOpen} onOpenChange={setIsDeleteConfirmationOpen}>
-                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6">
+            <Dialog open={isDeleteConfirmationOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsDeleteConfirmationOpen(false);
+                }
+            }}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle>Confirm Deletion</DialogTitle>
                         <DialogDescription>

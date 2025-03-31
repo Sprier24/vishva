@@ -17,10 +17,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 
 const complaintSchema = z.object({
   companyName: z.string().optional(),
-  complainerName: z.string().nonempty({ message: "Complainer name is required." }),
+  complainerName: z.string().nonempty({ message: "Required" }),
   contactNumber: z.string().regex(/^\d*$/, { message: "Paid amount must be numeric" }).optional(),
   emailAddress: z.string().optional(),
-  subject: z.string().nonempty({ message: "Subject is required." }),
+  subject: z.string().nonempty({ message: "Required" }),
   date: z.date().optional(),
   caseStatus: z.enum(["Pending", "Resolved", "InProgress"]),
   priority: z.enum(["High", "Medium", "Low"]),

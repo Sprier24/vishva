@@ -29,6 +29,7 @@ interface Complaint {
     caseStatus: string;
     priority: string;
     caseOrigin: string;
+    createdAt: string;
 }
 
 const generateUniqueId = () => {
@@ -65,10 +66,10 @@ const INITIAL_VISIBLE_COLUMNS = ["companyName", "complainerName", "contactNumber
 
 const complaintSchema = z.object({
     companyName: z.string().optional(),
-    complainerName: z.string().min(2, { message: "Complainer name is required." }),
-    contactNumber: z.string().optional(),
+    complainerName: z.string().nonempty({ message: "Required" }),
+    contactNumber: z.string().regex(/^\d*$/, { message: "Paid amount must be numeric" }).optional(),
     emailAddress: z.string().optional(),
-    subject: z.string().min(2, { message: "Subject is required." }),
+    subject: z.string().nonempty({ message: "Required" }),
     date: z.date().optional(),
     caseStatus: z.enum(["Pending", "Resolved", "InProgress"]),
     priority: z.enum(["High", "Medium", "Low"]),
@@ -88,11 +89,39 @@ export default function ComplaintTable() {
             const response = await axios.get(
                 "http://localhost:8000/api/v1/complaint/getAllComplaints"
             );
-            setComplaints(response.data.complaints || []);
+            let complaintsData;
+            if (typeof response.data === 'object' && 'data' in response.data) {
+                complaintsData = response.data.data;
+            } else if (Array.isArray(response.data)) {
+                complaintsData = response.data;
+            } else {
+                console.error('Unexpected response format:', response.data);
+                throw new Error('Invalid response format');
+            }
+
+            if (!Array.isArray(complaintsData)) {
+                complaintsData = [];
+            }
+
+            const sortedComplaints = [...complaintsData].sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+
+            const complaintsWithKeys = sortedComplaints.map((complaint: Complaint) => ({
+                ...complaint,
+                key: complaint._id || generateUniqueId()
+            }));
+
+            setComplaints(complaintsWithKeys);
+            setError(null);
         } catch (error) {
             console.error("Error fetching complaints:", error);
-            setError("Failed to fetch complaints.");
-
+            if (axios.isAxiosError(error)) {
+                setError(`Failed to fetch complaints: ${error.response?.data?.message || error.message}`);
+            } else {
+                setError("Failed to fetch complaint.");
+            }
+            setComplaints([]);
         }
     };
 
@@ -107,8 +136,8 @@ export default function ComplaintTable() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [sortDescriptor, setSortDescriptor] = useState({
-        column: "companyName",
-        direction: "ascending",
+        column: "createdAt",
+        direction: "descending",
     });
     const [page, setPage] = useState(1);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -545,11 +574,11 @@ export default function ComplaintTable() {
                 if (!open) {
                     setIsEditOpen(false);
                 }
-            }}>                
+            }}>
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
-                onInteractOutside={(e) => {
-                    e.preventDefault();
-                }}
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
                 >
                     <DialogHeader>
                         <DialogTitle>Update Complaint</DialogTitle>
@@ -732,9 +761,16 @@ export default function ComplaintTable() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
-        sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsDeleteDialogOpen(false);
+                }
+            }}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">

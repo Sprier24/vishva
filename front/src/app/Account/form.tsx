@@ -12,11 +12,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const accountSchema = z.object({
-  bankName: z.string().nonempty({ message: "Bank name is required." }),
-  IFSCCode: z.string().nonempty({ message: "Bank IFSC code is required." }),
-  accountHolderName: z.string().nonempty({ message: "Bank account holder name is required." }),
-  accountNumber: z.string().nonempty({ message: "Bank account number is required." }),
-  accountType: z.enum(["Current", "Savings", "Other"], { message: "Account type is required." }),
+  bankName: z.string().nonempty({ message: "Required" }),
+  IFSCCode: z.string().nonempty({ message: "Required" }),
+  accountHolderName: z.string().nonempty({ message: "Required" }),
+  accountNumber: z.string().nonempty({ message: "Required" }),
+  accountType: z.enum(["Current", "Savings", "Other"], { message: "Required" }),
   UpiId: z.string().optional(),
 });
 

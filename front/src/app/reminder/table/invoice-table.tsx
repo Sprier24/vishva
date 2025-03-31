@@ -36,31 +36,29 @@ interface Invoice {
     totalWithGst: number;
     paidAmount: number;
     remainingAmount: number;
+    createdAt: string;
 }
 
 export const invoiceSchema = z.object({
-    companyName: z.string().min(2, { message: "Company name is required." }),
-    customerName: z.string().min(2, { message: "Customer name must be at least 2 characters." }),
-    contactNumber: z.string().min(10, { message: "Contact number is required." }),
-    emailAddress: z.string().email({ message: "Invalid email address" }),
-    address: z.string().min(2, { message: "Address is required." }),
-    gstNumber: z.string().min(1, { message: "GST number is required." }),
-    productName: z.string().min(2, { message: "Product name is required." }),
-    amount: z.coerce.number().positive({ message: "Amount must be positive." }),
-    discount: z.coerce.number().min(0).default(0),
-    gstRate: z.coerce.number().min(0).default(0),
-    status: z.enum(["Unpaid", "Paid", "Pending"]).default("Unpaid"),
-    date: z.string().refine((val) => !isNaN(Date.parse(val)), {
-        message: "Invalid date",
-    }).transform((val) => new Date(val)),  // ✅ Convert string to Date
-
-    endDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
-        message: "Invalid date",
-    }).transform((val) => new Date(val)),  // ✅ Convert string to Date
-    totalWithoutGst: z.coerce.number().min(0).default(0),
-    totalWithGst: z.coerce.number().min(0).default(0),
-    paidAmount: z.coerce.number().min(0).default(0),
-    remainingAmount: z.coerce.number().min(0).default(0)
+    companyName: z.string().nonempty({ message: "Required" }),
+    customerName: z.string().nonempty({ message: "Required" }),
+    contactNumber: z
+        .string()
+        .regex(/^\d*$/, { message: "Contact number must be numeric" })
+        .optional(),
+    emailAddress: z.string().optional(),
+    address: z.string().optional(),
+    gstNumber: z.string().optional(),
+    productName: z.string().nonempty({ message: "Required" }),
+    amount: z.number().positive({ message: "Required" }),
+    discount: z.number().optional(),
+    gstRate: z.number().optional(),
+    status: z.enum(["Paid", "Unpaid"]),
+    date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
+    paidAmount: z.number().optional(),
+    remainingAmount: z.number().optional(),
+    totalWithoutGst: z.number().optional(),
+    totalWithGst: z.number().optional(),
 });
 
 const generateUniqueId = () => {
@@ -118,15 +116,39 @@ export default function InvoiceTable() {
             const response = await axios.get(
                 "http://localhost:8000/api/v1/invoice/getUnpaidInvoices"
             );
-            const invoicesData = Array.isArray(response.data) ? response.data : response.data.data || [];
-            setInvoices(invoicesData);
+            let invoicesData;
+            if (typeof response.data === 'object' && 'data' in response.data) {
+                invoicesData = response.data.data;
+            } else if (Array.isArray(response.data)) {
+                invoicesData = response.data;
+            } else {
+                console.error('Unexpected response format:', response.data);
+                throw new Error('Invalid response format');
+            }
+
+            if (!Array.isArray(invoicesData)) {
+                invoicesData = [];
+            }
+
+            const sortedInvoices = [...invoicesData].sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+
+            const invoicesWithKeys = sortedInvoices.map((invoice: Invoice) => ({
+                ...invoice,
+                key: invoice._id || generateUniqueId()
+            }));
+
+            setInvoices(invoicesWithKeys);
             setError(null);
         } catch (error) {
             console.error("Error fetching invoices:", error);
-            setError(error instanceof Error ? error.message : "Failed to fetch invoices");
+            if (axios.isAxiosError(error)) {
+                setError(`Failed to fetch invoices: ${error.response?.data?.message || error.message}`);
+            } else {
+                setError("Failed to fetch invoice.");
+            }
             setInvoices([]);
-        } finally {
-            setIsLoading(false);
         }
     };
 
@@ -143,8 +165,8 @@ export default function InvoiceTable() {
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [currentPage, setCurrentPage] = useState(1);
     const [sortDescriptor, setSortDescriptor] = useState({
-        column: "companyName",
-        direction: "ascending",
+        column: "createdAt",
+        direction: "descending",
     });
     const [page, setPage] = useState(1);
 
@@ -425,40 +447,40 @@ export default function InvoiceTable() {
                             onClear={() => setFilterValue("")}
                         />
                     </div>
-                     <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
-                                           <Dropdown>
-                                               <DropdownTrigger className="w-full sm:w-auto">
-                                                   <Button
-                                                       endContent={<ChevronDownIcon className="text-small" />}
-                                                       variant="default"
-                                                       className="px-3 py-2 text-sm sm:text-base w-full sm:w-auto flex items-center justify-between"
-                                                   >
-                                                       Hide Columns
-                                                   </Button>
-                                               </DropdownTrigger>
-                                               <DropdownMenu
-                                                   disallowEmptySelection
-                                                   aria-label="Table Columns"
-                                                   closeOnSelect={false}
-                                                   selectedKeys={visibleColumns}
-                                                   selectionMode="multiple"
-                                                   onSelectionChange={(keys) => {
-                                                       const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
-                                                       setVisibleColumns(newKeys);
-                                                   }}
-                                                   className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300 hide-scrollbar"
-                                               >
-                                                   {columns.map((column) => (
-                                                       <DropdownItem
-                                                           key={column.uid}
-                                                           className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
-                                                       >
-                                                           {column.name}
-                                                       </DropdownItem>
-                                                   ))}
-                                               </DropdownMenu>
-                                           </Dropdown>
-                                       </div>
+                    <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
+                        <Dropdown>
+                            <DropdownTrigger className="w-full sm:w-auto">
+                                <Button
+                                    endContent={<ChevronDownIcon className="text-small" />}
+                                    variant="default"
+                                    className="px-3 py-2 text-sm sm:text-base w-full sm:w-auto flex items-center justify-between"
+                                >
+                                    Hide Columns
+                                </Button>
+                            </DropdownTrigger>
+                            <DropdownMenu
+                                disallowEmptySelection
+                                aria-label="Table Columns"
+                                closeOnSelect={false}
+                                selectedKeys={visibleColumns}
+                                selectionMode="multiple"
+                                onSelectionChange={(keys) => {
+                                    const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
+                                    setVisibleColumns(newKeys);
+                                }}
+                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300 hide-scrollbar"
+                            >
+                                {columns.map((column) => (
+                                    <DropdownItem
+                                        key={column.uid}
+                                        className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
+                                    >
+                                        {column.name}
+                                    </DropdownItem>
+                                ))}
+                            </DropdownMenu>
+                        </Dropdown>
+                    </div>
                 </div>
                 <div className="flex justify-between items-center">
                     <span className="text-default-400 text-small">Total {invoices.length} reminder</span>
@@ -557,7 +579,7 @@ export default function InvoiceTable() {
                     <div className="lg:col-span-12">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Reminder Record</h1>
-                            <h1 className="text-1xl mb-4 mt-4 text-center">Only unpaid data</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Check your client / customer's due payment</h1>
                             <Table
                                 isHeaderSticky
                                 aria-label="Leads table with custom cells, pagination and sorting"

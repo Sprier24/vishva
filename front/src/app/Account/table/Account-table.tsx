@@ -22,6 +22,7 @@ interface Account {
     accountType: string;
     IFSCCode: string;
     UpiId: string;
+    createdAt: string;
 }
 
 const generateUniqueId = () => {
@@ -30,9 +31,8 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toISOString().split("T")[0]; // Returns "YYYY-MM-DD"
+    return date.toISOString().split("T")[0];
 };
-
 
 const columns = [
     { name: "Bank Name", uid: "bankName", sortable: true, width: "120px" },
@@ -47,11 +47,11 @@ const columns = [
 const INITIAL_VISIBLE_COLUMNS = ["accountHolderName", "accountNumber", "bankName", "accountType", "IFSCCode", "UpiId", "actions"];
 
 const accountSchema = z.object({
-    bankName: z.string().min(2, { message: "Bank name is required." }),
-    IFSCCode: z.string().min(2, { message: "Bank IFSC code is required." }),
-    accountHolderName: z.string().min(2, { message: "Bank account holder name is required." }),
-    accountNumber: z.string().min(2, { message: "Bank account number is required." }),
-    accountType: z.enum(["Current", "Savings", "Other"], { message: "Account type is required." }),
+    bankName: z.string().nonempty({ message: "Required" }),
+    IFSCCode: z.string().nonempty({ message: "Required" }),
+    accountHolderName: z.string().nonempty({ message: "Required" }),
+    accountNumber: z.string().nonempty({ message: "Required" }),
+    accountType: z.enum(["Current", "Savings", "Other"], { message: "Required" }),
     UpiId: z.string().optional(),
 });
 
@@ -68,40 +68,31 @@ export default function AccountTable() {
                 `http://localhost:8000/api/v1/account/getAllAccounts`
             );
 
-            // Log the response structure
-            console.log('Full API Response:', {
-                status: response.status,
-                data: response.data,
-                type: typeof response.data,
-                hasData: 'data' in response.data
-            });
-
-            // Handle the response based on its structure
             let accountsData;
             if (typeof response.data === 'object' && 'data' in response.data) {
-                // Response format: { data: [...leads] }
                 accountsData = response.data.data;
             } else if (Array.isArray(response.data)) {
-                // Response format: [...leads]
                 accountsData = response.data;
             } else {
                 console.error('Unexpected response format:', response.data);
                 throw new Error('Invalid response format');
             }
 
-            // Ensure leadsData is an array
             if (!Array.isArray(accountsData)) {
                 accountsData = [];
             }
 
-            // Map the data with safe key generation
-            const accountsWithKeys = accountsData.map((account: Account) => ({
+            const sortedAccounts = [...accountsData].sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+
+            const accountsWithKeys = sortedAccounts.map((account: Account) => ({
                 ...account,
                 key: account._id || generateUniqueId()
             }));
 
             setLeads(accountsWithKeys);
-            setError(null); // Clear any previous errors
+            setError(null);
         } catch (error) {
             console.error("Error fetching accounts:", error);
             if (axios.isAxiosError(error)) {
@@ -109,10 +100,9 @@ export default function AccountTable() {
             } else {
                 setError("Failed to fetch account.");
             }
-            setLeads([]); // Set empty array on error
+            setLeads([]);
         }
     };
-
 
     useEffect(() => {
         fetchAccounts();
@@ -124,8 +114,8 @@ export default function AccountTable() {
     const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [sortDescriptor, setSortDescriptor] = useState({
-        column: "companyName",
-        direction: "ascending",
+        column: "createdAt",
+        direction: "descending",
     });
     const [page, setPage] = useState(1);
 
@@ -343,7 +333,6 @@ export default function AccountTable() {
             );
         }
 
-        // For all other columns, return the raw cell value
         return cellValue;
     }, []);
 
@@ -518,6 +507,7 @@ export default function AccountTable() {
                                 classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
                                 topContent={topContent}
                                 topContentPlacement="outside"
+                                sortDescriptor={sortDescriptor}
                                 onSelectionChange={setSelectedKeys}
                                 onSortChange={setSortDescriptor}
                             >
@@ -554,10 +544,10 @@ export default function AccountTable() {
                     setIsEditOpen(false);
                 }
             }}>
-                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4" 
-                onInteractOutside={(e) => {
-                    e.preventDefault();
-                }}>
+                <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}>
                     <DialogHeader>
                         <DialogTitle>Update Account</DialogTitle>
                     </DialogHeader>
@@ -671,9 +661,16 @@ export default function AccountTable() {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 
-        sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]">
+            <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    setIsDeleteDialogOpen(false);
+                }
+            }}>
+                <DialogContent className="fixed left-1/2 top-[7rem] transform -translate-x-1/2 z-[9999] w-full max-w-md bg-white shadow-lg rounded-lg p-6 sm:max-w-sm sm:p-4 xs:max-w-[90%] xs:p-3 xs:top-[5rem]"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}
+                >
                     <DialogHeader>
                         <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">

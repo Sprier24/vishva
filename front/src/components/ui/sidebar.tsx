@@ -250,37 +250,62 @@ const Sidebar = React.forwardRef<
 )
 Sidebar.displayName = "Sidebar"
 
+
 const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
   React.ComponentProps<typeof Button>
 >(({ className, onClick, ...props }, ref) => {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, state } = useSidebar()
 
   return (
-    <Button
-      ref={ref}
-      data-sidebar="trigger"
-      variant="ghost"
-      size="icon"
-      className={cn("h-7 w-7", className)}
-      onClick={(event) => {
-        onClick?.(event)
-        toggleSidebar()
-      }}
-      {...props}
-    >
-      <PanelLeft />
-      <span className="sr-only">Toggle Sidebar</span>
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          ref={ref}
+          data-sidebar="trigger"
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "h-7 w-7 relative group/trigger",
+            "transition-colors duration-200",
+            "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+            className
+          )}
+          onClick={(event) => {
+            onClick?.(event)
+            toggleSidebar()
+          }}
+          {...props}
+        >
+          {/* Arrow on the left side */}
+          <span className={cn(
+            "absolute -left-1 top-1/2 -translate-y-1/2",
+            "w-0 h-0 border-t-4 border-b-4 border-l-4",
+            "border-t-transparent border-b-transparent",
+            "border-l-sidebar-foreground",
+            "opacity-0 group-hover/trigger:opacity-70",
+            "transition-all duration-300",
+            state === "collapsed" ? "translate-x-0" : "-translate-x-1 rotate-180"
+          )} />
+          
+          <PanelLeft className="size-4" />
+          <span className="sr-only">Toggle Sidebar</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="right" sideOffset={8}>
+        {state === "collapsed" ? "Open Sidebar" : "Close Sidebar"}
+      </TooltipContent>
+    </Tooltip>
   )
 })
 SidebarTrigger.displayName = "SidebarTrigger"
+
 
 const SidebarRail = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button">
 >(({ className, ...props }, ref) => {
-  const { toggleSidebar } = useSidebar()
+  const { toggleSidebar, state } = useSidebar()
 
   return (
     <button
@@ -297,12 +322,20 @@ const SidebarRail = React.forwardRef<
         "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full group-data-[collapsible=offcanvas]:hover:bg-sidebar",
         "[[data-side=left][data-collapsible=offcanvas]_&]:-right-2",
         "[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
+        // Add hover effect
+        "after:content-[''] after:transition-opacity after:duration-200 after:ease-in-out",
+        "after:hover:before:absolute after:hover:before:top-1/2 after:hover:before:left-1/2 after:hover:before:-translate-x-1/2 after:hover:before:-translate-y-1/2",
+        "after:hover:before:whitespace-nowrap after:hover:before:text-xs after:hover:before:font-medium after:hover:before:text-sidebar-foreground",
+        state === "collapsed"
+          ? "after:hover:before:content-['Open_Sidebar']" // Show "Open Sidebar" when collapsed
+          : "after:hover:before:content-['Close_Sidebar']", // Show "Close Sidebar" when expanded
         className
       )}
       {...props}
     />
   )
 })
+
 SidebarRail.displayName = "SidebarRail"
 
 const SidebarInset = React.forwardRef<

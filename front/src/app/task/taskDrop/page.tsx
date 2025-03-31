@@ -22,7 +22,7 @@ import { Meteors } from "@/components/ui/meteors";
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
 import Task from "../form";
-import { Calendar1 } from "lucide-react";
+import { Calendar1, Mail } from "lucide-react";
 
 interface Task {
   _id: string;
@@ -31,8 +31,8 @@ interface Task {
   lastReminder: string;
   name: string;
   assigned: string;
-  taskDate: string;
-  dueDate: string;
+  date: string;
+  endDate: string;
   status: "Pending" | "In Progress" | "Resolved";
   isActive: boolean;
 }
@@ -101,7 +101,10 @@ export default function App() {
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toISOString().split("T")[0];
+    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
+    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
+    const year = date.getFullYear();  // Get the full year
+    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
   };
 
   const handleDragStart = (e: React.DragEvent, task: Task, fromStatus: string) => {
@@ -172,6 +175,11 @@ export default function App() {
             <div  >
               <SearchBar />
             </div>
+            <a href="/email">
+              <div>
+                <Mail />
+              </div>
+            </a>
             <a href="/calendar">
               <div>
                 <Calendar1 />
@@ -222,8 +230,8 @@ export default function App() {
                         >
                           <p className="text-sm font-semibold text-black">Subject : {task.subject}</p>
                           <p className="text-sm font-semibold text-black">Name : {task.name}</p>
-                          <p className="text-sm font-semibold text-black">Task Date : {task.taskDate}</p>
-                          <p className="text-sm font-semibold text-black">Due Date : {task.dueDate}</p>
+                          <p className="text-sm font-semibold text-black">Task Date : {task.date}</p>
+                          <p className="text-sm font-semibold text-black">Due Date : {task.endDate}</p>
                         </div>
                       ))
                     )}
@@ -256,7 +264,7 @@ export default function App() {
                       .map(([key, value]) => (
                         <p key={key} className="text-lg">
                           <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong>{" "}
-                          {["dueDate", "lastReminderDate", "taskDate"].includes(key) && value
+                          {["endDate", "lastReminderDate", "date"].includes(key) && value
                             ? new Date(value).toLocaleDateString("en-GB")
                             : value || "N/A"}
                         </p>

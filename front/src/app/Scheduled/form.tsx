@@ -16,14 +16,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const eventSchema = z.object({
-  subject: z.string().nonempty({ message: "Subject is required." }),
+  subject: z.string().nonempty({ message: "Required" }),
   assignedUser: z.string().optional(),
   location: z.string().optional(),
   customer: z.string().optional(),
-  eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "Follow-Up", "follow-up"], { message: "Event type is required." }),
-  recurrence: z.enum(["one-time", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Recurrence is required." }),
-  status: z.enum(["Scheduled", "Completed", "Cancelled", "Postpone"], { message: "Status is required." }),
-  priority: z.enum(["Low", "low", "Medium", "medium", "High", "high"], { message: "Priority is required." }),
+  eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "Follow-Up", "follow-up"], { message: "Required" }),
+  recurrence: z.enum(["one-time", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
+  status: z.enum(["Scheduled", "Completed", "Cancelled", "Postpone"], { message: "Required" }),
+  priority: z.enum(["Low", "low", "Medium", "medium", "High", "high"], { message: "Required" }),
   date: z.date().optional(),
   description: z.string().optional(),
 });
