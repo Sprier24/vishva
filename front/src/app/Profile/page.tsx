@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState , useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -68,6 +68,7 @@ const NewProfile: React.FC = () => {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -86,6 +87,46 @@ const NewProfile: React.FC = () => {
       businessRegistration: '',
     },
   });
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        const response = await fetch('http://localhost:8000/api/v1/user/getuser', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+
+        const data = await response.json();
+        if (data.success && data.user.email) {
+          form.setValue('emailAddress', data.user.email);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch user information. Please try again.",
+          variant: "destructive",
+        });
+        router.push('/login');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [form, router]);
+
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -234,6 +275,21 @@ const NewProfile: React.FC = () => {
                 </p>
               )}
             </div>
+            {/* Save Profile Button */}
+                        <Button
+                          type="submit"
+                          className="w-full sm:w-auto flex items-center justify-center mt-4 sm:mt-0"
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="animate-spin mr-2" />
+                              Submitting...
+                            </>
+                          ) : (
+                            "Submit"
+                          )}
+                        </Button>
           </div>
 
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -287,41 +343,83 @@ const NewProfile: React.FC = () => {
               )}
             />
 
-            <FormField
+<FormField
+                control={form.control}
+                name="emailAddress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email Address</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter Email Address" 
+                        {...field} 
+                        type="email"
+                        readOnly
+                        className="bg-gray-100 cursor-not-allowed"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+  <FormField
               control={form.control}
-              name="emailAddress"
+              name="companyType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email Address</FormLabel>
+                  <FormLabel>Company Type</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter Email Address" 
-                      {...field} 
-                      type="email"
-                    />
+                    <Input placeholder="Enter Company Type" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            <FormField
+              <FormField
               control={form.control}
-              name="website"
+              name="businessRegistration"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Website</FormLabel>
+                  <FormLabel>Business Registration</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter Website URL (include http:// or https://)" 
+                    <select 
                       {...field} 
-                    />
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+                    >
+                      <option value="">Select Business Registration</option>
+                      <option value="Sole proprietorship">Sole proprietorship</option>
+                      <option value="One person Company">One person Company</option>
+                      <option value="Partnership">Partnership</option>
+                      <option value="Private Limited">Private Limited</option>
+                    </select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
+            <FormField
+              control={form.control}
+              name="employeeSize"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Employee Size</FormLabel>
+                  <FormControl>
+                    <select 
+                      {...field} 
+                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+                    >
+                      <option value="">Select Employee Size</option>
+                      <option value="1-10">1-10</option>
+                      <option value="11-50">11-50</option>
+                      <option value="51-100">51-100</option>
+                      <option value=">100">&gt;100</option>
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+           
             <FormField
               control={form.control}
               name="panNumber"
@@ -337,6 +435,43 @@ const NewProfile: React.FC = () => {
                         const value = e.target.value.toUpperCase().slice(0, 10);
                         field.onChange(value);
                       }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            /> 
+            <FormField
+              control={form.control}
+              name="gstNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>GST Number (optional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Enter GST Number (22AAAAA0000A1Z5)" 
+                      {...field} 
+                      onChange={(e) => {
+                        // Convert to uppercase
+                        const value = e.target.value.toUpperCase();
+                        field.onChange(value);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+ <FormField
+              control={form.control}
+              name="website"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Website</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Enter Website URL (include http:// or https://)" 
+                      {...field} 
                     />
                   </FormControl>
                   <FormMessage />
@@ -381,106 +516,12 @@ const NewProfile: React.FC = () => {
                 )}
               />
             )}
-
-            <FormField
-              control={form.control}
-              name="gstNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>GST Number (optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Enter GST Number (22AAAAA0000A1Z5)" 
-                      {...field} 
-                      onChange={(e) => {
-                        // Convert to uppercase
-                        const value = e.target.value.toUpperCase();
-                        field.onChange(value);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="companyType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company Type</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter Company Type" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="employeeSize"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Employee Size</FormLabel>
-                  <FormControl>
-                    <select 
-                      {...field} 
-                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-                    >
-                      <option value="">Select Employee Size</option>
-                      <option value="1-10">1-10</option>
-                      <option value="11-50">11-50</option>
-                      <option value="51-100">51-100</option>
-                      <option value=">100">&gt;100</option>
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="businessRegistration"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Business Registration</FormLabel>
-                  <FormControl>
-                    <select 
-                      {...field} 
-                      className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black"
-                    >
-                      <option value="">Select Business Registration</option>
-                      <option value="Sole proprietorship">Sole proprietorship</option>
-                      <option value="One person Company">One person Company</option>
-                      <option value="Partnership">Partnership</option>
-                      <option value="Private Limited">Private Limited</option>
-                    </select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="flex justify-center sm:justify-end">
-            <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin mr-2" />
-                  Submitting...
-                </>
-              ) : (
-                "Save Profile"
-              )}
-            </Button>
           </div>
         </form>
       </Form>
     </div>
-        )}
+        )
+      }
         </div>
   );
 };

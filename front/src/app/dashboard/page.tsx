@@ -2041,12 +2041,20 @@ export default function Page() {
           </div>
           <div className="flex items-center space-x-4 ml-auto mr-4">
             <div><SearchBar /></div>
-            <a href="/email">
-              <div>
-                <Mail />
-              </div>
-            </a>
-            <a href="/calendar"><div><Calendar1 /></div></a>
+            <a href="/email" className="relative group">
+                                       <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+                                       <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                           Email
+                                       </div>
+                                   </a>
+           
+                                   {/* Calendar Icon with Tooltip */}
+                                   <a href="/calendar" className="relative group">
+                                       <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+                                       <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                           Calendar
+                                       </div>
+                                   </a>
             <div><Notification /></div>
           </div>
         </header>
