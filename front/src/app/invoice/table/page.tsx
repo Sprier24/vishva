@@ -52,7 +52,6 @@ export default function invoiceTable() {
                                 Calendar
                             </div>
                         </a>
-
                         <div>
                             <Notification />
                         </div>

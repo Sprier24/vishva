@@ -22,7 +22,7 @@ const ownerSchema = new mongoose.Schema(
     },
     documentType: {
       type: String,
-      enum: ["GST Number", "UdhyamAadhar Number", "State Certificate", "Certificate of Incorporation"],
+      enum: ["GST Number", "Udhyam Aadhar Number", "State Certificate", "Certificate of Incorporation"],
     },
     documentNumber: {
       type: String,

@@ -97,7 +97,7 @@ const contactSchema = z.object({
         .nonempty({ message: "Required" }),
     emailAddress: z.string().email({ message: "Required" }),
     address: z.string().nonempty({ message: "Required" }),
-    gstNumber: z.string().nonempty({ message: "Required" }),
+    gstNumber: z.string().optional(),
     description: z.string().optional(),
 });
 
@@ -111,7 +111,7 @@ const formatDate = (dateString: string): string => {
     const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
     const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
     const year = date.getFullYear();  // Get the full year
-    return `${day}-${month}-${year}`;  // Returns "dd-mm-yyyy"
+    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
 };
 
 const columns = [
@@ -155,7 +155,7 @@ const formSchema = z.object({
     contactNumber: z
         .string()
         .regex(/^\d*$/, { message: "Contact number must be numeric" })
-        .nonempty({ message: "Required" }),
+        .optional(),
     emailAddress: z.string().email({ message: "Invalid email address" }),
     address: z.string().nonempty({ message: "Required" }),
     productName: z.string().nonempty({ message: "Required" }),
@@ -400,7 +400,7 @@ export default function DealTable() {
             );
 
             toast({
-                title: "Invoice Created",
+                title: "Invoice Submmited",
                 description: "The invoice has been successfully created",
             });
 
@@ -947,9 +947,10 @@ export default function DealTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                            Are you sure you want to delete this deal?,
+                            The data won't be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">
@@ -1352,7 +1353,7 @@ export default function DealTable() {
                                     name="gstNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Number</FormLabel>
+                                            <FormLabel>GST Number (Optional)</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     className="w-full"
@@ -1465,7 +1466,12 @@ export default function DealTable() {
                                             <FormControl>
                                                 <Input
                                                     placeholder="Enter contact number"
+                                                    type="tel"
                                                     {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value.replace(/[^0-9]/g, '');
+                                                        field.onChange(value);
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />

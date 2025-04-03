@@ -204,7 +204,7 @@ export default function InvoiceTable() {
             // Fetch the logo (convert to Base64)
             let ownerLogoBase64 = "";
             if (owner.logo) {
-                const imageUrl = `http://localhost:8000/uploads/${currentOwner.logo}`;
+                const imageUrl = `http://localhost:8000/uploads/${owner.logo}`;
                 ownerLogoBase64 = await fetchBase64Image(imageUrl);
                 console.log("Base64 Encoded Logo:", ownerLogoBase64 ? "Logo loaded successfully" : "Failed to load logo");
             }
@@ -226,90 +226,150 @@ export default function InvoiceTable() {
             // Generate Invoice HTML
             const invoiceContent = `
                 <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Invoice</title>
-                    <style>
-                        body { font-family: 'Arial', sans-serif; background-color: #f4f4f9; padding: 20px; }
-                        .invoice-container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); }
-                        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #004080; padding-bottom: 15px; }
-                        .header h1 { color: #004080; font-size: 28px; }
-                        .company-info, .client-info { margin-top: 20px; }
-                        .company-info p, .client-info p { margin: 4px 0; }
-                        .table-container { margin-top: 20px; }
-                        table { width: 100%; border-collapse: collapse; }
-                        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-                        th { background-color: #004080; color: white; }
-                        .total-section { text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold; }
-                        .footer { margin-top: 30px; text-align: center; font-size: 14px; color: #666; }
-                        .logo-container { text-align: right; margin-bottom: 10px; }
-                        .logo-container img { max-width: 150px; height: auto; display: block; }
-                    </style>
-                </head>
-                <body>
-                    <div class="invoice-container">
-                        <div class="header">
-                            <h1>INVOICE</h1>
-                            <div>
-                                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                        
-                        <div class="company-info">
-                            <h3>Company Information</h3>
-                            <div class="logo-container">
-                                ${ownerLogoBase64 ? `<img id="logo-img" src="${ownerLogoBase64}" style="width: 150px; height: auto;">` : ""}
-                            </div>
-                            <p><strong>${owner.companyName ?? "N/A"}</strong></p>
-                            <p>${owner.contactNumber ?? "N/A"} | ${owner.emailAddress ?? "N/A"}</p>
-                            <p>GST No: ${owner.gstNumber ?? "N/A"}</p>
-                        </div>
-                        
-                        <div class="client-info">
-                            <h3>Invoice To:</h3>
-                            <p><strong>Company Name: ${companyName}</strong></p>
-                            <p>Customer Name: ${customerName}</p>
-                            <p>Email: ${emailAddress}</p>
-                            <p>Contact Number: ${contactNumber}</p>
-                            <p>Address: ${address}</p>
-                        </div>
-                        
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Product</th>
-                                        <th>Price (₹)</th>
-                                        <th>Discount (%)</th>
-                                        <th>Total (₹)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>${productName}</td>
-                                        <td>${amount.toFixed(2)}</td>
-                                        <td>${discount}</td>
-                                        <td>${totalWithoutGst.toFixed(2)}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="total-section">
-                            <p>GST (CGST + SGST): ₹${(cgst + sgst).toFixed(2)}</p>
-                            <p>Grand Total: ₹${totalWithGst.toFixed(2)}</p>
-                            <p>Paid: ₹${paidAmount.toFixed(2)}</p>
-                            <p>Remaining: ₹${remainingAmount.toFixed(2)}</p>
-                        </div>
-                        
-                        <div class="footer">
-                            <p>Thank you for your business!</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Invoice</title>
+        <style>
+            @page {
+                size: A4;
+                margin: 0;
+            }
+            body {
+                font-family: 'Helvetica', sans-serif;
+                margin: 0;
+                padding: 20px;
+            }
+            .invoice-container {
+                max-width: 800px;
+                margin: auto;
+                padding: 20px;
+                border-radius: 8px; /* Removed shadow */
+                /* Removed box-shadow to eliminate the border shadow effect */
+            }
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 4px solid #004080;
+                padding-bottom: 15px;
+            }
+            .header h1 {
+                color: #004080;
+                font-size: 28px;
+            }
+            .company-info, .client-info {
+                margin-top: 20px;
+            }
+            .company-info p, .client-info p {
+                margin: 4px 0;
+            }
+            .table-container {
+                margin-top: 20px;
+            }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            th, td {
+                border: 1px solid #ddd;
+                padding: 10px;
+                text-align: center;
+            }
+            th {
+                background-color: #004080;
+                color: white;
+            }
+            .total-section {
+                text-align: right;
+                margin-top: 20px;
+                font-size: 18px;
+                font-weight: bold;
+            }
+            .footer {
+                position: fixed;
+                bottom: 20px; /* Ensures it's 20px from the bottom */
+                left: 50%;
+                transform: translateX(-50%); /* Centers the footer horizontally */
+                text-align: center;
+                font-size: 14px;
+                color: #666;
+                width: 100%;
+            }
+            .logo-container {
+                text-align: right;
+                margin-bottom: 10px;
+            }
+            .logo-container img {
+                max-width: 150px;
+                height: auto;
+                display: block;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="invoice-container">
+            <div class="header">
+                <h1>INVOICE</h1>
+                <div>
+                    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                </div>
+            </div>
+            
+            <div class="company-info">
+                <h3>Company Information</h3>
+                <div class="logo-container">
+                    ${ownerLogoBase64 ? `<img id="logo-img" src="${ownerLogoBase64}" style="width: 150px; height: auto;">` : ""}
+                </div>
+                <p><strong>Company Name : ${owner.companyName ?? "N/A"}</strong></p>
+                <p>Contact Number : ${owner.contactNumber ?? "N/A"}</p>
+                <p>Email Address : ${owner.emailAddress ?? "N/A"}</p>
+                <p>GST No : ${owner.gstNumber ?? "N/A"}</p>
+            </div>
+            
+            <div class="client-info">
+                <h3>Invoice To</h3>
+                <p><strong>Company Name : ${companyName ?? "N/A"}</strong></p>
+                <p>Customer Name : ${customerName ?? "N/A"}</p>
+                <p>Contact Number : ${contactNumber ?? "N/A"}</p>
+                <p>Email Address : ${emailAddress ?? "N/A"}</p>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Price (₹)</th>
+                            <th>Discount (%)</th>
+                            <th>Total (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>${productName}</td>
+                            <td>${amount.toFixed(2)}</td>
+                            <td>${discount}</td>
+                            <td>${totalWithoutGst.toFixed(2)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="total-section">
+                <p>GST (CGST + SGST): ₹${(cgst + sgst).toFixed(2)}</p>
+                <p>Grand Total: ₹${totalWithGst.toFixed(2)}</p>
+                <p>Paid: ₹${paidAmount.toFixed(2)}</p>
+                <p>Remaining: ₹${remainingAmount.toFixed(2)}</p>
+            </div>
+            
+            <div class="footer">
+                <p>"Thank you for your business! We appreciate your trust in us and hope to continue working with you on future projects."</p>
+            </div>
+        </div>
+    </body>
+    </html>
             `;
 
             // Create an iframe for printing
@@ -341,7 +401,6 @@ export default function InvoiceTable() {
             console.error("Error generating invoice:", error);
         }
     };
-
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -480,7 +539,7 @@ export default function InvoiceTable() {
 
             toast({
                 title: "Invoice Deleted",
-                description: "The invoice has been successfully deleted.",
+                description: "The invoice has been successfully deleted",
             });
 
             fetchInvoices();
@@ -553,7 +612,7 @@ export default function InvoiceTable() {
                                 <Edit className="h-4 w-4" />
                             </span>
                         </Tooltip>
-                        <Tooltip>
+                        <Tooltip color="danger">
                             <span
                                 className="text-lg text-danger cursor-pointer active:opacity-50"
                                 onClick={() => handleDeleteClick(invoice)}
@@ -583,7 +642,7 @@ export default function InvoiceTable() {
             default:
                 return cellValue;
         }
-    }, []);
+    }, [invoices]);
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -634,39 +693,39 @@ export default function InvoiceTable() {
                         />
                     </div>
                     <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
-                        <Dropdown>
-                            <DropdownTrigger className="w-full sm:w-auto">
-                                <Button
-                                    endContent={<ChevronDownIcon className="text-small" />}
-                                    variant="default"
-                                    className="px-3 py-2 text-sm sm:text-base w-full sm:w-auto flex items-center justify-between"
-                                >
-                                    Hide Columns
-                                </Button>
-                            </DropdownTrigger>
-                            <DropdownMenu
-                                disallowEmptySelection
-                                aria-label="Table Columns"
-                                closeOnSelect={false}
-                                selectedKeys={visibleColumns}
-                                selectionMode="multiple"
-                                onSelectionChange={(keys) => {
-                                    const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
-                                    setVisibleColumns(newKeys);
-                                }}
-                                className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300 hide-scrollbar"
-                            >
-                                {columns.map((column) => (
-                                    <DropdownItem
-                                        key={column.uid}
-                                        className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
-                                    >
-                                        {column.name}
-                                    </DropdownItem>
-                                ))}
-                            </DropdownMenu>
-                        </Dropdown>
-
+                       <Dropdown>
+                                                   <DropdownTrigger className="w-full sm:w-auto">
+                                                       <Button
+                                                           endContent={<ChevronDownIcon className="text-small" />}
+                                                           variant="default"
+                                                           className="px-3 py-2 text-sm sm:text-base w-full sm:w-auto flex items-center justify-between"
+                                                       >
+                                                           Hide Columns
+                                                       </Button>
+                                                   </DropdownTrigger>
+                                                   <DropdownMenu
+                                                       disallowEmptySelection
+                                                       aria-label="Table Columns"
+                                                       closeOnSelect={false}
+                                                       selectedKeys={visibleColumns}
+                                                       selectionMode="multiple"
+                                                       onSelectionChange={(keys) => {
+                                                           const newKeys = new Set<string>(Array.from(keys as Iterable<string>));
+                                                           setVisibleColumns(newKeys);
+                                                       }}
+                                                       className="min-w-[180px] sm:min-w-[220px] max-h-96 overflow-auto rounded-lg shadow-lg p-2 bg-white border border-gray-300 hide-scrollbar"
+                                                   >
+                                                       {columns.map((column) => (
+                                                           <DropdownItem
+                                                               key={column.uid}
+                                                               className="capitalize px-4 py-2 rounded-md text-gray-800 hover:bg-gray-200 transition-all"
+                                                           >
+                                                               {column.name}
+                                                           </DropdownItem>
+                                                       ))}
+                                                   </DropdownMenu>
+                                               </Dropdown>
+                       
                         <Button
                             className="addButton w-full sm:w-auto flex items-center justify-between"
                             style={{ backgroundColor: 'hsl(339.92deg 91.04% 52.35%)' }}
@@ -952,7 +1011,15 @@ export default function InvoiceTable() {
                                         <FormItem>
                                             <FormLabel>Product Amount</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Enter product amount" type="number" {...field} />
+                                                <Input
+                                                    placeholder="Enter product amount"
+                                                    type="number"
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.valueAsNumber || "";
+                                                        field.onChange(value);
+                                                    }}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -968,7 +1035,15 @@ export default function InvoiceTable() {
                                         <FormItem>
                                             <FormLabel>Discount (%)</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Enter discount" type="number" {...field} />
+                                                <Input
+                                                    placeholder="Enter discount"
+                                                    type="number"
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.valueAsNumber || "";
+                                                        field.onChange(value);
+                                                    }}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -1009,7 +1084,15 @@ export default function InvoiceTable() {
                                         <FormItem>
                                             <FormLabel>Paid Amount</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Enter paid amount" {...field} />
+                                                <Input
+                                                    type="number"
+                                                    placeholder="Enter paid amount"
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.valueAsNumber || "";
+                                                        field.onChange(value);
+                                                    }}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -1107,9 +1190,10 @@ export default function InvoiceTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                            Are you sure you want to delete this invoice?,
+                            The data won't be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">

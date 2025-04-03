@@ -2042,19 +2042,19 @@ export default function Page() {
           <div className="flex items-center space-x-4 ml-auto mr-4">
             <div><SearchBar /></div>
             <a href="/email" className="relative group">
-                                       <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-                                       <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                           Email
-                                       </div>
-                                   </a>
-           
-                                   {/* Calendar Icon with Tooltip */}
-                                   <a href="/calendar" className="relative group">
-                                       <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-                                       <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                           Calendar
-                                       </div>
-                                   </a>
+              <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                Email
+              </div>
+            </a>
+
+            {/* Calendar Icon with Tooltip */}
+            <a href="/calendar" className="relative group">
+              <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                Calendar
+              </div>
+            </a>
             <div><Notification /></div>
           </div>
         </header>
@@ -2065,8 +2065,8 @@ export default function Page() {
             <h1 className="text-amber-500 font-bold mb-8 mt-4 text-xl text-center">S P R I E R S</h1>
             <Grid container rowSpacing={1} columnSpacing={{ xs: 1, sm: 2, md: 3 }}>
               {/* Chart Sections */}
-              <Grid item xs={12} md={6} lg={4} className="pb-4">
-                <Item className="bg-white shadow-lg rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl">
+              <Grid item xs={12} md={6} lg={4} className="pb-4 ">
+                <Item className="bg-white shadow-lg rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl border border-gray-100">
                   <FormControl
                     fullWidth
                     sx={{
@@ -2106,7 +2106,7 @@ export default function Page() {
               </Grid>
 
               <Grid item xs={12} md={6} lg={4} className="pb-4">
-                <Item className="bg-white shadow-lg rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl">
+                <Item className="bg-white shadow-lg rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl border border-gray-100">
                   <FormControl
                     fullWidth
                     sx={{
@@ -2146,7 +2146,7 @@ export default function Page() {
               </Grid>
 
               <Grid item xs={12} md={6} lg={4} className="pb-4">
-                <Item className="bg-white shadow-lg rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl">
+                <Item className="bg-white shadow-lg rounded-xl p-4 sm:p-6 transition-all duration-300 hover:shadow-xl border border-gray-100">
                   <FormControl
                     fullWidth
                     sx={{
@@ -2187,7 +2187,7 @@ export default function Page() {
 
               {/* Lead Record Section */}
               <Grid item xs={12} md={6} lg={6} className="pb-4">
-                <Item className="bg-white shadow-lg rounded-xl p-6">
+                <Item className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
                   <h1 className="text-2xl font-semibold mb-4 mt-4 text-center">Lead Record</h1>
                   <div className="flex flex-wrap justify-between items-center gap-3 ">
                     <Input
@@ -2240,7 +2240,7 @@ export default function Page() {
               </Grid>
 
               <Grid item xs={12} md={6} lg={6} className="pb-4">
-                <Item className="bg-white shadow-lg rounded-xl p-6">
+                <Item className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
                   <h1 className="text-2xl font-semibold mb-4 mt-4 text-center">Deal Record</h1>
                   <div className="flex flex-wrap justify-between items-center gap-3">
                     <Input
@@ -2293,7 +2293,7 @@ export default function Page() {
               </Grid>
 
               <Grid item xs={12} md={6} lg={6} className="pb-4">
-                <Item className="bg-white shadow-lg rounded-xl p-6">
+                <Item className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
                   <h1 className="text-2xl font-semibold mb-4 mt-4 text-center">Invoice Record</h1>
                   <div className="flex flex-wrap justify-between items-center gap-3">
                     <Input
@@ -2346,7 +2346,7 @@ export default function Page() {
               </Grid>
 
               <Grid item xs={12} md={6} lg={6} className="pb-4">
-                <Item className="bg-white shadow-lg rounded-xl p-6">
+                <Item className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
                   <h1 className="text-2xl font-semibold mb-4 mt-4 text-center">Reminder Record</h1>
                   <div className="flex flex-wrap justify-between items-center gap-3">
                     <Input
@@ -2399,7 +2399,7 @@ export default function Page() {
               </Grid>
 
               <Grid item xs={12} md={6} lg={6} className="pb-4">
-                <Item className="bg-white shadow-lg rounded-xl p-6">
+                <Item className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
                   <h1 className="text-2xl font-semibold mb-4 mt-4 text-center">Task Record</h1>
                   <div className="flex flex-wrap justify-between items-center gap-3">
                     <Input
@@ -2453,7 +2453,7 @@ export default function Page() {
               </Grid>
 
               <Grid item xs={12} md={6} lg={6} className="pb-4">
-                <Item className="bg-white shadow-lg rounded-xl p-6">
+                <Item className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
                   <h1 className="text-2xl font-semibold mb-4 mt-4 text-center">Event or Meeting Record</h1>
                   <div className="flex flex-wrap justify-between items-center gap-3">
                     <Input

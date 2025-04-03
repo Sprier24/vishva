@@ -31,25 +31,21 @@ app.use("/api/v1", routes);
 app.get("/", (req, res) => res.send("Home Page"));
 app.get("/auth/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-// In your Google auth callback route
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
-    const { isFirstLogin, token, user } = req.user; // Ensure user object contains email and basic profile info
+    const { isFirstLogin, token, email } = req.user;
 
     const redirectTo = isFirstLogin
-      ? `http://localhost:3000/profile?token=${token}`
-      : `http://localhost:3000/dashboard?token=${token}`;
+      ? `http://localhost:3000/Profile`
+      : `http://localhost:3000/Dashboard`;
 
     res.redirect(redirectTo);
   }
 );
+
 const server = http.createServer(app);
-
-
-
-
 const io = new Server(server, {
   cors: {
     origin: 'http://localhost:3000',

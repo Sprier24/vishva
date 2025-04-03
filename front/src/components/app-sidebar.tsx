@@ -24,6 +24,9 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
+import { Progress } from "@/components/ui/progress"; 
+import { Cloud } from "lucide-react"; 
+
 const data = {
   navMain: [
     {
@@ -138,47 +141,85 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const [isClient, setIsClient] = React.useState(false)
-  const [activePath, setActivePath] = React.useState("")
-  const [windowWidth, setWindowWidth] = React.useState(0);
+  const [isClient, setIsClient] = React.useState(false);
+  const [activePath, setActivePath] = React.useState("");
+  const [hover, setHover] = React.useState(false);
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
+
+  const storageValue = 60;
 
   React.useEffect(() => {
-    setIsClient(true)
-    setActivePath(window.location.pathname)
-    setWindowWidth(window.innerWidth)
+    setIsClient(true);
+    setActivePath(window.location.pathname);
+  }, []);
 
-    const handleResize = () => setWindowWidth(window.innerWidth)
-    window.addEventListener("resize", handleResize)
+  // ✅ Detect sidebar collapse using ResizeObserver
+  React.useEffect(() => {
+    if (!sidebarRef.current) return;
 
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        const width = entry.contentRect.width;
+        setIsCollapsed(width < 80); // Adjust based on actual collapsed width
+      }
+    });
+
+    observer.observe(sidebarRef.current);
+
+    return () => observer.disconnect();
+  }, []);
 
   const updatedNavMain = React.useMemo(
     () =>
       data.navMain.map((item) => ({
         ...item,
         isActive: isClient && activePath === item.url,
-        items: item.items
-          ?.filter(
-            (subItem) => !(windowWidth < 768 && subItem.title === "Drag & Drop")
-          ) // Hide Drag & Drop if width < 768px
-          .map((subItem) => ({
-            ...subItem,
-            isActive: isClient && activePath === subItem.url,
-          })),
+        items: item.items?.map((subItem) => ({
+          ...subItem,
+          isActive: isClient && activePath === subItem.url,
+        })),
       })),
-    [isClient, activePath, windowWidth]
-  )
+    [isClient, activePath]
+  );
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar ref={sidebarRef} collapsible="icon" {...props}>
       <SidebarContent>
         <NavMain items={updatedNavMain} />
       </SidebarContent>
+
+      {/* Cloud Storage Section */}
+      <div className="px-4 py-3 space-y-1">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Cloud className="size-4 text-gray-500" />
+          {!isCollapsed && (
+            <span className="font-medium transition-opacity duration-300 ease-in-out">
+              Your Cloud Storage
+            </span>
+          )}
+        </div>
+        <div
+          className="relative group"
+          onMouseEnter={() => setHover(true)}
+          onMouseLeave={() => setHover(false)}
+        >
+          <Progress value={storageValue} className="h-1" />
+          {hover && (
+            <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md">
+              {storageValue}% Used
+            </div>
+          )}
+        </div>
+      </div>
+
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }
+
+
+

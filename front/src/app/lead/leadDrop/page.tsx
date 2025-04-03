@@ -1,21 +1,25 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Card, CardBody, CardFooter } from "@heroui/react";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
-import { MdCancel } from "react-icons/md";
-import { AppSidebar } from "@/components/app-sidebar"
-import { Separator } from "@/components/ui/separator"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
-import { Meteors } from "@/components/ui/meteors";
-import { useRouter } from "next/navigation";
-import { ModeToggle } from "@/components/ModeToggle"
-import SearchBar from '@/components/globalSearch';
-import Notification from '@/components/notification';
-import { Calendar1, Mail } from "lucide-react";
+} from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { Separator } from "@/components/ui/separator";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { ModeToggle } from "@/components/ModeToggle";
+import SearchBar from "@/components/globalSearch";
+import Notification from "@/components/notification";
+import { Calendar, Calendar1, Mail, X } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+
 interface Lead {
   _id: string;
   companyName: string;
@@ -32,6 +36,16 @@ interface Lead {
   isActive: boolean;
 }
 
+const statusColors = {
+  Proposal: "bg-orange-100 text-orange-800 border-orange-200",
+  New: "bg-blue-100 text-blue-800 border-blue-200",
+  Discussion: "bg-purple-100 text-purple-800 border-purple-200",
+  Demo: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  Decided: "bg-green-100 text-green-800 border-green-200",
+};
+
+const statusOrder = ["Proposal", "New", "Discussion", "Demo", "Decided"];
+
 const getAllLeads = async (): Promise<Lead[]> => {
   try {
     const response = await fetch("http://localhost:8000/api/v1/lead/getAllLeads");
@@ -44,75 +58,40 @@ const getAllLeads = async (): Promise<Lead[]> => {
   }
 };
 
-export default function App() {
+export default function LeadBoard() {
   const [groupedLeads, setGroupedLeads] = useState<Record<string, Lead[]>>({});
   const [error, setError] = useState("");
   const [draggedOver, setDraggedOver] = useState<string | null>(null);
-  const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
-  const router = useRouter();
-
-  const handleLeadClick = (lead: Lead) => {
-    setSelectedLead(lead);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedLead(null);
-  };
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [totalValue, setTotalValue] = useState(0);
 
   useEffect(() => {
     const fetchLeads = async () => {
       try {
         const fetchedLeads = await getAllLeads();
-        groupLeadsByStatus(fetchedLeads);
+        const grouped = fetchedLeads.reduce((acc, lead) => {
+          if (!acc[lead.status]) acc[lead.status] = [];
+          acc[lead.status].push(lead);
+          return acc;
+        }, {} as Record<string, Lead[]>);
+
+        setGroupedLeads(grouped);
+        setTotalValue(fetchedLeads.reduce((sum, lead) => sum + lead.amount, 0));
       } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message);
-        } else {
-          setError("An unknown error occurred");
-        }
-      };
-    }
+        setError(error instanceof Error ? error.message : "An unknown error occurred");
+      }
+    };
     fetchLeads();
   }, []);
-
-  const groupLeadsByStatus = (leads: Lead[]) => {
-    const grouped = leads.reduce((acc, lead) => {
-      if (!acc[lead.status]) acc[lead.status] = [];
-      acc[lead.status].push(lead);
-      return acc;
-    }, {} as Record<string, Lead[]>);
-    setGroupedLeads(grouped);
-  };
-
-  const statusColors: Record<string, string> = {
-    Proposal: " text-gray-800 border-2 border-black ",
-    New: " text-gray-800 border-2 border-black ",
-    Discussion: " text-gray-800 border-2 border-black ",
-    Demo: " text-gray-800 border-2 border-black ",
-    Decided: " text-gray-800 border-2 border-black ",
-  };
-
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
-      console.warn(`Invalid date: ${dateString}`);
-      return "Invalid Date";
-    }
-    return date.toISOString().split("T")[0];
-  };
 
   const handleDragStart = (e: React.DragEvent, lead: Lead, fromStatus: string) => {
     e.dataTransfer.setData("lead", JSON.stringify(lead));
     e.dataTransfer.setData("fromStatus", fromStatus);
-    e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDrop = async (e: React.DragEvent, toStatus: string) => {
     e.preventDefault();
-    setDraggedOver(null);
     const leadData = e.dataTransfer.getData("lead");
     const fromStatus = e.dataTransfer.getData("fromStatus");
 
@@ -127,18 +106,31 @@ export default function App() {
       [toStatus]: [...(prev[toStatus] || []), updatedLead as Lead],
     }));
 
-
     try {
-      const response = await fetch("http://localhost:8000/api/v1/lead/updateLeadStatus", {
+      await fetch("http://localhost:8000/api/v1/lead/updateLeadStatus", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leadId: lead._id, status: toStatus }),
       });
-      const data = await response.json();
-      if (!data.success) throw new Error("Failed to update lead status on server.");
     } catch (error) {
       console.error("Error updating status:", error);
     }
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
+    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
+    const year = date.getFullYear();  // Get the full year
+    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(amount);
   };
 
   return (
@@ -183,91 +175,162 @@ export default function App() {
                 Calendar
               </div>
             </a>
-
             <div>
               <Notification />
             </div>
           </div>
         </header>
-        <div className="p-6">
-          {error && <p className="text-red-500 text-center">{error}</p>}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-7xl mx-auto">
+
+        <main className="p-4 md:p-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Total Value</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(totalValue)}</div>
+              </CardContent>
+            </Card>
+            {statusOrder.map((status) => (
+              <Card key={status}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">{status}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{groupedLeads[status]?.length || 0}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {formatCurrency(
+                      groupedLeads[status]?.reduce((sum, lead) => sum + lead.amount, 0) || 0
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Lead Board */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
             {Object.keys(statusColors).map((status) => {
-              const leadsInStatus = groupedLeads[status] || [];
-              const totalAmount = leadsInStatus.reduce((sum, lead) => sum + lead.amount, 0);
+              const leads = groupedLeads[status] || [];
+              const statusTotal = leads.reduce((sum, lead) => sum + lead.amount, 0);
+              const percentage = totalValue > 0 ? (statusTotal / totalValue) * 100 : 0;
 
               return (
                 <div
                   key={status}
+                  className={`rounded-lg border p-4 transition-colors ${draggedOver === status ? "bg-accent/50" : "bg-background"
+                    }`}
                   onDrop={(e) => handleDrop(e, status)}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDraggedOver(status);
-                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnter={() => setDraggedOver(status)}
                   onDragLeave={() => setDraggedOver(null)}
                 >
-                  <h2 className={`text-base font-bold mb-4 px-5 py-2 rounded-lg ${statusColors[status]}`}>{status}</h2>
-                  <div className="p-4 rounded-lg shadow-sm border border-black mb-4">
-                    <p className="text-sm font-semibold text-gray-800">Total Lead : {leadsInStatus.length}</p>
-                    <p className="text-sm font-semibold text-gray-800">Total Amount : ₹{totalAmount}</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-sm font-medium px-3 py-1 rounded-full ${statusColors[status]}`}>
+                      {status}
+                    </h3>
+                    <span className="text-sm text-muted-foreground">
+                      {leads.length} leads
+                    </span>
                   </div>
-                  <div className="mt-4 flex flex-col gap-3 min-h-[250px] max-h-[500px] h-[350px] overflow-y-auto scrollbar-hide">
-                    {leadsInStatus.length === 0 ? (
-                      <h1 className="text-1xl mb-4 mt-4 text-center">No lead available</h1>
-                    ) : (
-                      leadsInStatus.map((lead) => (
-                        <div
+
+                  <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto scrollbar-hide">
+                    {leads.length > 0 ? (
+                      leads.map((lead) => (
+                        <Card
                           key={lead._id}
-                          className="p-3 border border-black rounded-lg bg-white shadow-sm cursor-grab"
+                          className="cursor-grab hover:shadow-sm active:cursor-grabbing"
                           draggable
                           onDragStart={(e) => handleDragStart(e, lead, status)}
-                          onClick={() => handleLeadClick(lead)}
+                          onClick={() => {
+                            setSelectedLead(lead);
+                            setIsModalOpen(true);
+                          }}
                         >
-                          <p className="text-sm font-semibold text-gray-800">Company Name : <span>{lead.companyName}</span></p>
-                          <p className="text-sm font-semibold text-gray-800">Customer Name : <span>{lead.customerName}</span></p>
-                          <p className="text-sm font-semibold text-gray-800">Product : <span>{lead.productName}</span></p>
-                          <p className="text-sm font-semibold text-gray-800">Amount : <span>₹{lead.amount}</span></p>
-                        </div>
+                          <CardHeader className="p-4 pb-2">
+                            <CardTitle className="text-sm font-medium line-clamp-1">
+                              {lead.productName}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                              {lead.companyName}
+                            </p>
+                            <p className="text-sm font-semibold mt-2">
+                              {formatCurrency(lead.amount)}
+                            </p>
+                          </CardContent>
+                        </Card>
                       ))
+                    ) : (
+                      <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+                        No lead in this status
+                      </div>
                     )}
                   </div>
                 </div>
               );
             })}
           </div>
+        </main>
 
-          {isModalOpen && selectedLead && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-              <div className="w-full max-w-md h-auto relative">
-                <div className="absolute inset-0 h-full w-full bg-gradient-to-r  rounded-full blur-lg scale-90 opacity-50" />
-                <div className="relative bg-white border border-gray-700 rounded-lg p-6 w-[800px] h-700 flex flex-col">
-                  <div
-                    className="absolute top-3 right-3 h-8 w-8 flex items-center justify-center cursor-pointer"
-                    onClick={() => {
-                      setIsModalOpen(false);
-                    }}
-                  >
-                    <MdCancel className="text-gray-500 text-2xltext-gray-500 text-2xl" />
+        {/* Lead Detail Modal */}
+        {isModalOpen && selectedLead && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="relative mx-4 w-full max-w-2xl rounded-lg bg-background shadow-lg">
+              <button
+                className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none"
+                onClick={() => setIsModalOpen(false)}
+              >
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close</span>
+              </button>
+
+              <div className="p-6">
+                <h2 className="text-xl font-semibold mb-4">{selectedLead.productName}</h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Company</h3>
+                    <p>{selectedLead.companyName}</p>
                   </div>
-                  <h1 className="font-bold text-2xl text-gray-900 mb-6 text-center">Lead Record</h1>
-                  <Separator className="my-4 border-gray-300" />
-                  <div className="grid grid-cols-2 gap-4 text-gray-700">
-                    {Object.entries(selectedLead)
-                      .filter(([key]) => !["_id", "__v", "isActive", "createdAt", "updatedAt"].includes(key))
-                      .map(([key, value]) => (
-                        <p key={key} className="text-lg">
-                          <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong>{" "}
-                          {["date", "endDate"].includes(key) && value
-                            ? new Date(value).toLocaleDateString("en-GB")
-                            : value || "N/A"}
-                        </p>
-                      ))}
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Customer</h3>
+                    <p>{selectedLead.customerName}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Value</h3>
+                    <p>{formatCurrency(selectedLead.amount)}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Status</h3>
+                    <span className={`text-xs px-2 py-1 rounded-full ${statusColors[selectedLead.status]}`}>
+                      {selectedLead.status}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Start Date</h3>
+                    <p>{formatDate(selectedLead.date)}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">End Date</h3>
+                    <p>{formatDate(selectedLead.endDate)}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Contact</h3>
+                    <p>{selectedLead.contactNumber}</p>
+                    <p className="text-blue-600">{selectedLead.emailAddress}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Notes</h3>
+                    <p className="whitespace-pre-line">{selectedLead.notes || "No notes"}</p>
                   </div>
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </SidebarInset>
     </SidebarProvider>
   );

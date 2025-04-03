@@ -10,7 +10,7 @@ const createScheduledEvent = async (req, res) => {
             eventData.attachments = req.files.map(file => file.buffer);  
         }
 
-        const validRecurrences = ['one-time', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
+        const validRecurrences = ['OneTime', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
         if (eventData.recurrence && !validRecurrences.includes(eventData.recurrence)) {
             return res.status(400).json({
                 success: false,

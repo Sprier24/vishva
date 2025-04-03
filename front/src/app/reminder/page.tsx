@@ -9,7 +9,6 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button" 
-import { Calendar1, Mail } from "lucide-react"
 
 
 export default function CertificatePage() {
@@ -37,22 +36,6 @@ export default function CertificatePage() {
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
-
-                        <a href="/email" className="relative group">
-                            <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-                            <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                Email
-                            </div>
-                        </a>
-
-                        {/* Calendar Icon with Tooltip */}
-                        <a href="/calendar" className="relative group">
-                            <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-                            <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                Calendar
-                            </div>
-                        </a>
-
                         {/* Add button in the header */}
                         <div className="ml-auto">
                             <Button>Invocie List</Button>

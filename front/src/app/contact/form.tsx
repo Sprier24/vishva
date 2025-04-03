@@ -20,7 +20,7 @@ const contactSchema = z.object({
     .nonempty({ message: "Required" }),
   emailAddress: z.string().email({ message: "Required" }),
   address: z.string().nonempty({ message: "Required" }),
-  gstNumber: z.string().nonempty({ message: "Required" }),
+  gstNumber: z.string().optional(),
   description: z.string().optional(),
 });
 
@@ -157,7 +157,7 @@ export default function ContactForm() {
             name="gstNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>GST Number</FormLabel>
+                <FormLabel>GST Number (Optional) </FormLabel>
                 <FormControl>
                   <Input placeholder="Enter GST number" {...field} />
                 </FormControl>
@@ -177,7 +177,7 @@ export default function ContactForm() {
                 <textarea
                   placeholder="Enter more details here..."
                   {...field}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
                   rows={3}
                 />
               </FormControl>

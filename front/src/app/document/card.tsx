@@ -18,7 +18,7 @@ const GoogleDriveClone = () => {
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'file' | 'photo'>('all');
   const modalRef = useRef<HTMLDivElement>(null);
-  const modalBackdropRef = useRef<HTMLDivElement>(null); 
+  const modalBackdropRef = useRef<HTMLDivElement>(null);
 
   const getFileImage = (fileName: string) => {
     const extension = fileName.split(".").pop()?.toLowerCase(); // Extract file extension
@@ -138,14 +138,34 @@ const GoogleDriveClone = () => {
     setSelectedFile(null);
   };
 
-  const handleDownload = (file: File) => {
-    const downloadLink = document.createElement('a');
-    downloadLink.href = `http://localhost:8000/uploads/${file.fileUrl}`;
-    downloadLink.download = file.name;
-    downloadLink.click();
-
-    setDownloadStatus('Download Started...');
-    setTimeout(() => setDownloadStatus(null), 2000);
+  const handleDownload = async (file: File) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/file-folder/files/download/${file.id}`);  
+      if (!response.ok) {
+        throw new Error('Failed to download file');
+      }
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = file.name;  
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = filename;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(downloadLink);
+        setTimeout(() => setDownloadStatus(null), 2000);
+    } catch (error) {
+      console.error("Download failed:", error);
+      setTimeout(() => setDownloadStatus(null), 2000);
+    }
   };
 
   // Close the modal if clicked outside the modal content
@@ -166,7 +186,7 @@ const GoogleDriveClone = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="bg-gray-50 text-gray-900 p-2 rounded-md w-full mb-4 border border-gray-300"
         />
-        <h3 className="text-lg font-semibold mb-2 text-gray-800">Files</h3>
+        <h3 className="text-lg font-semibold mb-2 text-gray-800">Documents</h3>
 
         {/* Filter Buttons */}
         <div className="filter-buttons mb-4 flex space-x-2">
@@ -186,7 +206,7 @@ const GoogleDriveClone = () => {
             onClick={() => setFilter('photo')}
             className={`filter-btn ${filter === 'photo' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'} py-1 px-3 rounded-md text-sm`}
           >
-            Photos
+            Images
           </button>
         </div>
 
@@ -213,7 +233,7 @@ const GoogleDriveClone = () => {
           onClick={() => document.getElementById('fileInput')?.click()}
           className="bg-blue-500 text-white py-2 px-4 rounded-md w-full mt-4 hover:bg-blue-600"
         >
-          Upload File
+          Upload
         </button>
       </div>
 

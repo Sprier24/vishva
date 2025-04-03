@@ -62,7 +62,7 @@ const contactSchema = z.object({
         .nonempty({ message: "Required" }),
     emailAddress: z.string().email({ message: "Required" }),
     address: z.string().nonempty({ message: "Required" }),
-    gstNumber: z.string().nonempty({ message: "Required" }),
+    gstNumber: z.string().optional(),
     description: z.string().optional(),
 });
 
@@ -261,7 +261,7 @@ export default function ContactTable() {
 
             toast({
                 title: "Contact Deleted",
-                description: "The task has been successfully deleted.",
+                description: "The contact has been successfully deleted",
             });
 
             fetchContacts();
@@ -296,7 +296,7 @@ export default function ContactTable() {
 
             toast({
                 title: "Contact Updated",
-                description: "The contact has been successfully updated.",
+                description: "The contact has been successfully updated",
             });
 
             // Close dialog and reset form
@@ -327,6 +327,10 @@ export default function ContactTable() {
         }
         // Render note column with a fallback message if there's no note
         if (columnKey === "description") {
+            return cellValue || "N/A";
+        }
+
+        if (columnKey === "gstNumber") {
             return cellValue || "N/A";
         }
         // Render actions column with edit and delete buttons
@@ -705,9 +709,10 @@ export default function ContactTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                        Are you sure you want to delete this contact?,
+                        The data won't be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">

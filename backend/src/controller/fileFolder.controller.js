@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const FileFolder = require('../model/fileFolderSchema.model');
 const fs = require('fs');
 const path = require('path');
+const { resolve } = require('url');
+const mime = require("mime-types");
 
 const createFile = async (req, res) => {
   try {
@@ -76,5 +78,41 @@ const deleteFile = async (req, res) => {
   }
 };
 
+const downloadFile = async (req, res) => {
+  try {
+    const { id } = req.params;
 
-module.exports = { createFile, getFiles, deleteFile };
+    const file = await FileFolder.findById(id);
+    if (!file) {
+      return res.status(404).json({ success: false, message: "File not found" });
+    }
+
+    const filePath = path.resolve(__dirname, "../uploads", path.basename(file.fileUrl));
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ success: false, message: "File not found on server" });
+    }
+
+    let contentType = mime.lookup(filePath) || "application/octet-stream";
+
+    res.setHeader("Content-Disposition", `attachment; filename="${file.name}"`);
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Transfer-Encoding", "binary");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.download(filePath, file.name, (err) => {
+      if (err) {
+        res.status(500).json({ success: false, message: "Error downloading file" });
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+module.exports = { createFile, getFiles, deleteFile, downloadFile };
+
+

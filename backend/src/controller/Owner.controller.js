@@ -4,7 +4,7 @@ const path = require('path');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads')); 
+    cb(null, path.join(__dirname, '../uploads'));
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -13,7 +13,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, 
+  limits: { fileSize: 5 * 1024 * 1024 },
 }).single('logo');
 
 const addOwner = async (req, res) => {
@@ -144,7 +144,7 @@ const deleteOwner = async (req, res) => {
 
 const getOwnerCount = async (req, res) => {
   try {
-    const count = await Owner.countDocuments(); 
+    const count = await Owner.countDocuments();
     res.status(200).json({ count });
   } catch (error) {
     res.status(400).json({ message: 'Error fetching owner count', error: error.message });
@@ -153,7 +153,7 @@ const getOwnerCount = async (req, res) => {
 
 const getOwnerForInvoice = async (req, res) => {
   try {
-    const owner = await Owner.findOne(); 
+    const owner = await Owner.findOne();
     if (!owner) {
       return res.status(404).json({ message: 'Owner not found' });
     }
@@ -165,7 +165,7 @@ const getOwnerForInvoice = async (req, res) => {
         emailAddress: owner.emailAddress,
         gstNumber: owner.gstNumber,
         website: owner.website,
-        logo : owner.logo
+        logo: owner.logo
       },
     });
   } catch (error) {
@@ -179,7 +179,6 @@ module.exports = {
   updateOwner,
   getOwners,
   deleteOwner,
-  getOwnerCount, 
-  getOwnerForInvoice 
+  getOwnerCount,
+  getOwnerForInvoice
 };
- 

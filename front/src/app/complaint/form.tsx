@@ -197,7 +197,7 @@ export default function ComplaintForm() {
                 <FormLabel>Case Status</FormLabel>
                 <FormControl>
                   <select {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                   >
                     <option value="Pending">Pending</option>
                     <option value="InProgress">In Progress</option>
@@ -216,7 +216,7 @@ export default function ComplaintForm() {
                 <FormLabel>Priority</FormLabel>
                 <FormControl>
                   <select {...field}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                   >
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
@@ -239,7 +239,7 @@ export default function ComplaintForm() {
                 <textarea
                   placeholder="Enter client / customer problem briefly..."
                   {...field}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
                   rows={3}
                 />
               </FormControl>

@@ -149,49 +149,39 @@ export default function App() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList className="flex items-center space-x-2">
-                <BreadcrumbItem className="hidden sm:block md:block">
-                  <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden sm:block md:block" />
-                <BreadcrumbItem className="hidden sm:block md:block">
-                  <BreadcrumbLink href="/invoice/table">Invoice</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden sm:block md:block" />
-                <span className="hidden sm:block md:block">
-                  Drag and Drop
-                </span>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-          <div className="flex items-center space-x-4 ml-auto mr-4">
-            <div  >
-              <SearchBar />
+      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
+            <div className="flex items-center gap-2 px-4">
+                <SidebarTrigger className="-ml-1" />
+                <Separator orientation="vertical" className="mr-2 h-4"/>
+                <Breadcrumb>
+                <BreadcrumbList className="flex items-center space-x-2">
+                    <BreadcrumbItem className="hidden sm:block md:block">
+                    <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden sm:block md:block"/>
+                    <BreadcrumbItem className="hidden sm:block md:block">
+                    <BreadcrumbLink href="/invoice/table">Invoice</BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden sm:block md:block" />
+                    <span className="hidden sm:block md:block">
+                        Drag and Drop
+                    </span>
+                </BreadcrumbList>
+                </Breadcrumb>
             </div>
-            <a href="/email" className="relative group">
-              <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Email
-              </div>
-            </a>
-
-            {/* Calendar Icon with Tooltip */}
-            <a href="/calendar" className="relative group">
-              <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Calendar
-              </div>
-            </a>
-
-            <div>
-              <Notification />
+            <div className="flex items-center space-x-4 ml-auto mr-4">
+                <div  >
+                    <SearchBar />
+                </div>
+                <a href="/calendar">
+                    <div>
+                        <Calendar1 />
+                    </div>
+                </a>
+                <div>
+                    <Notification />
+                </div>
             </div>
-          </div>
         </header>
 
         <div className="p-6">
@@ -260,7 +250,7 @@ export default function App() {
                   <h1 className="text-2xl font-bold text-gray-900 text-center mb-6">Invoice Details</h1>
                   <Separator className="my-4 border-gray-300" />
                   <div className="grid grid-cols-2 gap-4 text-gray-700">
-
+                  
                     {Object.entries(selectedInvoice)
                       .filter(([key]) => !["_id", "__v", "isActive", "createdAt", "updatedAt"].includes(key))
                       .map(([key, value]) => (

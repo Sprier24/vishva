@@ -273,8 +273,8 @@ export default function ComplaintTable() {
             }
 
             toast({
-                title: "deal Deleted",
-                description: "The deal has been successfully deleted.",
+                title: "Complaint Deleted",
+                description: "The complaint has been successfully deleted",
             });
 
             // Refresh the leads list
@@ -622,7 +622,15 @@ export default function ComplaintTable() {
                                         <FormItem>
                                             <FormLabel>Contact Number (Optional)</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Enter contact number" {...field} />
+                                                <Input
+                                                    placeholder="Enter contact number"
+                                                    type="tel"
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value.replace(/[^0-9]/g, ''); // Allow only numeric values
+                                                        field.onChange(value);
+                                                    }}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -772,9 +780,10 @@ export default function ComplaintTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                            Are you sure you want to delete this complaint?,
+                            The data won't be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">

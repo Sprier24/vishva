@@ -25,8 +25,8 @@ const scheduledEventSchema = new mongoose.Schema({
       "meeting",
       "Demo",
       "demo",
-      "Follow-Up",
-      "follow-up",
+      "FollowUp",
+      "followup",
     ],
   },
   priority: {
@@ -38,7 +38,7 @@ const scheduledEventSchema = new mongoose.Schema({
   },
   recurrence: {
     type: String,
-    enum: ["one-time", "Daily", "Weekly", "Monthly", "Yearly"],
+    enum: ["OneTime", "Daily", "Weekly", "Monthly", "Yearly"],
   },
   description: {
     type: String,

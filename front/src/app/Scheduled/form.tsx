@@ -20,8 +20,8 @@ const eventSchema = z.object({
   assignedUser: z.string().optional(),
   location: z.string().optional(),
   customer: z.string().optional(),
-  eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "Follow-Up", "follow-up"], { message: "Required" }),
-  recurrence: z.enum(["one-time", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
+  eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "FollowUp", "follow-up"], { message: "Required" }),
+  recurrence: z.enum(["OneTime", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
   status: z.enum(["Scheduled", "Completed", "Cancelled", "Postpone"], { message: "Required" }),
   priority: z.enum(["Low", "low", "Medium", "medium", "High", "high"], { message: "Required" }),
   date: z.date().optional(),
@@ -42,7 +42,7 @@ export default function ScheduledEventForm() {
       eventType: "call",
       priority: "Medium",
       description: "",
-      recurrence: "one-time",
+      recurrence: "OneTime",
       date: new Date(),
     },
   });
@@ -155,7 +155,7 @@ export default function ScheduledEventForm() {
                     <option value="call">Call</option>
                     <option value="Meeting">Meeting</option>
                     <option value="Demo">Demo</option>
-                    <option value="Follow-Up">Follow Up</option>
+                    <option value="FollowUp">Follow Up</option>
                   </select>
                 </FormControl>
                 <FormMessage />
@@ -173,7 +173,7 @@ export default function ScheduledEventForm() {
                     {...field}
                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                   >
-                    <option value="one-time">One Time</option>
+                    <option value="OneTime">One Time</option>
                     <option value="Daily">Daily</option>
                     <option value="Weekly">Weekly</option>
                     <option value="Monthly">Monthly</option>

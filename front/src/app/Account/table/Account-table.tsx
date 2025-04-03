@@ -241,7 +241,7 @@ export default function AccountTable() {
 
             toast({
                 title: "Account Deleted",
-                description: "The account has been successfully deleted.",
+                description: "The account has been successfully deleted",
             });
 
             fetchAccounts();
@@ -276,7 +276,7 @@ export default function AccountTable() {
 
             toast({
                 title: "Account Updated",
-                description: "The account has been successfully updated.",
+                description: "The account has been successfully updated",
             });
 
             // Close dialog and reset form
@@ -672,9 +672,10 @@ export default function AccountTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                        Are you sure you want to delete this account?,
+                        The data won't be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">

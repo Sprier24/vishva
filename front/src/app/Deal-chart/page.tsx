@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import CardLineChart from "../Deal-chart/chart"
+
 import {
     SidebarInset,
     SidebarProvider,
@@ -8,6 +9,7 @@ import {
 import { AppSidebar } from "@/components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { Button } from "@/components/ui/button"
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
 import { Calendar1, Mail } from "lucide-react"
@@ -21,21 +23,19 @@ export default function CertificatePage() {
                     <div className="flex items-center gap-2 px-4">
                         <SidebarTrigger className="-ml-1" />
                         <Separator orientation="vertical" className="mr-2 h-4" />
-                        <Breadcrumb>
-                            <BreadcrumbList className="flex items-center space-x-2">
-                                <BreadcrumbItem className="hidden sm:block md:block">
-                                    <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden sm:block md:block" />
-                                <BreadcrumbItem className="hidden sm:block md:block">
-                                    <BreadcrumbLink href="/deal/table">Deal</BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden sm:block md:block" />
-                                <span className="hidden sm:block md:block">
-                                    Graph
-                                </span>
-                            </BreadcrumbList>
-                        </Breadcrumb>
+                        <BreadcrumbList className="flex items-center space-x-2">
+                            <BreadcrumbItem className="hidden sm:block md:block">
+                                <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator className="hidden sm:block md:block" />
+                            <BreadcrumbItem className="hidden sm:block md:block">
+                                <BreadcrumbLink href="/deal/table">Deal</BreadcrumbLink>
+                            </BreadcrumbItem>
+                            <BreadcrumbSeparator className="hidden sm:block md:block" />
+                            <span className="hidden sm:block md:block">
+                                Graph
+                            </span>
+                        </BreadcrumbList>
                     </div>
                     <div className="flex items-center space-x-4 ml-auto mr-4">
                         <div  >
@@ -55,18 +55,13 @@ export default function CertificatePage() {
                                 Calendar
                             </div>
                         </a>
-
                         <div>
                             <Notification />
                         </div>
                     </div>
                 </header>
-                <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15">
-                    <Card className="max-w-8xl mx-auto">
-                        <CardHeader>
-                            <CardTitle className="text-3xl font-bold text-center">Deal</CardTitle>
-                            <h1 className="text-1xl mb-4 mt-4 text-center">Manage and track your deal effectively</h1>
-                        </CardHeader>
+                <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 ">
+                    <Card className="max-w-6xl mx-auto border-none shadow-none">
                         <CardContent>
                             <CardLineChart />
                         </CardContent>

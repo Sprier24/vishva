@@ -71,8 +71,8 @@ const eventSchema = z.object({
     assignedUser: z.string().optional(),
     location: z.string().optional(),
     customer: z.string().optional(),
-    eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "Follow-Up", "follow-up"], { message: "Required" }),
-    recurrence: z.enum(["one-time", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
+    eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "FollowUp", "followup"], { message: "Required" }),
+    recurrence: z.enum(["OneTime", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
     status: z.enum(["Scheduled", "Completed", "Cancelled", "Postpone"], { message: "Required" }),
     priority: z.enum(["Low", "low", "Medium", "medium", "High", "high"], { message: "Required" }),
     date: z.date().optional(),
@@ -173,7 +173,7 @@ export default function ScheduledEvents() {
             eventType: "call",
             priority: "Medium",
             description: "",
-            recurrence: "one-time",
+            recurrence: "OneTime",
             date: "",
         },
     })
@@ -278,8 +278,8 @@ export default function ScheduledEvents() {
             }
 
             toast({
-                title: "Scheduled Deleted",
-                description: "The scheduled has been successfully deleted.",
+                title: "Event or meeting Deleted",
+                description: "The event or meeting has been successfully deleted",
             });
 
             // Refresh the leads list
@@ -670,7 +670,7 @@ export default function ScheduledEvents() {
                                                     <option value="call">Call</option>
                                                     <option value="Meeting">Meeting</option>
                                                     <option value="Demo">Demo</option>
-                                                    <option value="Follow-Up">Follow Up</option>
+                                                    <option value="FollowUp">Follow Up</option>
                                                 </select>
                                             </FormControl>
                                             <FormMessage />
@@ -688,7 +688,7 @@ export default function ScheduledEvents() {
                                                     {...field}
                                                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                                                 >
-                                                    <option value="one-time">One Time</option>
+                                                    <option value="OneTime">One Time</option>
                                                     <option value="Daily">Daily</option>
                                                     <option value="Weekly">Weekly</option>
                                                     <option value="Monthly">Monthly</option>
@@ -821,9 +821,10 @@ export default function ScheduledEvents() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                            Are you sure you want to delete this event or meeting?,
+                            The data won't be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">

@@ -52,7 +52,6 @@ export default function DealTablePage() {
                                 Calendar
                             </div>
                         </a>
-
                         <div>
                             <Notification />
                         </div>

@@ -81,7 +81,7 @@ const EmailInput: React.FC = () => {
             if (!response.ok) throw new Error("Failed to send email");
 
             toast({
-                title: "Email Sent Successfully",
+                title: "Email Submitted",
                 description: "The email has been sent successfully",
             });
 
@@ -157,9 +157,10 @@ const EmailInput: React.FC = () => {
                         <div>
                             <SearchBar />
                         </div>
-                        <a href="/calendar">
-                            <div>
-                                <Calendar1 />
+                        <a href="/calendar" className="relative group">
+                            <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+                            <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                Calendar
                             </div>
                         </a>
                         <div>
@@ -170,7 +171,7 @@ const EmailInput: React.FC = () => {
                 {showTablePicker && (
                     <div
                         className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-10 z-50"
-                        onClick={() => setShowTablePicker(false)} 
+                        onClick={() => setShowTablePicker(false)}
                     >
                         <div
                             className="bg-white shadow-md p-4 border rounded-md"

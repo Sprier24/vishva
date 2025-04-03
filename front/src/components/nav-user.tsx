@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import Link from "next/link";
-import { Loader2 } from 'lucide-react';
+import { Edit, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -16,7 +16,7 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/c
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { z } from "zod";
-import { LuLoader } from "react-icons/lu";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface Owner {
   _id: string;
@@ -195,14 +195,6 @@ export function NavUser() {
     }
   };
 
-  const handleLogout = () => {
-    setLoading(true);
-    // Simulate logout process (Replace with actual logout logic)
-    setTimeout(() => {
-      setLoading(false);
-    }, 2000);
-  };
-
   const onSubmit = async (data: Owner) => {
     setIsSubmitting(true);
     try {
@@ -252,24 +244,6 @@ export function NavUser() {
     <>
       <SidebarMenu>
         <SidebarMenuItem>
-          <div className="px-4 py-3 space-y-1">
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-
-              <span className="font-medium">Your Cloud Storage</span>
-            </div>  <Cloud className="size-4 text-gray-500" />
-            <div
-              className="relative group"
-              onMouseEnter={() => setHover(true)}
-              onMouseLeave={() => setHover(false)}
-            >
-              <Progress value={storageValue} className="h-1" />
-              {hover && (
-                <div className="absolute left-1/2 -top-6 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md">
-                  {storageValue}% Used
-                </div>
-              )}
-            </div>
-          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent">
@@ -290,11 +264,9 @@ export function NavUser() {
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" side={isMobile ? "bottom" : "right"} align="end" sideOffset={4}>
-            <DropdownMenuItem onClick={handleLogout} disabled={loading}>
-                {loading ? <LuLoader className="animate-spin mr-2" /> : <LogOut />}
-                <Link href="/login" className="ml-2">
-                  Log out
-                </Link>
+              <DropdownMenuItem>
+                <LogOut />
+                <Link href="/login">Log out</Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setDeleteModalOpen(true)} className="text-red-500">
                 <Trash2 className="size-4 mr-2" />
@@ -361,138 +333,172 @@ export function NavUser() {
       </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4 flex flex-col items-center text-center">
-          <DialogHeader className="w-full flex flex-col items-center text-center">
-            <DialogTitle>Profile Details</DialogTitle>
-            <hr className="my-3 border-gray-300 dark:border-gray-700 w-full" />
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto hide-scrollbar">
+          <DialogHeader>
+            <DialogTitle className="text-center">Profile Details</DialogTitle>
           </DialogHeader>
-          {loading ? (
-            <div className="text-center text-gray-600 dark:text-gray-400 text-lg">Loading...</div>
-          ) : error ? (
-            <div className="text-center text-red-600 text-lg">{error}</div>
+          {error ? (
+            <div className="text-center text-red-500 py-4">{error}</div>
           ) : currentOwner ? (
-            <div className="relative h-full flex flex-col items-center text-center w-full">
-              {/* Logo at the top, centered */}
-              <div className="w-32 h-32 md:w-44 md:h-44 border border-gray-300 dark:border-gray-700 rounded-full overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800 mb-4">
-                {currentOwner.logo ? (
-                  <img
-                    src={`http://localhost:8000/uploads/${currentOwner.logo}`}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-gray-600 dark:text-gray-400 text-base md:text-lg">No Logo</span>
-                )}
-              </div>
-
-              {/* Name and email centered below logo */}
-              <div className="text-center mb-6">
-                <div className="text-lg md:text-xl font-bold font-serif text-gray-800 dark:text-white">
-                  {currentOwner.ownerName}
+            <div className="space-y-6">
+              {/* Profile Header */}
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-gray-200">
+                    <AvatarImage
+                      src={currentOwner.logo ? `http://localhost:8000/uploads/${currentOwner.logo}` : "/default-logo.png"}
+                      alt={currentOwner.companyName}
+                    />
+                    <AvatarFallback className="text-xl">
+                      {currentOwner.companyName?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                 </div>
-                <div className="text-sm md:text-lg font-medium text-gray-600 dark:text-gray-400">
-                  {currentOwner.emailAddress}
+                <div className="text-center">
+                  <h2 className="text-xl font-bold">{currentOwner.ownerName}</h2>
+                  <p className="text-sm text-gray-500">{currentOwner.emailAddress}</p>
                 </div>
               </div>
 
-              {/* Two-column grid for other details */}
-              <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-gray-700 dark:text-gray-300 py-4 md:py-6 text-base md:text-sm text-center">
-                <div>
-                  <span className="md:text-2xl text-black">Company Name</span>
-                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.companyName}</span>
-                </div>
-                <div>
-                  <span className="md:text-2xl text-black">Owner Name</span>
-                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.ownerName}</span>
-                </div>
-                <div>
-                  <span className="md:text-2xl text-black">Contact Number</span>
-                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.contactNumber}</span>
-                </div>
-                <div>
-                  <span className="md:text-2xl text-black">Company Type</span>
-                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.companyType}</span>
-                </div>
-                <div>
-                  <span className="md:text-2xl text-black">Business Registration</span>
-                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.businessRegistration}</span>
-                </div>
-                <div>
-                  <span className="md:text-2xl text-black">Employee Size</span>
-                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.employeeSize}</span>
-                </div>
-                <div>
-                  <span className="md:text-2xl text-black">PAN Number</span>
-                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.panNumber}</span>
-                </div>
-                <div>
-                  <span className="md:text-2xl text-black">GST Number</span>
-                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.gstNumber}</span>
-                </div>
-                <div>
-                  <span className="md:text-2xl text-black">Document Type</span>
-                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.documentType}</span>
-                </div>
-                <div>
-                  <span className="md:text-2xl text-black">Document Number</span>
-                  <span className="block text-sm md:text-base py-2 px-3 mr-2">{currentOwner.documentNumber || "N/A"}</span>
-                </div>
-                {currentOwner.website && (
+              {/* Profile Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <h3 className="text-sm font-medium text-gray-500">Contact Information</h3>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
                   <div>
-                    <span className="md:text-2xl text-black">Company Website</span>
-                    <br />
-                    <a
-                      href={currentOwner.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 dark:text-blue-400 underline"
-                    >
-                      {currentOwner.website}
-                    </a>
-                  </div>
-                )}
+                      <p className="text-xs text-gray-400">Name</p>
+                      <p>{currentOwner.ownerName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Email</p>
+                      <p>{currentOwner.emailAddress}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Phone</p>
+                      <p>{currentOwner.contactNumber}</p>
+                    </div>
+                    {currentOwner.website && (
+                      <div>
+                        <p className="text-xs text-gray-400">Website</p>
+                        <a 
+                          href={currentOwner.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          {currentOwner.website}
+                        </a>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <h3 className="text-sm font-medium text-gray-500">Business Details</h3>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div>
+                      <p className="text-xs text-gray-400">Company Name</p>
+                      <p>{currentOwner.companyName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Company Type</p>
+                      <p>{currentOwner.companyType}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Registration</p>
+                      <p>{currentOwner.businessRegistration}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Employees</p>
+                      <p>{currentOwner.employeeSize}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="md:col-span-2">
+                  <CardHeader className="pb-2">
+                    <h3 className="text-sm font-medium text-gray-500">Legal Information</h3>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-400">PAN Number</p>
+                      <p>{currentOwner.panNumber}</p>
+                    </div>
+                    {currentOwner.gstNumber && (
+                      <div>
+                        <p className="text-xs text-gray-400">GST Number</p>
+                        <p>{currentOwner.gstNumber}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-xs text-gray-400">Document Type</p>
+                      <p>{currentOwner.documentType}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400">Document Number</p>
+                      <p>{currentOwner.documentNumber || "N/A"}</p>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-              <Button type="submit"
-                className="w-full" onClick={() => handleEditClick(currentOwner)}
-              >
-                Update Profile
-              </Button>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setOpen(false)}>
+                  Close
+                </Button>
+                <Button onClick={() => handleEditClick(currentOwner)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Button>
+              </div>
             </div>
           ) : (
-            <div className="text-center text-gray-600 dark:text-gray-400 text-lg">No profile found</div>
+            <div className="text-center py-8 text-gray-500">
+              No profile information available
+            </div>
           )}
         </DialogContent>
       </Dialog>
 
+      {/* Edit Profile Modal */}
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto hide-scrollbar">
           <DialogHeader>
-            <DialogTitle>Update Profile</DialogTitle>
+            <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-6 w-full">
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <label htmlFor="logo" style={{ textAlign: 'center' }}>
-                  <img
-                    src={logoPreview || (currentOwner?.logo ? `http://localhost:8000/uploads/${currentOwner.logo}` : "/default-logo.png")}
-                    style={{
-                      width: '120px',  // Increased width
-                      height: '120px', // Increased height
-                      borderRadius: '50%',
-                      border: '1px solid #ccc',
-                    }}
-                  />
-
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* Logo Upload */}
+              <div className="flex flex-col items-center gap-4">
+                <label htmlFor="logo" className="cursor-pointer">
+                  <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-dashed border-gray-300">
+                    <AvatarImage
+                      src={logoPreview || (currentOwner?.logo ? `http://localhost:8000/uploads/${currentOwner.logo}` : "/default-logo.png")}
+                      alt="Company Logo"
+                    />
+                    <AvatarFallback className="text-xl">
+                      {currentOwner?.companyName?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                 </label>
                 <input
                   type="file"
                   id="logo"
                   accept="image/*"
                   onChange={handleLogoChange}
-                  style={{ display: 'none' }}
+                  className="hidden"
                 />
+                <Button variant="outline" size="sm" onClick={() => document.getElementById('logo')?.click()}>
+                  Change Logo
+                </Button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Form Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="companyName"
@@ -500,7 +506,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Company Name</FormLabel>
                       <FormControl>
-                        <Input className="w-full p-2 border rounded-md" {...field} placeholder="Enter company name" />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -513,15 +519,12 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Owner Name</FormLabel>
                       <FormControl>
-                        <Input className="w-full p-2 border rounded-md" {...field} placeholder="Enter owner name" />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="contactNumber"
@@ -529,7 +532,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Contact Number</FormLabel>
                       <FormControl>
-                        <Input className="w-full p-2 border rounded-md" {...field} placeholder="Enter contact number" />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -542,15 +545,12 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Company Type</FormLabel>
                       <FormControl>
-                        <Input className="w-full p-2 border rounded-md" {...field} placeholder="Enter company type" />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="businessRegistration"
@@ -558,8 +558,8 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Business Registration</FormLabel>
                       <FormControl>
-                        <select className="w-full p-2 border rounded-md bg-white" {...field}>
-                          <option value="">Select Business Registration</option>
+                        <select className="w-full p-2 border rounded-md" {...field}>
+                          <option value="">Select Registration</option>
                           <option value="Sole proprietorship">Sole proprietorship</option>
                           <option value="One person Company">One person Company</option>
                           <option value="Partnership">Partnership</option>
@@ -577,8 +577,8 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Employee Size</FormLabel>
                       <FormControl>
-                        <select className="w-full p-2 border rounded-md bg-white" {...field}>
-                          <option value="">Select Employee Size</option>
+                        <select className="w-full p-2 border rounded-md" {...field}>
+                          <option value="">Select Size</option>
                           <option value="1-10">1-10</option>
                           <option value="11-50">11-50</option>
                           <option value="51-100">51-100</option>
@@ -589,9 +589,6 @@ export function NavUser() {
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="panNumber"
@@ -599,7 +596,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>PAN Number</FormLabel>
                       <FormControl>
-                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                        <Input disabled {...field} className="bg-gray-100" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -612,15 +609,12 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>GST Number</FormLabel>
                       <FormControl>
-                        <Input className="w-full p-2 border rounded-md" {...field} placeholder="Enter GST number" />
+                      <Input disabled {...field} className="bg-gray-100" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="documentType"
@@ -628,7 +622,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Document Type</FormLabel>
                       <FormControl>
-                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                      <Input disabled {...field} className="bg-gray-100" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -641,7 +635,20 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Document Number</FormLabel>
                       <FormControl>
-                        <Input disabled className="!text-black !opacity-100 bg-gray-200" {...field} />
+                      <Input disabled {...field} className="bg-gray-100" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="https://example.com" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -649,31 +656,21 @@ export function NavUser() {
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Website</FormLabel>
-                    <FormControl>
-                      <Input className="w-full p-2 border rounded-md" {...field} placeholder="Provide website link" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Buttons */}
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Save Changes...
-                  </>
-                ) : (
-                  "Update Profile"
-                )}
-              </Button>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Changes"
+                  )}
+                </Button>
+              </div>
             </form>
           </Form>
         </DialogContent>

@@ -777,9 +777,10 @@ export default function TaskTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle>Confirm Deletion</DialogTitle>
+                        <DialogTitle>Confirm Delete</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to delete this task? This action cannot be undone.
+                            Are you sure you want to delete this task?,
+                            The data won't be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">
@@ -806,7 +807,7 @@ export default function TaskTable() {
 
                                         toast({
                                             title: "Task Deleted",
-                                            description: "The task has been successfully deleted.",
+                                            description: "The task has been successfully deleted",
                                         });
 
                                         fetchTasks();

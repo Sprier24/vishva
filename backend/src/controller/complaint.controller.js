@@ -40,7 +40,7 @@ const getAllComplaints = async (req, res) => {
     const complaints = await Complaint.find(); 
     res.status(200).json({
       success: true,
-      complaints,
+      data: complaints,
     });
   } catch (error) {
     console.error('Error fetching complaints:', error);

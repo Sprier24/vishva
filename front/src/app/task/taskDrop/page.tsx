@@ -1,12 +1,10 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Card, CardBody, CardFooter } from "@heroui/react";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { MdCancel } from "react-icons/md";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -14,17 +12,16 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { ModeToggle } from "@/components/ModeToggle";
-import { Meteors } from "@/components/ui/meteors";
-import SearchBar from '@/components/globalSearch';
-import Notification from '@/components/notification';
-import Task from "../form";
-import { Calendar1, Mail } from "lucide-react";
+import SearchBar from "@/components/globalSearch";
+import Notification from "@/components/notification";
+import { Calendar1, Mail, X } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface Task {
+  notes: string;
   _id: string;
   subject: string;
   relatedTo: string;
@@ -33,9 +30,18 @@ interface Task {
   assigned: string;
   date: string;
   endDate: string;
-  status: "Pending" | "In Progress" | "Resolved";
+  status: "Pending" | "InProgress" | "Resolved";
   isActive: boolean;
+  priority: "High" | "Medium" | "Low";
 }
+
+const statusColors = {
+  Pending: "bg-blue-100 text-blue-800 border-blue-200",
+  "InProgress": "bg-yellow-100 text-yellow-800 border-yellow-200",
+  Resolved: "bg-green-100 text-green-800 border-green-200",
+};
+
+const statusOrder = ["Pending", "InProgress", "Resolved"];
 
 const getAllTasks = async (): Promise<Task[]> => {
   try {
@@ -49,76 +55,40 @@ const getAllTasks = async (): Promise<Task[]> => {
   }
 };
 
-export default function App() {
+export default function TaskBoard() {
+  const [groupedTasks, setGroupedTasks] = useState<Record<string, Task[]>>({});
   const [error, setError] = useState("");
   const [draggedOver, setDraggedOver] = useState<string | null>(null);
-  const [groupedTasks, setGroupedTasks] = useState<Record<string, Task[]>>({});
-  const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
-  const [isModalOpen, setIsModalOpen] = React.useState(false);
-
-  const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedTask(null);
-  };
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchTasks = async () => {
       try {
         const fetchedTasks = await getAllTasks();
-        groupTasksByStatus(fetchedTasks);
+        const grouped = fetchedTasks.reduce((acc, task) => {
+          if (!acc[task.status]) acc[task.status] = [];
+          acc[task.status].push(task);
+          return acc;
+        }, {} as Record<string, Task[]>);
+        setGroupedTasks(grouped);
       } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message);
-        } else {
-          setError("An unknown error occurred");
-        }
-      };
-    }
+        setError(error instanceof Error ? error.message : "An unknown error occurred");
+      }
+    };
     fetchTasks();
   }, []);
-
-  const groupTasksByStatus = (tasks: Task[]) => {
-    const grouped = tasks.reduce((acc, task) => {
-      if (!acc[task.status]) acc[task.status] = [];
-      acc[task.status].push(task);
-      return acc;
-    }, {} as Record<string, Task[]>);
-    setGroupedTasks(grouped);
-  };
-
-
-  const statusColors: Record<string, string> = {
-    Pending: "text-gray-800 border-2 border-black shadow-lg shadow-black/50",
-    InProgress: "text-gray-800 border-2 border-black shadow-lg shadow-black/50",
-    Resolved: "text-gray-800 border-2 border-black shadow-lg shadow-black/50",
-  };
-
-
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
-    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
-    const year = date.getFullYear();  // Get the full year
-    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
-  };
 
   const handleDragStart = (e: React.DragEvent, task: Task, fromStatus: string) => {
     e.dataTransfer.setData("task", JSON.stringify(task));
     e.dataTransfer.setData("fromStatus", fromStatus);
-    e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDrop = async (e: React.DragEvent, toStatus: string) => {
     e.preventDefault();
-    setDraggedOver(null);
     const taskData = e.dataTransfer.getData("task");
     const fromStatus = e.dataTransfer.getData("fromStatus");
-
+    
     if (!taskData || !fromStatus || fromStatus === toStatus) return;
 
     const task: Task = JSON.parse(taskData);
@@ -126,21 +96,27 @@ export default function App() {
 
     setGroupedTasks((prev) => ({
       ...prev,
-      [fromStatus]: prev[fromStatus]?.filter((l) => l._id !== task._id) || [],
+      [fromStatus]: prev[fromStatus]?.filter((t) => t._id !== task._id) || [],
       [toStatus]: [...(prev[toStatus] || []), updatedTask as Task],
     }));
 
     try {
-      const response = await fetch("http://localhost:8000/api/v1/task/updateTaskStatus", {
+      await fetch("http://localhost:8000/api/v1/task/updateTaskStatus", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ taskId: task._id, status: toStatus }),
       });
-      const data = await response.json();
-      if (!data.success) throw new Error("Failed to update task status on server.");
     } catch (error) {
       console.error("Error updating status:", error);
     }
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
+    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
+    const year = date.getFullYear();  // Get the full year
+    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
   };
 
   return (
@@ -175,106 +151,172 @@ export default function App() {
             <div  >
               <SearchBar />
             </div>
-            <a href="/email">
-              <div>
-                <Mail />
-              </div>
-            </a>
-            <a href="/calendar">
-              <div>
-                <Calendar1 />
-              </div>
-            </a>
+            <a href="/email" className="relative group">
+                            <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+                            <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                Email
+                            </div>
+                        </a>
+
+                        {/* Calendar Icon with Tooltip */}
+                        <a href="/calendar" className="relative group">
+                            <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+                            <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                Calendar
+                            </div>
+                        </a>
             <div>
               <Notification />
             </div>
           </div>
         </header>
 
-        <div className="p-6">
-          {error && <p className="text-red-500 text-center">{error}</p>}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-            {Object.keys(statusColors).map((status) => {
-              const taskStatus = groupedTasks[status] || [];
+        <main className="p-4 md:p-6">
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {Object.values(groupedTasks).reduce((sum, tasks) => sum + tasks.length, 0)}
+                </div>
+              </CardContent>
+            </Card>
+            {statusOrder.map((status) => (
+              <Card key={status}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">{status}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{groupedTasks[status]?.length || 0}</div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Task Board */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-x-auto pb-4">
+            {statusOrder.map((status) => {
+              const tasks = groupedTasks[status] || [];
 
               return (
                 <div
                   key={status}
+                  className={`rounded-lg border p-4 transition-colors ${
+                    draggedOver === status ? "bg-accent/50" : "bg-background"
+                  }`}
                   onDrop={(e) => handleDrop(e, status)}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setDraggedOver(status);
-                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragEnter={() => setDraggedOver(status)}
                   onDragLeave={() => setDraggedOver(null)}
                 >
-                  <h2 className="text-base font-bold mb-4 p-4 bg-white border border-black rounded text-gray-800 text-center">
-                    {status}
-                  </h2>
-
-                  <div className="p-4 rounded-lg shadow-sm border border-black mb-4">
-                    <p className="text-sm font-semibold text-gray-800">Total Task : {taskStatus.length}</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-sm font-medium px-3 py-1 rounded-full ${statusColors[status]}`}>
+                      {status}
+                    </h3>
+                    <span className="text-sm text-muted-foreground">
+                      {tasks.length} tasks
+                    </span>
                   </div>
 
-                  <div className="mt-4 flex flex-col gap-3 min-h-[250px] max-h-[500px] overflow-y-auto">
-                    {taskStatus.length === 0 ? (
-                      <p className="text-center text-gray-500">No task available</p>
-                    ) : (
-                      taskStatus.map((task) => (
-                        <div
+                  <div className="space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto scrollbar-hide">
+                    {tasks.length > 0 ? (
+                      tasks.map((task) => (
+                        <Card
                           key={task._id}
-                          className="p-3 border border-black rounded-lg bg-white shadow-sm cursor-grab"
+                          className="cursor-grab hover:shadow-sm active:cursor-grabbing"
                           draggable
                           onDragStart={(e) => handleDragStart(e, task, status)}
-                          onClick={() => handleTaskClick(task)}
+                          onClick={() => {
+                            setSelectedTask(task);
+                            setIsModalOpen(true);
+                          }}
                         >
-                          <p className="text-sm font-semibold text-black">Subject : {task.subject}</p>
-                          <p className="text-sm font-semibold text-black">Name : {task.name}</p>
-                          <p className="text-sm font-semibold text-black">Task Date : {task.date}</p>
-                          <p className="text-sm font-semibold text-black">Due Date : {task.endDate}</p>
-                        </div>
+                          <CardHeader className="p-4 pb-2">
+                            <CardTitle className="text-sm font-medium line-clamp-1">
+                              {task.subject}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-4 pt-0">
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                              {task.name}
+                            </p>
+                            <p className="text-sm font-semibold mt-2">
+                              Due: {formatDate(task.endDate)}
+                            </p>
+                          </CardContent>
+                        </Card>
                       ))
+                    ) : (
+                      <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
+                        No task in this status
+                      </div>
                     )}
                   </div>
                 </div>
               );
             })}
           </div>
+        </main>
 
-          {isModalOpen && selectedTask && (
-            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-              <div className="w-full max-w-md h-auto relative">
-                <div className="absolute inset-0 h-full w-full bg-gradient-to-r  rounded-full blur-lg scale-90 opacity-50" />
-                <div className="relative bg-white border border-gray-700 rounded-lg p-6 w-[800px] h-700 flex flex-col">
-                  {/* Close Button */}
-                  <div
-                    className="absolute top-3 right-3 h-8 w-8 flex items-center justify-center cursor-pointer"
-                    onClick={closeModal}
-                  >
-                    <MdCancel className="text-gray-500 text-2xl" />
+        {/* Task Detail Modal */}
+        {isModalOpen && selectedTask && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="relative mx-4 w-full max-w-2xl rounded-lg bg-background shadow-lg">
+              <button
+                className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none"
+                onClick={() => setIsModalOpen(false)}
+              >
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close</span>
+              </button>
+
+              <div className="p-6">
+                <h2 className="text-xl font-semibold mb-4">{selectedTask.subject}</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Name</h3>
+                    <p>{selectedTask.name || "N/A"}</p>
                   </div>
-
-                  {/* Modal Header */}
-                  <h1 className="text-2xl font-bold text-gray-900 text-center mb-6">Task Record</h1>
-                  <Separator className="my-4 border-gray-300" />
-                  {/* Invoice Details */}
-                  <div className="grid grid-cols-2 gap-6 text-gray-700 overflow-y-auto">
-                    {Object.entries(selectedTask)
-                      .filter(([key]) => !["_id", "__v", "isActive", "createdAt", "updatedAt"].includes(key))
-                      .map(([key, value]) => (
-                        <p key={key} className="text-lg">
-                          <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong>{" "}
-                          {["endDate", "lastReminderDate", "date"].includes(key) && value
-                            ? new Date(value).toLocaleDateString("en-GB")
-                            : value || "N/A"}
-                        </p>
-                      ))}
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Related To</h3>
+                    <p>{selectedTask.relatedTo || "N/A"}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Assigned By</h3>
+                    <p>{selectedTask.assigned || "N/A"}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Status</h3>
+                    <span className={`text-xs px-2 py-1 rounded-full ${statusColors[selectedTask.status]}`}>
+                      {selectedTask.status}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Start Date</h3>
+                    <p>{formatDate(selectedTask.date)}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Due Date</h3>
+                    <p>{formatDate(selectedTask.endDate)}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Priority</h3>
+                    <p>{selectedTask.priority || "N/A"}</p>
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-sm text-muted-foreground mb-1">Notes</h3>
+                    <p className="whitespace-pre-line">{selectedTask.notes || "No description"}</p>
                   </div>
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </SidebarInset>
     </SidebarProvider>
   );

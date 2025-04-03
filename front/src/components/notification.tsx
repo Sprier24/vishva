@@ -121,9 +121,9 @@ const Notification = () => {
         <button onClick={toggleNotificationPanel} className="relative">
           <div className="relative group">
             <Bell className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-            <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {/* <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
               Bell
-            </div>
+            </div> */}
           </div>
           {unreadNotificationCount > 0 && (
             <span className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full px-1">
@@ -136,7 +136,7 @@ const Notification = () => {
         <div className="fixed top-0 right-0 w-full sm:w-96 h-full bg-gray-100 dark:bg-[#1a1a1a] shadow-lg border-l border-gray-200 dark:border-gray-700 z-50 p-4 overflow-y-auto hide-scrollbar">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-              Reminders
+              Notifications
             </h2>
             <button
               onClick={() => setNotificationVisible(false)}
@@ -150,7 +150,7 @@ const Notification = () => {
               onClick={clearAllNotifications}
               className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600"
             >
-              Dismiss All Reminders
+              Clear All Notifications
             </button>
           </div>
           <div className="notification-inbox overflow-y-auto h-full hide-scrollbar">

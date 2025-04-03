@@ -62,7 +62,6 @@ export default function CertificatePage() {
                                 Calendar
                             </div>
                         </a>
-
                         <div>
                             <Notification />
                         </div>

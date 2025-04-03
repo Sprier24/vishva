@@ -60,7 +60,6 @@ export default function LeadTablePage() {
                                 Calendar
                             </div>
                         </a>
-
                         <div>
                             <Notification />
                         </div>

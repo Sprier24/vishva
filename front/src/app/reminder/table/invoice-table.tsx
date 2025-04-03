@@ -93,7 +93,7 @@ const columns = [
     },
     { name: "Paid Amount", uid: "paidAmount", sortable: true },
     { name: "Remaining Amount", uid: "remainingAmount", sortable: true },
-    { name: "Status", uid: "status", sortable: true },
+    // { name: "Status", uid: "status", sortable: true },
     // { name: "Action", uid: "actions", sortable: true }
 ];
 
