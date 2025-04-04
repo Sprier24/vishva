@@ -1,22 +1,19 @@
 "use client";
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon, ReceiptText, SquareUser } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon, ReceiptText, SquareUser } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
-import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
+import { SortDescriptor, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
 import axios from "axios";
 import { format } from "date-fns"
-import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip } from "@heroui/react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { Calendar } from "@/components/ui/calendar"
 
 interface Deal {
     _id: string;
@@ -34,36 +31,6 @@ interface Deal {
     notes: string;
     isActive: string;
     createdAt: string;
-}
-
-interface Contact {
-    companyName: string;
-    customerName: string;
-    contactNumber: string;
-    emailAddress: string;
-    address: string;
-    gstNumber?: string;
-    description?: string;
-}
-
-interface Invoice {
-    _id: string;
-    companyName: string;
-    customerName: string;
-    contactNumber: string;
-    emailAddress: string;
-    address: string;
-    gstNumber: string;
-    productName: string;
-    amount: number;
-    discount: number;
-    gstRate: number;
-    status: string;
-    date: string;
-    totalWithoutGst: number;
-    totalWithGst: number;
-    paidAmount: number;
-    remainingAmount: number;
 }
 
 export const invoiceSchema = z.object({
@@ -97,10 +64,9 @@ const contactSchema = z.object({
         .nonempty({ message: "Required" }),
     emailAddress: z.string().email({ message: "Required" }),
     address: z.string().nonempty({ message: "Required" }),
-    gstNumber: z.string().optional(),
+    gstNumber: z.string().nonempty({ message: "Required" }),
     description: z.string().optional(),
 });
-
 
 const generateUniqueId = () => {
     return Math.random().toString(36).substring(2) + Date.now().toString(36);
@@ -108,10 +74,10 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
-    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
-    const year = date.getFullYear();  // Get the full year
-    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
+    const day = String(date.getDate()).padStart(2, '0');  
+    const month = String(date.getMonth() + 1).padStart(2, '0');  
+    const year = date.getFullYear();  
+    return `${day}/${month}/${year}`; 
 };
 
 const columns = [
@@ -155,12 +121,12 @@ const formSchema = z.object({
     contactNumber: z
         .string()
         .regex(/^\d*$/, { message: "Contact number must be numeric" })
-        .optional(),
+        .nonempty({ message: "Required" }),
     emailAddress: z.string().email({ message: "Invalid email address" }),
     address: z.string().nonempty({ message: "Required" }),
     productName: z.string().nonempty({ message: "Required" }),
     amount: z.number().positive({ message: "Required" }),
-    gstNumber: z.string().optional(),
+    gstNumber: z.string().nonempty({ message: "Required" }),
     status: z.enum(["Proposal", "New", "Discussion", "Demo", "Decided"]),
     date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
     endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
@@ -177,49 +143,11 @@ export default function DealTable() {
     const [isInvoiceFormVisible, setIsInvoiceFormVisible] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const [newInvoice, setNewInvoice] = useState<Invoice>({
-        _id: "",
-        companyName: "",
-        customerName: "",
-        contactNumber: "",
-        emailAddress: "",
-        address: "",
-        gstNumber: "",
-        productName: "",
-        amount: 0, // Initialize as a number
-        discount: 0, // Initialize as a number
-        gstRate: 0, // Initialize as a number
-        status: "",
-        date: "",
-        totalWithGst: 0, // Initialize as a number
-        totalWithoutGst: 0, // Initialize as a number
-        paidAmount: 0, // Initialize as a number
-        remainingAmount: 0, // Initialize as a number
-    });
-
-    const [newContact, setNewContact] = useState<Contact>({
-        companyName: "",
-        customerName: "",
-        contactNumber: "",
-        emailAddress: "",
-        address: "",
-        gstNumber: "",
-        description: "",
-    });
-
     const fetchdeal = async () => {
         try {
             const response = await axios.get(
                 'http://localhost:8000/api/v1/deal/getAllDeals'
             );
-
-            console.log('Full API Response:', {
-                status: response.status,
-                data: response.data,
-                type: typeof response.data,
-                hasData: 'data' in response.data
-            });
-
             let leadsData;
             if (typeof response.data === 'object' && 'data' in response.data) {
                 leadsData = response.data.data;
@@ -229,20 +157,16 @@ export default function DealTable() {
                 console.error('Unexpected response format:', response.data);
                 throw new Error('Invalid response format');
             }
-
             if (!Array.isArray(leadsData)) {
                 leadsData = [];
             }
-
             const sortedDeals = [...leadsData].sort((a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
-
             const leadsWithKeys = sortedDeals.map((deal: Deal) => ({
                 ...deal,
                 key: deal._id || generateUniqueId()
             }));
-
             setDeals(leadsWithKeys);
             setError(null);
         } catch (error) {
@@ -260,21 +184,15 @@ export default function DealTable() {
         fetchdeal();
     }, []);
 
-    const [isAddNewOpen, setIsAddNewOpen] = useState(false);
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-    const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [sortDescriptor, setSortDescriptor] = useState({
+    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
         column: "createdAt",
         direction: "descending",
     });
     const [page, setPage] = useState(1);
-    const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
-    const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
 
-
-    // Form setup
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -294,7 +212,6 @@ export default function DealTable() {
         },
     })
 
-    const contactformSchema = contactSchema;
     const contactform = useForm<z.infer<typeof contactSchema>>({
         resolver: zodResolver(contactSchema),
         defaultValues: {
@@ -326,30 +243,26 @@ export default function DealTable() {
             date: new Date(),
             totalWithoutGst: 0,
             totalWithGst: 0,
-            paidAmount: "",
+            paidAmount: 0,
             remainingAmount: 0,
         }
     })
 
     const handleAddContactClick = (deal: Deal) => {
         setIsContactFormVisible(true);
-
-        // Pre-populate the contact form with the lead's information
         contactform.reset({
             companyName: deal.companyName,
             customerName: deal.customerName,
-            contactNumber: deal.contactNumber || "", // Default to empty if not available
+            contactNumber: deal.contactNumber || "", 
             emailAddress: deal.emailAddress,
             address: deal.address,
-            gstNumber: deal.gstNumber, // Optional, you can leave this empty or populate based on your needs
-            description: "", // Optional, same as above
+            gstNumber: deal.gstNumber, 
+            description: "", 
         });
     };
 
     const handleAddInvoice = (deal: Deal) => {
         setIsInvoiceFormVisible(true);
-
-        // Pre-populate the invoice form with the lead's information
         invoiceform.reset({
             companyName: deal.companyName,
             customerName: deal.customerName,
@@ -373,19 +286,16 @@ export default function DealTable() {
     const handleInvoiceSubmit = async (values: z.infer<typeof invoiceSchema>) => {
         try {
             setIsSubmitting(true);
-
-            // Calculate all values
             const {
                 totalWithoutGst,
                 totalWithGst,
                 remainingAmount
             } = calculateGST(
                 values.amount,
-                values.discount,
-                values.gstRate,
-                values.paidAmount
+                values.discount ?? 0,
+                values.gstRate ?? 0,
+                Number(values.paidAmount) || 0
             );
-
             const invoiceData = {
                 ...values,
                 totalWithoutGst,
@@ -393,17 +303,14 @@ export default function DealTable() {
                 remainingAmount,
                 date: format(values.date, "yyyy-MM-dd")
             };
-
             await axios.post(
                 "http://localhost:8000/api/v1/invoice/invoiceAdd",
                 invoiceData
             );
-
             toast({
-                title: "Invoice Submmited",
+                title: "Invoice Created",
                 description: "The invoice has been successfully created",
             });
-
             setIsInvoiceFormVisible(false);
             invoiceform.reset();
         } catch (error) {
@@ -424,13 +331,11 @@ export default function DealTable() {
         gstRate: number,
         paidAmount: number
     ) => {
-        // Subtract the discount from the amount to get the discounted amount
         const discountedAmount = amount - (amount * (discount / 100));
         const gstAmount = discountedAmount * (gstRate / 100);
         const totalWithoutGst = discountedAmount;
         const totalWithGst = discountedAmount + gstAmount;
         const remainingAmount = totalWithGst - paidAmount;
-
         return {
             discountedAmount,
             gstAmount,
@@ -438,36 +343,6 @@ export default function DealTable() {
             totalWithGst,
             remainingAmount
         };
-    };
-
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ) => {
-        const { name, value } = e.target;
-        const updatedInvoice = { ...newInvoice, [name]: value };
-
-        if (
-            name === "amount" ||
-            name === "discount" ||
-            name === "gstRate" ||
-            name === "paidAmount"
-        ) {
-            const { totalWithoutGst, totalWithGst, remainingAmount } = calculateGST(
-                updatedInvoice.amount,
-                updatedInvoice.discount,
-                updatedInvoice.gstRate,
-                updatedInvoice.paidAmount
-            );
-
-            setNewInvoice({
-                ...updatedInvoice,
-                totalWithoutGst,
-                totalWithGst,
-                remainingAmount,
-            });
-        } else {
-            setNewInvoice(updatedInvoice);
-        }
     };
 
     const updateCalculatedFields = () => {
@@ -478,11 +353,10 @@ export default function DealTable() {
             remainingAmount
         } = calculateGST(
             values.amount,
-            values.discount,
-            values.gstRate,
-            values.paidAmount
+            values.discount ?? 0,
+            values.gstRate ?? 0,
+            Number(values.paidAmount) || 0
         );
-
         invoiceform.setValue('totalWithoutGst', totalWithoutGst);
         invoiceform.setValue('totalWithGst', totalWithGst);
         invoiceform.setValue('remainingAmount', remainingAmount);
@@ -491,7 +365,6 @@ export default function DealTable() {
     const handleContactSubmit = async (values: z.infer<typeof contactSchema>) => {
         try {
             setIsSubmitting(true);
-
             await axios.post(
                 "http://localhost:8000/api/v1/contact/createContact",
                 values
@@ -499,7 +372,6 @@ export default function DealTable() {
 
             setIsContactFormVisible(false);
             contactform.reset();
-
             toast({
                 title: "Contact Submitted",
                 description: "The contact has been successfully created",
@@ -519,13 +391,12 @@ export default function DealTable() {
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; // Check if all columns are selected
+        if (visibleColumns.size === columns.length) return columns; 
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
     const filteredItems = React.useMemo(() => {
         let filteredDeals = [...Deals];
-
         if (hasSearchFilter) {
             filteredDeals = filteredDeals.filter((Deals) => {
                 const searchableFields = {
@@ -542,28 +413,19 @@ export default function DealTable() {
                     notes: Deals.notes,
                     status: Deals.status,
                 };
-
                 return Object.values(searchableFields).some(value =>
                     String(value || '').toLowerCase().includes(filterValue.toLowerCase())
                 );
             });
         }
-
-        if (statusFilter !== "all") {
-            filteredDeals = filteredDeals.filter((Deals) =>
-                statusFilter === Deals.status
-            );
-        }
-
         return filteredDeals;
-    }, [Deals, filterValue, statusFilter]);
+    }, [Deals, filterValue]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
     const items = React.useMemo(() => {
         const start = (page - 1) * rowsPerPage;
         const end = start + rowsPerPage;
-
         return filteredItems.slice(start, end);
     }, [page, filteredItems, rowsPerPage]);
 
@@ -572,7 +434,6 @@ export default function DealTable() {
             const first = a[sortDescriptor.column as keyof Deal];
             const second = b[sortDescriptor.column as keyof Deal];
             const cmp = first < second ? -1 : first > second ? 1 : 0;
-
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
     }, [sortDescriptor, items]);
@@ -580,10 +441,8 @@ export default function DealTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
-    // Function to handle edit button click
     const handleEditClick = (Deals: Deal) => {
         setSelectedDeal(Deals);
-        // Pre-fill the form with lead data
         form.reset({
             companyName: Deals.companyName,
             customerName: Deals.customerName,
@@ -601,8 +460,6 @@ export default function DealTable() {
         });
         setIsEditOpen(true);
     };
-
-    // Function to handle delete button click
     const handleDeleteClick = (Deals: Deal) => {
         setSelectedDeal(Deals);
         setIsDeleteDialogOpen(true);
@@ -610,22 +467,18 @@ export default function DealTable() {
 
     const handleDeleteConfirm = async () => {
         if (!selectedDeal?._id) return;
-
         try {
             const response = await fetch(`http://localhost:8000/api/v1/deal/deleteDeal/${selectedDeal._id}`, {
                 method: "DELETE",
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to delete deal");
             }
-
             toast({
                 title: "Deal Deleted",
                 description: "The deal has been successfully deleted",
             });
-
             fetchdeal();
         } catch (error) {
             toast({
@@ -643,7 +496,6 @@ export default function DealTable() {
 
     async function onEdit(values: z.infer<typeof formSchema>) {
         if (!selectedDeal?._id) return;
-
         setIsSubmitting(true);
         try {
             const response = await fetch(`http://localhost:8000/api/v1/deal/updateDeal/${selectedDeal._id}`, {
@@ -651,17 +503,14 @@ export default function DealTable() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to update deal");
             }
-
             toast({
                 title: "Deal Updated",
                 description: "The deal has been successfully updated",
             });
-
             setIsEditOpen(false);
             setSelectedDeal(null);
             form.reset();
@@ -680,19 +529,12 @@ export default function DealTable() {
 
     const renderCell = React.useCallback((Deals: Deal, columnKey: string) => {
         const cellValue = Deals[columnKey as keyof Deal];
-
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
             return formatDate(cellValue);
         }
-
-        if (columnKey === "gstNumber") {
-            return cellValue || "N/A";
-        }
-
         if (columnKey === "notes") {
             return cellValue || "N/A";
         }
-
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
@@ -731,10 +573,8 @@ export default function DealTable() {
                 </div>
             );
         }
-
         return cellValue;
     }, []);
-
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -762,11 +602,6 @@ export default function DealTable() {
         }
     }, []);
 
-    const onClear = React.useCallback(() => {
-        setFilterValue("");
-        setPage(1);
-    }, []);
-
     const topContent = React.useMemo(() => {
         return (
             <div className="flex flex-col gap-4">
@@ -774,7 +609,7 @@ export default function DealTable() {
                     <div className="relative w-full sm:max-w-[20%]">
                         <Input
                             isClearable
-                            className="w-full pr-12 sm:pr-14 pl-12" // Extra padding for clear button
+                            className="w-full pr-12 sm:pr-14 pl-12" 
                             startContent={
                                 <SearchIcon className="h-4 w-5 text-muted-foreground absolute left-3 top-1/2 transform -translate-y-1/2" />
                             }
@@ -817,7 +652,6 @@ export default function DealTable() {
                                 ))}
                             </DropdownMenu>
                         </Dropdown>
-
                         <Button
                             className="addButton w-full sm:w-auto flex items-center justify-between"
                             style={{ backgroundColor: 'hsl(339.92deg 91.04% 52.35%)' }}
@@ -905,7 +739,8 @@ export default function DealTable() {
                                 classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
                                 topContent={topContent}
                                 topContentPlacement="outside"
-                                onSelectionChange={setSelectedKeys}
+                                sortDescriptor={sortDescriptor}
+                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -924,7 +759,7 @@ export default function DealTable() {
                                         <TableRow key={item._id}>
                                             {(columnKey) => (
                                                 <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                                                    {renderCell(item, columnKey)}
+                                                    {renderCell(item, columnKey.toString())}
                                                 </TableCell>
                                             )}
                                         </TableRow>
@@ -947,10 +782,9 @@ export default function DealTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this deal?,
-                            The data won't be retrieved again.
+                            Are you sure you want to delete this invoice? This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">
@@ -1015,7 +849,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -1052,7 +885,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
                             <FormField
                                 control={form.control}
                                 name="address"
@@ -1066,7 +898,6 @@ export default function DealTable() {
                                     </FormItem>
                                 )}
                             />
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -1103,14 +934,13 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
                                     name="gstNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Number (Optional)</FormLabel>
+                                            <FormLabel>GST Number</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="Enter GST number" {...field} />
                                             </FormControl>
@@ -1141,7 +971,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -1202,8 +1031,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
-
                             <FormField
                                 control={form.control}
                                 name="notes"
@@ -1222,7 +1049,6 @@ export default function DealTable() {
                                     </FormItem>
                                 )}
                             />
-
                             <Button type="submit" className="w-full" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <>
@@ -1253,7 +1079,6 @@ export default function DealTable() {
                     </DialogHeader>
                     <Form {...contactform}>
                         <form onSubmit={contactform.handleSubmit(handleContactSubmit)} className="space-y-6">
-                            {/* First row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={contactform.control}
@@ -1290,8 +1115,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Second row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={contactform.control}
@@ -1328,8 +1151,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Third row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={contactform.control}
@@ -1353,7 +1174,7 @@ export default function DealTable() {
                                     name="gstNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Number (Optional)</FormLabel>
+                                            <FormLabel>GST Number</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     className="w-full"
@@ -1366,8 +1187,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Notes */}
                             <FormField
                                 control={contactform.control}
                                 name="description"
@@ -1386,8 +1205,6 @@ export default function DealTable() {
                                     </FormItem>
                                 )}
                             />
-
-                            {/* Submit Button */}
                             <Button type="submit" className="w-full" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <>
@@ -1416,10 +1233,8 @@ export default function DealTable() {
                     <DialogHeader>
                         <DialogTitle>Create Invoice</DialogTitle>
                     </DialogHeader>
-
                     <Form {...invoiceform}>
                         <form onSubmit={invoiceform.handleSubmit(handleInvoiceSubmit)} className="space-y-6">
-                            {/* First row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={invoiceform.control}
@@ -1454,8 +1269,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Second row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={invoiceform.control}
@@ -1466,12 +1279,7 @@ export default function DealTable() {
                                             <FormControl>
                                                 <Input
                                                     placeholder="Enter contact number"
-                                                    type="tel"
                                                     {...field}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value.replace(/[^0-9]/g, '');
-                                                        field.onChange(value);
-                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -1495,8 +1303,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Third row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={invoiceform.control}
@@ -1531,8 +1337,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Fourth row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={invoiceform.control}
@@ -1572,7 +1376,6 @@ export default function DealTable() {
                                         </FormItem>
                                     )}
                                 />
-
                                 <FormField
                                     control={invoiceform.control}
                                     name="discount"
@@ -1595,7 +1398,6 @@ export default function DealTable() {
                                         </FormItem>
                                     )}
                                 />
-
                                 <FormField
                                     control={invoiceform.control}
                                     name="gstRate"
@@ -1624,7 +1426,6 @@ export default function DealTable() {
                                         </FormItem>
                                     )}
                                 />
-
                                 <FormField
                                     control={invoiceform.control}
                                     name="paidAmount"
@@ -1666,8 +1467,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Seventh row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={invoiceform.control}
@@ -1718,8 +1517,6 @@ export default function DealTable() {
                                     )}
                                 />
                             </div>
-
-
                             <Button type="submit" className="w-full" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <>
@@ -1734,9 +1531,7 @@ export default function DealTable() {
                     </Form>
                 </DialogContent>
             </Dialog>
-
         </div>
-
     );
 }
 

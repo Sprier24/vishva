@@ -1,0 +1,8 @@
+${statusColors[status as keyof typeof statusColors]}`}>
+
+{selectedKeysInvoice.size === filteredItemsInvoice.length
+        ? "All items selected"
+        : `${selectedKeysInvoice.size} of ${filteredItemsInvoice.length} selected`}
+        </span>
+
+        {renderCellInvoice(item, columnKey)}

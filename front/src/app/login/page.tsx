@@ -238,7 +238,7 @@ export default function Page() {
         <LuLoader className="animate-spin text-gray-600 dark:text-gray-300" size={50}/>
       </div>
     )  : (
-        <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-8 md:p-8 shadow-input bg-white dark:bg-black border border-gray-300 dark:border-gray-700">
+        <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-8 md:p-8 shadow-input bg-white dark:bg-black border border-gray-300 dark:border-gray-700 shadow-lg shadow-gray-500">
           {isForgotPassword ? (
             emailSent ? (
               <div className="text-center">

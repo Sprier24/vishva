@@ -3,29 +3,25 @@ const Owner = require('../model/pdfSchema.model');
 const multer = require('multer');
 const path = require('path');
 
-// Configure Multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads')); // Specify the uploads folder
+    cb(null, path.join(__dirname, '../uploads')); 
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Create a unique filename
+    cb(null, Date.now() + path.extname(file.originalname)); 
   },
 });
 
-// Initialize Multer upload middleware
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Limit file size to 5MB
+  limits: { fileSize: 5 * 1024 * 1024 }, 
 });
 
-// Create a new PDF profile
 const createPdf = async (req, res) => {
   try {
     const { companyName, contactNumber, emailAddress, gstNumber } = req.body;
-    const logo = req.file ? `/uploads/${req.file.filename}` : ''; // Save logo path
+    const logo = req.file ? `/uploads/${req.file.filename}` : ''; 
 
-    // Create new Owner (PDF profile) entry
     const newPdf = new Owner({
       companyName,
       contactNumber,
@@ -49,7 +45,6 @@ const createPdf = async (req, res) => {
   }
 };
 
-// Get all PDF profiles
 const getAllPdfs = async (req, res) => {
   try {
     const pdfs = await Owner.find({});
@@ -79,7 +74,7 @@ const getPdfById = async (req, res) => {
       return res.status(400).json({ success: false, message: "ID is required" });
     }
 
-    const pdfProfile = await PdfModel.findById(id); // Make sure `PdfModel` is correct
+    const pdfProfile = await PdfModel.findById(id); 
     if (!pdfProfile) {
       return res.status(404).json({ success: false, message: "Profile not found" });
     }
@@ -92,7 +87,6 @@ const getPdfById = async (req, res) => {
 };
 
 
-// Update a PDF profile
 const updatePdf = async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
@@ -104,7 +98,6 @@ const updatePdf = async (req, res) => {
       });
     }
 
-    // Update the PDF profile in the database
     const updatedPdf = await Owner.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
     if (!updatedPdf) {
       return res.status(404).json({
@@ -127,7 +120,6 @@ const updatePdf = async (req, res) => {
   }
 };
 
-// Delete a PDF profile by ID
 const deletePdf = async (req, res) => {
   const { id } = req.params;
   try {
@@ -153,7 +145,6 @@ const deletePdf = async (req, res) => {
   }
 };
 
-// Search PDFs by company name
 const searchPdfsByCompanyName = async (req, res) => {
   const { companyName } = req.query;
   try {
@@ -177,7 +168,6 @@ const searchPdfsByCompanyName = async (req, res) => {
   }
 };
 
-// Export the upload middleware and controller functions
 module.exports = {
   upload,
   createPdf,

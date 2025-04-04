@@ -14,7 +14,6 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { ModeToggle } from "@/components/ModeToggle";
 import SearchBar from "@/components/globalSearch";
 import Notification from "@/components/notification";
 import { Calendar1, Mail, X } from "lucide-react";
@@ -113,10 +112,10 @@ export default function TaskBoard() {
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
-    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
-    const year = date.getFullYear();  // Get the full year
-    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
+    const day = String(date.getDate()).padStart(2, '0'); 
+    const month = String(date.getMonth() + 1).padStart(2, '0'); 
+    const year = date.getFullYear(); 
+    return `${day}/${month}/${year}`;
   };
 
   return (
@@ -152,28 +151,24 @@ export default function TaskBoard() {
               <SearchBar />
             </div>
             <a href="/email" className="relative group">
-                            <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-                            <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                Email
-                            </div>
-                        </a>
-
-                        {/* Calendar Icon with Tooltip */}
-                        <a href="/calendar" className="relative group">
-                            <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-                            <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                Calendar
-                            </div>
-                        </a>
+                <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+                    <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        Email
+                    </div>
+                </a>
+                <a href="/calendar" className="relative group">
+                    <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+                    <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        Calendar
+                    </div>
+                </a>
             <div>
               <Notification />
             </div>
           </div>
         </header>
 
-
         <main className="p-4 md:p-6">
-          {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Card>
               <CardHeader className="pb-2">
@@ -197,7 +192,6 @@ export default function TaskBoard() {
             ))}
           </div>
 
-          {/* Task Board */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-x-auto pb-4">
             {statusOrder.map((status) => {
               const tasks = groupedTasks[status] || [];
@@ -214,7 +208,7 @@ export default function TaskBoard() {
                   onDragLeave={() => setDraggedOver(null)}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className={`text-sm font-medium px-3 py-1 rounded-full ${statusColors[status]}`}>
+                    <h3 className={`text-sm font-medium px-3 py-1 rounded-full ${statusColors[status as keyof typeof statusColors]}`}>
                       {status}
                     </h3>
                     <span className="text-sm text-muted-foreground">
@@ -262,7 +256,6 @@ export default function TaskBoard() {
           </div>
         </main>
 
-        {/* Task Detail Modal */}
         {isModalOpen && selectedTask && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="relative mx-4 w-full max-w-2xl rounded-lg bg-background shadow-lg">

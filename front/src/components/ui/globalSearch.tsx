@@ -1,10 +1,33 @@
 import { useState } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 
-export  function GlobalSearch() {
+// Define TypeScript interfaces
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+}
+
+interface Deal {
+  _id: string;
+  title: string;
+}
+
+interface Suggestion {
+  path: string;
+  page: string;
+}
+
+interface SearchResults {
+  users: User[];
+  deals: Deal[];
+  suggestions: Suggestion[];
+}
+
+export function GlobalSearch() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState({ users: [], customers: [], deals: [], suggestions: [] });
+  const [results, setResults] = useState<SearchResults>({ users: [], deals: [], suggestions: [] });
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -13,7 +36,7 @@ export  function GlobalSearch() {
     setLoading(true);
 
     try {
-      const { data } = await axios.get(`http://localhost:8000/api/v1/search?q=${query}`);
+      const { data } = await axios.get<SearchResults>(`http://localhost:8000/api/v1/search?q=${query}`);
       setResults(data);
     } catch (error) {
       console.error("Search error:", error);
@@ -32,7 +55,7 @@ export  function GlobalSearch() {
         onChange={(e) => setQuery(e.target.value)}
         onKeyPress={(e) => e.key === "Enter" && handleSearch()}
       />
-      
+
       {loading && <p>Loading...</p>}
 
       <div className="mt-4">
@@ -40,19 +63,18 @@ export  function GlobalSearch() {
           <div>
             <h3 className="font-bold">Users</h3>
             <ul>
-              {results.users.map((user) => (
+              {results.users.map((user: User) => (
                 <li key={user._id}>{user.name} - {user.email}</li>
               ))}
             </ul>
           </div>
         )}
 
-
         {results.deals.length > 0 && (
           <div>
             <h3 className="font-bold">Deals</h3>
             <ul>
-              {results.deals.map((deal) => (
+              {results.deals.map((deal: Deal) => (
                 <li key={deal._id}>{deal.title}</li>
               ))}
             </ul>
@@ -63,7 +85,7 @@ export  function GlobalSearch() {
           <div className="mt-4">
             <h3 className="font-bold">Found in:</h3>
             <ul>
-              {results.suggestions.map((suggestion, index) => (
+              {results.suggestions.map((suggestion: Suggestion, index: number) => (
                 <li key={index} className="cursor-pointer text-blue-500" onClick={() => router.push(suggestion.path)}>
                   {suggestion.page} Page
                 </li>

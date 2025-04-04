@@ -1,7 +1,6 @@
 "use client";
 
 import * as z from "zod"
-import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useForm } from "react-hook-form"
 import { toast } from "@/hooks/use-toast"
@@ -9,10 +8,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const formSchema = z.object({
@@ -73,7 +70,6 @@ export default function InvoiceForm() {
     const totalDiscount = Number(discount);
     const totalGstRate = Number(gstRate);
     const totalPaidAmount = Number(paidAmount);
-
     const { totalWithoutGst, totalWithGst, remainingAmount } = calculateGST(
       totalAmount,
       totalDiscount,
@@ -158,7 +154,6 @@ export default function InvoiceForm() {
             )}
           />
         </div>
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -195,7 +190,6 @@ export default function InvoiceForm() {
             )}
           />
         </div>
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -224,7 +218,6 @@ export default function InvoiceForm() {
             )}
           />
         </div>
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -261,7 +254,6 @@ export default function InvoiceForm() {
             )}
           />
         </div>
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -309,7 +301,6 @@ export default function InvoiceForm() {
             )}
           />
         </div>
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -346,7 +337,6 @@ export default function InvoiceForm() {
             )}
           />
         </div>
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 justify-items-stretch">
           <FormField
             control={form.control}
@@ -397,7 +387,6 @@ export default function InvoiceForm() {
             )}
           />
         </div>
-
         <div className="flex justify-center sm:justify-end">
           <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
             {isSubmitting ? (

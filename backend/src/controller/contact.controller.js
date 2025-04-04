@@ -82,62 +82,11 @@ const deleteContact = async (req, res) => {
   }
 };
 
-const sendEmailContact = async (req, res) => {
-  const { to, subject = "(No Subject)", message = "(No Message)" } = req.body; 
-  const attachments = req.files; 
-
-  if (!to) {
-      return res.status(400).json({
-          success: false,
-          message: "The recipient's email (to) is required.",
-      });
-  }
-
-  try {
-      const mailOptions = {
-          from: "purvagalani@gmail.com",
-          to: to,
-          subject: subject || "(No Subject)", 
-          html: message || "(No Message)", 
-          attachments: attachments
-              ? attachments.map(file => ({
-                    filename: file.originalname,
-                    path: file.path,
-                }))
-              : [], 
-      };
-
-      transporter.sendMail(mailOptions, (error, info) => {
-          if (error) {
-              console.error("Error sending email:", error.message);
-              return res.status(500).json({
-                  success: false,
-                  message: "Error sending email: " + error.message,
-              });
-          }
-
-          console.log("Email sent successfully: " + info.response);
-          res.status(200).json({
-              success: true,
-              message: `Email sent successfully to ${to}`,
-              data: info.response,
-          });
-      });
-  } catch (error) {
-      console.error("Error sending email:", error.message);
-      res.status(500).json({
-          success: false,
-          message: "Internal server error: " + error.message,
-      });
-  }
-};
-
 module.exports = {
   createContact,
   updateContact,
   deleteContact,
   getAllContacts,
-  sendEmailContact
 };
 
 

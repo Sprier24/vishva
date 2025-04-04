@@ -43,7 +43,6 @@ const Search = async (req, res) => {
         ...(dateQuery  ? [{ date: { $gte: dateQuery, $lte: new Date(dateQuery.getTime() + 86400000) } }, { endDate: { $gte: dateQuery, $lte: new Date(dateQuery.getTime() + 86400000) } }] : [])
       ]
     }).limit(5)
-    // const reminder = await Invoice.find({ $or: [{ companyName: regex },{ customerName: regex }, { emailAddress: regex }, { contactNumber: regex }, { address: regex } , {gstNumber : regex} , {customerName: regex} , {productName: regex} , {amount : regex} , {status : regex}] }).limit(5);
     const deals = await Deal.find({
       $or: [
         { companyName: regex },
@@ -123,7 +122,6 @@ const Search = async (req, res) => {
     let suggestions = [];
     if (leads.length > 0) suggestions.push({ page: "Leads", path: "/lead/table" });
     if (invoices.length > 0) suggestions.push({ page: "Invoices", path: "/invoice/table" });
-    // if (reminder.length > 0) suggestions.push({ page: "Reminders", path: "/reminder" });
     if (deals.length > 0) suggestions.push({ page: "Deals", path: "/deal/table" });
     if (tasks.length > 0) suggestions.push({ page: "Tasks", path: "/task/table" });
     if (complaint.length > 0) suggestions.push({ page: "Complaint", path: "/complaint/table" });

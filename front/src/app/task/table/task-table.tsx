@@ -1,22 +1,19 @@
 "use client";
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
-import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
+import { SortDescriptor, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
 import axios from "axios";
 import { format } from "date-fns"
-import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip } from "@heroui/react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { Calendar } from "@/components/ui/calendar"
 
 interface Task {
     _id: string;
@@ -38,12 +35,11 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
-    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
-    const year = date.getFullYear();  // Get the full year
-    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');  
+    const year = date.getFullYear();  
+    return `${day}/${month}/${year}`;  
 };
-
 
 const columns = [
     { name: "Subject", uid: "subject", sortable: true, width: "120px" },
@@ -145,35 +141,17 @@ export default function TaskTable() {
         fetchTasks();
     }, []);
 
-    const [isAddNewOpen, setIsAddNewOpen] = useState(false);
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
     const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [sortDescriptor, setSortDescriptor] = useState({
+    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
         column: "createdAt",
         direction: "descending",
     });
     const [page, setPage] = useState(1);
     const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
-
-    const handleSortChange = (column: string) => {
-        setSortDescriptor((prevState) => {
-            if (prevState.column === column) {
-                return {
-                    column,
-                    direction: prevState.direction === "ascending" ? "descending" : "ascending",
-                };
-            } else {
-                return {
-                    column,
-                    direction: "ascending",
-                };
-            }
-        });
-    };
-
 
     const form = useForm<z.infer<typeof taskSchema>>({
         resolver: zodResolver(taskSchema),
@@ -184,17 +162,16 @@ export default function TaskTable() {
             relatedTo: "",
             date: new Date(),
             endDate: undefined,
-            status: "New",
+            status: "Pending",  
             priority: "Medium",
             notes: "",
         },
     });
 
-
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; // Check if all columns are selected
+        if (visibleColumns.size === columns.length) return columns; 
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
@@ -214,7 +191,6 @@ export default function TaskTable() {
                     priority: task.priority,
                     status: task.status,
                 };
-
                 return Object.values(searchableFields).some(value =>
                     String(value || '').toLowerCase().includes(filterValue.toLowerCase())
                 );
@@ -253,7 +229,6 @@ export default function TaskTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-    // Function to handle edit button click
     const handleEditClick = (task: Task) => {
         setSelectedTask(task);
         form.reset({
@@ -263,21 +238,18 @@ export default function TaskTable() {
             relatedTo: task.relatedTo,
             date: task.date ? new Date(task.date) : undefined,
             endDate: task.endDate ? new Date(task.endDate) : undefined,
-            status: task.status,
-            priority: task.priority,
+            status: task.status as "Pending" | "InProgress" | "Resolved",
+            priority: task.priority as "High" | "Medium" | "Low",
             notes: task.notes,
         });
         setIsEditOpen(true);
     };
-
-    // Function to handle delete button click
 
     const handleDeleteClick = (task: Task) => {
         setTaskToDelete(task);
         setIsDeleteConfirmationOpen(true);
     };
     const [isSubmitting, setIsSubmitting] = useState(false)
-
 
     async function onEdit(values: z.infer<typeof taskSchema>) {
         if (!selectedTask?._id) return;
@@ -299,13 +271,9 @@ export default function TaskTable() {
                 title: "Task Updated",
                 description: "The task has been successfully updated",
             });
-
-            // Close dialog and reset form
             setIsEditOpen(false);
             setSelectedTask(null);
             form.reset();
-
-            // Refresh the leads list
             fetchTasks();
         } catch (error) {
             toast({
@@ -351,7 +319,6 @@ export default function TaskTable() {
                 </div>
             );
         }
-
         return cellValue;
     }, []);
 
@@ -380,11 +347,6 @@ export default function TaskTable() {
         } else {
             setFilterValue("");
         }
-    }, []);
-
-    const onClear = React.useCallback(() => {
-        setFilterValue("");
-        setPage(1);
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -525,7 +487,8 @@ export default function TaskTable() {
                                 classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
                                 topContent={topContent}
                                 topContentPlacement="outside"
-                                onSelectionChange={setSelectedKeys}
+                                sortDescriptor={sortDescriptor}
+                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -544,7 +507,7 @@ export default function TaskTable() {
                                         <TableRow key={item._id}>
                                             {(columnKey) => (
                                                 <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                                                    {renderCell(item, columnKey)}
+                                                    {renderCell(item, columnKey.toString())}
                                                 </TableCell>
                                             )}
                                         </TableRow>
@@ -831,6 +794,5 @@ export default function TaskTable() {
             </Dialog>
 
         </div>
-
     );
 }

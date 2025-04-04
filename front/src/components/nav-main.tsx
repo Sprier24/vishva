@@ -33,7 +33,6 @@ export function NavMain({
       </SidebarMenuButton>
       <SidebarMenu>
         {items.map((item) => {
-          // If there are no sub-items or only one sub-item, make it a direct link
           if (!item.items || item.items.length <= 1) {
             const url = item.items?.[0]?.url || item.url;
             return (
@@ -47,8 +46,7 @@ export function NavMain({
               </SidebarMenuItem>
             );
           }
-          
-          // For items with multiple sub-items
+
           return (
             <Collapsible
               key={item.title}

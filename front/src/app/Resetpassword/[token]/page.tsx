@@ -93,7 +93,7 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900 p-4">
-      <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-8 md:p-8 shadow-input bg-white dark:bg-black">
+      <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-8 md:p-8 shadow-input bg-white dark:bg-black shadow-lg shadow-gray-500">
         {passwordReset ? (
           <div className="text-center">
             <h2 className="font-bold text-xl text-neutral-800 dark:text-neutral-200">

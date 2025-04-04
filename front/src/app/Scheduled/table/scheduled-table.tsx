@@ -1,22 +1,19 @@
 "use client";
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {  Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
-import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
+import { SortDescriptor, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
 import axios from "axios";
 import { format } from "date-fns"
-import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip } from "@heroui/react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { Calendar } from "@/components/ui/calendar"
 
 interface ScheduledEvents {
     _id: string;
@@ -71,10 +68,10 @@ const eventSchema = z.object({
     assignedUser: z.string().optional(),
     location: z.string().optional(),
     customer: z.string().optional(),
-    eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "FollowUp", "followup"], { message: "Required" }),
-    recurrence: z.enum(["OneTime", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
+    eventType: z.enum(["Call", "Meeting", "Demo", "Follow-Up"], { message: "Required" }),
+    recurrence: z.enum(["one-time", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
     status: z.enum(["Scheduled", "Completed", "Cancelled", "Postpone"], { message: "Required" }),
-    priority: z.enum(["Low", "low", "Medium", "medium", "High", "high"], { message: "Required" }),
+    priority: z.enum(["Low", "Medium", "High"], { message: "Required" }),
     date: z.date().optional(),
     description: z.string().optional(),
 });
@@ -124,7 +121,7 @@ export default function ScheduledEvents() {
             } else {
                 setError("Failed to fetch ScheduledEvents.");
             }
-            setScheduledEvents([]); // Set empty array on error
+            setScheduledEvents([]);
         }
     };
 
@@ -132,35 +129,15 @@ export default function ScheduledEvents() {
         fetchScheduledEvents();
     }, []);
 
-    const [isAddNewOpen, setIsAddNewOpen] = useState(false);
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-    const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [sortDescriptor, setSortDescriptor] = useState({
+    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
         column: "createdAt",
         direction: "descending",
     });
+
     const [page, setPage] = useState(1);
-
-    const handleSortChange = (column: string) => {
-        setSortDescriptor((prevState) => {
-            // Check if the column being clicked is the current sorted column
-            if (prevState.column === column) {
-                // Toggle direction if the same column is clicked again
-                return {
-                    column,
-                    direction: prevState.direction === "ascending" ? "descending" : "ascending",
-                };
-            } else {
-
-                return {
-                    column,
-                    direction: "ascending",
-                };
-            }
-        });
-    };
 
     const form = useForm<z.infer<typeof eventSchema>>({
         resolver: zodResolver(eventSchema),
@@ -170,11 +147,11 @@ export default function ScheduledEvents() {
             customer: "",
             location: "",
             status: "Scheduled",
-            eventType: "call",
+            eventType: "Call",
             priority: "Medium",
             description: "",
-            recurrence: "OneTime",
-            date: "",
+            recurrence: "one-time",
+            date: new Date(),
         },
     })
 
@@ -209,14 +186,8 @@ export default function ScheduledEvents() {
             });
         }
 
-        if (statusFilter !== "all") {
-            filteredScheduledEvents = filteredScheduledEvents.filter((scheduledEvents) =>
-                statusFilter === scheduledEvents.status
-            );
-        }
-
         return filteredScheduledEvents;
-    }, [scheduledEvents, filterValue, statusFilter]);
+    }, [scheduledEvents, filterValue]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -243,16 +214,15 @@ export default function ScheduledEvents() {
     const handleEditClick = (scheduledEvents: ScheduledEvents) => {
         setSelectedScheduledEvents(scheduledEvents);
         form.reset({
-            id: scheduledEvents.id,
             subject: scheduledEvents.subject,
             assignedUser: scheduledEvents.assignedUser,
             customer: scheduledEvents.customer,
             location: scheduledEvents.location,
-            status: scheduledEvents.status,
-            eventType: scheduledEvents.eventType,
-            priority: scheduledEvents.priority,
+            status: scheduledEvents.status as "Scheduled" | "Completed" | "Cancelled" | "Postpone",
+            eventType: scheduledEvents.eventType as "Call" | "Meeting" | "Demo" | "Follow-Up",
+            priority: scheduledEvents.priority as "Low" | "Medium" | "High" ,
             description: scheduledEvents.description,
-            recurrence: scheduledEvents.recurrence,
+            recurrence: scheduledEvents.recurrence as "one-time" | "Daily" | "Weekly" | "Monthly" | "Yearly",
             date: scheduledEvents.date ? new Date(scheduledEvents.date) : undefined,
 
         });
@@ -276,13 +246,10 @@ export default function ScheduledEvents() {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to delete scheduled");
             }
-
             toast({
-                title: "Event or meeting Deleted",
-                description: "The event or meeting has been successfully deleted",
+                title: "Scheduled Deleted",
+                description: "The scheduled has been successfully deleted.",
             });
-
-            // Refresh the leads list
             fetchScheduledEvents();
         } catch (error) {
             toast({
@@ -297,6 +264,7 @@ export default function ScheduledEvents() {
     };
 
     const [isSubmitting, setIsSubmitting] = useState(false)
+
     async function onEdit(values: z.infer<typeof eventSchema>) {
         if (!selectedScheduledEvents?._id) return;
 
@@ -312,18 +280,13 @@ export default function ScheduledEvents() {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to update scheduled");
             }
-
             toast({
                 title: "Event or meeting Updated",
                 description: "The event or meeting has been successfully updated",
             });
-
-            // Close dialog and reset form
             setIsEditOpen(false);
             setSelectedScheduledEvents(null);
             form.reset();
-
-            // Refresh the leads list
             fetchScheduledEvents();
         } catch (error) {
             toast({
@@ -338,13 +301,9 @@ export default function ScheduledEvents() {
 
     const renderCell = React.useCallback((scheduledEvents: ScheduledEvents, columnKey: string) => {
         const cellValue = scheduledEvents[columnKey as keyof ScheduledEvents];
-
-        // Format date fields (date and endDate)
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
             return formatDate(cellValue);
         }
-
-        // Handle fields that should default to "N/A" if empty
         if (
             columnKey === "description" ||
             columnKey === "location" ||
@@ -353,8 +312,6 @@ export default function ScheduledEvents() {
         ) {
             return cellValue || "N/A";
         }
-
-        // Handle actions column with buttons for editing and deleting
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
@@ -381,7 +338,6 @@ export default function ScheduledEvents() {
         return cellValue;
     }, []);
 
-
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
             setPage(page + 1);
@@ -406,11 +362,6 @@ export default function ScheduledEvents() {
         } else {
             setFilterValue("");
         }
-    }, []);
-
-    const onClear = React.useCallback(() => {
-        setFilterValue("");
-        setPage(1);
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -551,7 +502,8 @@ export default function ScheduledEvents() {
                                 classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
                                 topContent={topContent}
                                 topContentPlacement="outside"
-                                onSelectionChange={setSelectedKeys}
+                                sortDescriptor={sortDescriptor}
+                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -570,7 +522,7 @@ export default function ScheduledEvents() {
                                         <TableRow key={item._id}>
                                             {(columnKey) => (
                                                 <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                                                    {renderCell(item, columnKey)}
+                                                    {renderCell(item, columnKey.toString())}
                                                 </TableCell>
                                             )}
                                         </TableRow>
@@ -670,7 +622,7 @@ export default function ScheduledEvents() {
                                                     <option value="call">Call</option>
                                                     <option value="Meeting">Meeting</option>
                                                     <option value="Demo">Demo</option>
-                                                    <option value="FollowUp">Follow Up</option>
+                                                    <option value="Follow-Up">Follow Up</option>
                                                 </select>
                                             </FormControl>
                                             <FormMessage />
@@ -688,7 +640,7 @@ export default function ScheduledEvents() {
                                                     {...field}
                                                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                                                 >
-                                                    <option value="OneTime">One Time</option>
+                                                    <option value="one-time">One Time</option>
                                                     <option value="Daily">Daily</option>
                                                     <option value="Weekly">Weekly</option>
                                                     <option value="Monthly">Monthly</option>
@@ -821,10 +773,9 @@ export default function ScheduledEvents() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this event or meeting?,
-                            The data won't be retrieved again.
+                            Are you sure you want to delete this invoice? This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">

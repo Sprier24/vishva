@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { LuLoader } from "react-icons/lu";
 
-// Enhanced form schema with better validation
 const formSchema = z.object({
   companyName: z.string().nonempty({ message: "Required" }),
   ownerName: z.string().nonempty({ message: "Required" }),
@@ -108,7 +107,6 @@ const NewProfile: React.FC = () => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
 
-      // Validate file type
       if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
         form.setError('logo', {
           type: 'manual',
@@ -117,7 +115,6 @@ const NewProfile: React.FC = () => {
         return;
       }
 
-      // Validate file size
       if (file.size > 5 * 1024 * 1024) {
         form.setError('logo', {
           type: 'manual',
@@ -176,7 +173,7 @@ const NewProfile: React.FC = () => {
           description: "Your session has expired. Please log in again.",
           variant: "destructive",
         });
-        localStorage.removeItem("authToken"); // Remove expired token
+        localStorage.removeItem("authToken");
         router.push("/login");
         return;
       }
@@ -220,13 +217,11 @@ const NewProfile: React.FC = () => {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', padding: '50px', height: '100vh' }}>
-          {/* Centered Header */}
           <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold', textAlign: 'center' }}>Create Profile</h1>
           <Separator className="my-4 border-gray-500 border-1" />
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 flex-grow">
-              {/* Logo Section */}
               <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between mb-6 w-full">
                 <div className="text-center">
                   <label htmlFor="logo">
@@ -249,7 +244,6 @@ const NewProfile: React.FC = () => {
                     </p>
                   )}
                 </div>
-                {/* Save Profile Button */}
                 <Button
                   type="submit"
                   className="w-full sm:w-auto flex items-center justify-center mt-4 sm:mt-0"
@@ -306,7 +300,6 @@ const NewProfile: React.FC = () => {
                           placeholder="Enter Contact Number"
                           {...field}
                           onChange={(e) => {
-                            // Allow only numbers
                             const value = e.target.value.replace(/\D/g, '');
                             field.onChange(value);
                           }}
@@ -405,7 +398,6 @@ const NewProfile: React.FC = () => {
                           placeholder="Enter PAN Number (e.g., ABCDE1234F)"
                           {...field}
                           onChange={(e) => {
-                            // Convert to uppercase and limit to 10 characters
                             const value = e.target.value.toUpperCase().slice(0, 10);
                             field.onChange(value);
                           }}
@@ -426,7 +418,6 @@ const NewProfile: React.FC = () => {
                           placeholder="Enter GST Number (e.g., 01ABCDE2345F6G7)"
                           {...field}
                           onChange={(e) => {
-                            // Convert to uppercase
                             const value = e.target.value.toUpperCase();
                             field.onChange(value);
                           }}
@@ -501,3 +492,7 @@ const NewProfile: React.FC = () => {
 };
 
 export default NewProfile;
+
+function setIsLoading(arg0: boolean) {
+  throw new Error('Function not implemented.');
+}

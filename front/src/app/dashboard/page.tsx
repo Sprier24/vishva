@@ -1,8 +1,7 @@
 "use client"
 
 import { AppSidebar } from "@/components/app-sidebar"
-import { ModeToggle } from "@/components/ModeToggle"
-import { Breadcrumb, BreadcrumbSeparator, BreadcrumbPage, BreadcrumbList, BreadcrumbLink, BreadcrumbItem } from "@/components/ui/breadcrumb"
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem } from "@/components/ui/breadcrumb"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartConfig, ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import SearchBar from '@/components/globalSearch';
@@ -30,8 +29,8 @@ import {
   Select,
   styled,
 } from "@mui/material";
-import { Button, Pagination, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Chip, Tooltip, ChipProps, Input } from "@heroui/react"
-import { Pencil, Trash2, Search, Calendar1, Calendar, Filter, Plus, Mail } from "lucide-react";
+import { Button, Pagination, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Chip, Tooltip, Input, SortDescriptor } from "@heroui/react"
+import { Pencil, Trash2, Search, Calendar1, Mail } from "lucide-react";
 
 const chartConfig = {
   visitors: {
@@ -130,9 +129,9 @@ interface Invoice {
   amount: number;
   discount: number;
   gstRate: number;
-  status: "Paid" | "Unpaid" | "Pending";
-  date: Date;
-  endDate: Date;
+  status: string;
+  date: string;
+  endDate: string;
   totalWithoutGst: number;
   totalWithGst: number;
   paidAmount: number;
@@ -152,7 +151,7 @@ interface Reminder {
   amount: number;
   discount: number;
   gstRate: number;
-  status: "Paid" | "Unpaid" | "Pending";
+  status: string;
   date: Date;
   endDate: Date;
   totalWithoutGst: number;
@@ -195,6 +194,7 @@ interface Task {
 }
 
 interface Schedule {
+  _id: string;
   subject: string;
   assignedUser: string;
   customer: string;
@@ -367,45 +367,40 @@ export default function Page() {
   const hasSearchFilterSchedule = Boolean(filterValueSchedule);
 
   const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set());
-  const [selectedKeysInvoice, setSelectedKeysInvoice] = useState(new Set([]));
-  const [selectedKeysDeal, setSelectedKeysDeal] = useState(new Set([]));
-  const [selectedKeysTask, setSelectedKeysTask] = useState(new Set([]));
-  const [selectedKeysReminder, setSelectedKeysReminder] = useState(new Set([]));
-  const [selectedKeysSchedule, setSelectedKeysSchedule] = useState(new Set([]));
+  const [selectedKeysInvoice, setSelectedKeysInvoice] = React.useState<Selection>(new Set());
+  const [selectedKeysDeal, setSelectedKeysDeal] = React.useState<Selection>(new Set());
+  const [selectedKeysTask, setSelectedKeysTask] = React.useState<Selection>(new Set());
+  const [selectedKeysReminder, setSelectedKeysReminder] = React.useState<Selection>(new Set());
+  const [selectedKeysSchedule, setSelectedKeysSchedule] = React.useState<Selection>(new Set());
 
   const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-  const [visibleColumnsInvoice, setVisibleColumnsInvoice] = useState(new Set(INITIAL_VISIBLE_COLUMNS_INVOICE));
-  const [visibleColumnsDeal, setVisibleColumnsDeal] = useState(new Set(INITIAL_VISIBLE_COLUMNS_DEAL));
-  const [visibleColumnsTask, setVisibleColumnsTask] = useState(new Set(INITIAL_VISIBLE_COLUMNS_TASK));
-  const [visibleColumnsReminder, setVisibleColumnsReminder] = useState(new Set(INITIAL_VISIBLE_COLUMNS_REMINDER));
-  const [visibleColumnsSchedule, setVisibleColumnsSchedule] = useState(new Set(INITIAL_VISIBLE_COLUMNS_SCHEDULE));
 
-  const [sortDescriptor, setSortDescriptor] = useState({
+    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
     column: "createdAt",
     direction: "descending",
   });
 
-  const [sortDescriptorInvoice, setSortDescriptorInvoice] = useState({
+  const [sortDescriptorInvoice, setSortDescriptorInvoice] = useState<SortDescriptor>({
     column: "createdAt",
     direction: "descending",
   })
 
-  const [sortDescriptorDeal, setSortDescriptorDeal] = useState({
+  const [sortDescriptorDeal, setSortDescriptorDeal] = useState<SortDescriptor>({
     column: "createdAt",
     direction: "descending",
   });
 
-  const [sortDescriptorTask, setSortDescriptorTask] = useState({
+  const [sortDescriptorTask, setSortDescriptorTask] = useState<SortDescriptor>({
     column: "createdAt",
     direction: "descending",
   });
 
-  const [sortDescriptorReminder, setSortDescriptorReminder] = useState({
+  const [sortDescriptorReminder, setSortDescriptorReminder] = useState<SortDescriptor>({
     column: "createdAt",
     direction: "descending",
   })
 
-  const [sortDescriptorSchedule, setSortDescriptorSchedule] = useState({
+  const [sortDescriptorSchedule, setSortDescriptorSchedule] = useState<SortDescriptor>({
     column: "createdAt",
     direction: "ascending",
   })
@@ -986,8 +981,8 @@ export default function Page() {
     return Object.entries(categorizedLeads).map(([status, leads]) => ({
       browser: status,
       visitors: leads.length,
-      fill: chartData[status] || "#ccc",
-    }));
+      fill: chartData[status as keyof typeof chartData] || "#ccc",
+      }));
   }, [categorizedLeads]);
 
   //Invoice Chart
@@ -995,7 +990,7 @@ export default function Page() {
     return Object.entries(categorizedInvoices).map(([status, invoices]) => ({
       browser: status,
       visitors: invoices.length,
-      fill: chartDataInvoice[status] || "#ccc",
+      fill: chartDataInvoice[status as keyof typeof chartDataInvoice] || "#ccc",
     }));
   }, [categorizedInvoices]);
 
@@ -1004,7 +999,7 @@ export default function Page() {
     return Object.entries(categorizedDeals).map(([status, deals]) => ({
       browser: status,
       visitors: deals.length,
-      fill: chartDataDeal[status] || "#ccc",
+      fill: chartDataDeal[status as keyof typeof chartDataDeal] || "#ccc",
     }));
   }, [categorizedDeals]);
 
@@ -1288,6 +1283,7 @@ export default function Page() {
               config={chartConfigInvoice}
               className="mx-auto aspect-square max-h-[300px] md:h-[400px] lg:h-[500px]"
             >
+              
               <RadialBarChart
                 width={width}
                 height={height}
@@ -1599,7 +1595,7 @@ export default function Page() {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
         <span className="w-[30%] text-small text-default-400">
-          {selectedKeysInvoice === "all"
+        {selectedKeysInvoice === "all"
             ? "All items selected"
             : `${selectedKeysInvoice.size} of ${filteredItemsInvoice.length} selected`}
         </span>
@@ -1633,7 +1629,7 @@ export default function Page() {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
         <span className="w-[30%] text-small text-default-400">
-          {selectedKeysDeal === "all"
+        {selectedKeysDeal === "all"
             ? "All items selected"
             : `${selectedKeysDeal.size} of ${filteredItemsDeal.length} selected`}
         </span>
@@ -1667,7 +1663,7 @@ export default function Page() {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
         <span className="w-[30%] text-small text-default-400">
-          {selectedKeysTask === "all"
+        {selectedKeysTask === "all"
             ? "All items selected"
             : `${selectedKeysTask.size} of ${filteredItemsTask.length} selected`}
         </span>
@@ -1701,7 +1697,7 @@ export default function Page() {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
         <span className="w-[30%] text-small text-default-400">
-          {selectedKeysReminder === "all"
+        {selectedKeysReminder === "all"
             ? "All items selected"
             : `${selectedKeysReminder.size} of ${filteredItemsReminder.length} selected`}
         </span>
@@ -1735,7 +1731,7 @@ export default function Page() {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
         <span className="w-[30%] text-small text-default-400">
-          {selectedKeysSchedule === "all"
+        {selectedKeysSchedule === "all"
             ? "All items selected"
             : `${selectedKeysSchedule.size} of ${filteredItemsSchedule.length} selected`}
         </span>
@@ -1819,8 +1815,6 @@ export default function Page() {
       case "productName":
       case "amount":
       case "gstNumber":
-      case "date":
-      case "endDate":
       case "notes":
         return cellValue;
       case "status":
@@ -1830,7 +1824,7 @@ export default function Page() {
             size="sm"
             variant="flat"
           >
-            {cellValue}
+          {cellValue}
           </Chip>
         );
       case "actions":
@@ -1925,10 +1919,13 @@ export default function Page() {
       case "endDate": {
         if (!cellValue) return "N/A";
 
-        const date = new Date(cellValue);
+        if (typeof cellValue !== 'string' && typeof cellValue !== 'number') {
+          return "Invalid Date";
+        }   
+
+        const date = new Date(cellValue); 
         if (isNaN(date.getTime())) return "Invalid Date";
 
-        // Format date as dd-mm-yyyy
         const day = String(date.getDate()).padStart(2, "0");
         const month = String(date.getMonth() + 1).padStart(2, "0");
         const year = date.getFullYear();
@@ -2041,20 +2038,12 @@ export default function Page() {
           </div>
           <div className="flex items-center space-x-4 ml-auto mr-4">
             <div><SearchBar /></div>
-            <a href="/email" className="relative group">
-              <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Email
+            <a href="/email">
+              <div>
+                <Mail />
               </div>
             </a>
-
-            {/* Calendar Icon with Tooltip */}
-            <a href="/calendar" className="relative group">
-              <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Calendar
-              </div>
-            </a>
+            <a href="/calendar"><div><Calendar1 /></div></a>
             <div><Notification /></div>
           </div>
         </header>
@@ -2336,7 +2325,9 @@ export default function Page() {
                       <TableBody emptyContent={"No invoice available"} items={sortedInvoice}>
                         {(item) => (
                           <TableRow key={item._id} className="hover:bg-gray-50 transition duration-200">
-                            {(columnKey) => (<TableCell className="px-4 py-3 text-gray-700">{renderCellInvoice(item, columnKey)}</TableCell>)}
+                            {(columnKey) => (<TableCell className="px-4 py-3 text-gray-700">
+                              {renderCellInvoice(item, columnKey)}                            
+                              </TableCell>)}
                           </TableRow>
                         )}
                       </TableBody>
@@ -2389,7 +2380,9 @@ export default function Page() {
                       <TableBody emptyContent={"No reminder available"} items={sortedReminder}>
                         {(item) => (
                           <TableRow key={item._id} className="hover:bg-gray-50 transition duration-200">
-                            {(columnKey) => (<TableCell className="px-4 py-3 text-gray-700">{renderCellReminder(item, columnKey)}</TableCell>)}
+                            {(columnKey) => (<TableCell className="px-4 py-3 text-gray-700">
+                              {renderCellReminder(item, columnKey).toLocaleString()}
+                              </TableCell>)}
                           </TableRow>
                         )}
                       </TableBody>

@@ -73,18 +73,15 @@ export default function CertificateNWForm() {
         },
         body: JSON.stringify(values),
       })
-
       const data = await response.json()
-
       if (!response.ok) {
         throw new Error(data.error || "Failed to submit the form")
       }
-
       toast({ 
         title: "Certificate submitted",
         description: `Your Certificate NW has been successfully submitted. ID: ${data.id}`,
       })
-      router.push(`/certificate/${data.id}`) // Redirect to the new PDF generation page
+      router.push(`/certificate/${data.id}`) 
     } catch (error) {
       toast({
         title: "Error",

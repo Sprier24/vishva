@@ -1,5 +1,4 @@
 "use client"
-
 import * as React from "react"
 import {
   BellMinus,
@@ -14,7 +13,6 @@ import {
   Target,
   UserX,
 } from "lucide-react"
-
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -23,7 +21,6 @@ import {
   SidebarFooter,
   SidebarRail,
 } from "@/components/ui/sidebar"
-
 import { Progress } from "@/components/ui/progress"; 
 import { Cloud } from "lucide-react"; 
 
@@ -35,7 +32,6 @@ const data = {
       icon: LayoutDashboard,
       items: [{ title: "Dashboard", url: "/dashboard" }],
     },
-
     {
       title: "Lead",
       url: "/lead",
@@ -46,19 +42,16 @@ const data = {
         { title: "Drag & Drop", url: "/lead/leadDrop" }
       ],
     },
-
     {
       title: "Deal",
       url: "/deal",
       icon: Handshake,
-
       items: [
         { title: "Record", url: "/deal/table" },
         { title: "Graph", url: "/Deal-chart" },
         { title: "Drag & Drop", url: "/deal/dealDrop" }
       ],
     },
-
     {
       title: "Invoice",
       url: "/invoice",
@@ -67,48 +60,39 @@ const data = {
         { title: "Record", url: "/invoice/table" },
       ],
     },
-
     {
       title: "Reminder",
       url: "/reminder",
       icon: BellMinus,
-
       items: [
         { title: "Record", url: "/reminder/table" },
       ],
     },
-
     {
       title: "Task",
       url: "/task",
       icon: BookCheck,
-
       items: [
         { title: "Record", url: "/task/table" },
         { title: "Drag & Drop", url: "/task/taskDrop" }
       ],
     },
-
     {
       title: "Complaint",
       url: "/complaint",
       icon: UserX,
-
       items: [
         { title: "Record", url: "/complaint/table" },
       ],
     },
-
     {
       title: "Contact",
       url: "/contact",
       icon: SquareUser,
-
       items: [
         { title: "Record", url: "/contact/table" },
       ],
     },
-
     {
       title: "Account",
       url: "/account",
@@ -117,7 +101,6 @@ const data = {
         { title: "Record", url: "/Account/table" }
       ],
     },
-
     {
       title: "Documents",
       url: "/document",
@@ -126,17 +109,14 @@ const data = {
         { title: "Drive", url: "/document" }
       ],
     },
-
     {
       title: "Event or Meeting",
       url: "/scheduled",
       icon: CalendarCog,
-
       items: [
         { title: "Record", url: "/Scheduled/table" }
       ],
     },
-
   ],
 }
 
@@ -146,27 +126,20 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [hover, setHover] = React.useState(false);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
-
   const storageValue = 60;
-
   React.useEffect(() => {
     setIsClient(true);
     setActivePath(window.location.pathname);
   }, []);
-
-  // ✅ Detect sidebar collapse using ResizeObserver
   React.useEffect(() => {
     if (!sidebarRef.current) return;
-
     const observer = new ResizeObserver((entries) => {
       for (let entry of entries) {
         const width = entry.contentRect.width;
-        setIsCollapsed(width < 80); // Adjust based on actual collapsed width
+        setIsCollapsed(width < 80); 
       }
     });
-
     observer.observe(sidebarRef.current);
-
     return () => observer.disconnect();
   }, []);
 
@@ -188,8 +161,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={updatedNavMain} />
       </SidebarContent>
-
-      {/* Cloud Storage Section */}
       <div className="px-4 py-3 space-y-1">
         <div className="flex items-center gap-2 text-sm text-gray-600">
           <Cloud className="size-4 text-gray-500" />
@@ -212,9 +183,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           )}
         </div>
       </div>
-
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

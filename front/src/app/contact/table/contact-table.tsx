@@ -1,22 +1,18 @@
 "use client";
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
-import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
+import { SortDescriptor, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
 import axios from "axios";
-import { format } from "date-fns"
-import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip} from "@heroui/react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { Calendar } from "@/components/ui/calendar"
 
 interface Contact {
     _id: string;
@@ -36,7 +32,7 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toISOString().split("T")[0]; // Returns "YYYY-MM-DD"
+    return date.toISOString().split("T")[0]; 
 };
 
 const columns = [
@@ -48,7 +44,6 @@ const columns = [
     { name: "GST Number", uid: "gstNumber", sortable: true, width: "100px" },
     { name: "Notes", uid: "description", sortable: true, width: "100px" },
     { name: "Action", uid: "actions", sortable: true, width: "100px" },
-
 ];
 
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "contactNumber", "emailAddress", "address", "gstNumber", "description", "actions"];
@@ -62,7 +57,7 @@ const contactSchema = z.object({
         .nonempty({ message: "Required" }),
     emailAddress: z.string().email({ message: "Required" }),
     address: z.string().nonempty({ message: "Required" }),
-    gstNumber: z.string().optional(),
+    gstNumber: z.string().nonempty({ message: "Required" }),
     description: z.string().optional(),
 });
 
@@ -78,14 +73,12 @@ export default function ContactTable() {
             const response = await axios.get(
                 "http://localhost:8000/api/v1/contact/getallContacts"
             );
-
             console.log('Full API Response:', {
                 status: response.status,
                 data: response.data,
                 type: typeof response.data,
                 hasData: 'data' in response.data
             });
-
             let TaskData;
             if (typeof response.data === 'object' && 'data' in response.data) {
 
@@ -97,20 +90,16 @@ export default function ContactTable() {
                 console.error('Unexpected response format:', response.data);
                 throw new Error('Invalid response format');
             }
-
             if (!Array.isArray(TaskData)) {
                 TaskData = [];
             }
-
             const sortedContacts = [...TaskData].sort((a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
-
             const ContactWithKeys = sortedContacts.map((contact: Contact) => ({
                 ...contact,
                 key: contact._id || generateUniqueId()
             }));
-
             setContact(ContactWithKeys);
             setError(null);
         } catch (error) {
@@ -128,32 +117,14 @@ export default function ContactTable() {
         fetchContacts();
     }, []);
 
-    const [isAddNewOpen, setIsAddNewOpen] = useState(false);
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-    const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [sortDescriptor, setSortDescriptor] = useState({
+    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
         column: "createdAt",
         direction: "descending",
     });
     const [page, setPage] = useState(1);
-
-    const handleSortChange = (column: string) => {
-        setSortDescriptor((prevState) => {
-            if (prevState.column === column) {
-                return {
-                    column,
-                    direction: prevState.direction === "ascending" ? "descending" : "ascending",
-                };
-            } else {
-                return {
-                    column,
-                    direction: "ascending",
-                };
-            }
-        });
-    };
 
     const form = useForm<z.infer<typeof contactSchema>>({
         resolver: zodResolver(contactSchema),
@@ -190,24 +161,19 @@ export default function ContactTable() {
                     description: contact.description
 
                 };
-
                 return Object.values(searchableFields).some(value =>
                     String(value || '').toLowerCase().includes(filterValue.toLowerCase())
                 );
             });
         }
-
-
-
         return filteredTasks;
-    }, [contact, filterValue, statusFilter]);
+    }, [contact, filterValue]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
     const items = React.useMemo(() => {
         const start = (page - 1) * rowsPerPage;
         const end = start + rowsPerPage;
-
         return filteredItems.slice(start, end);
     }, [page, filteredItems, rowsPerPage]);
 
@@ -216,7 +182,6 @@ export default function ContactTable() {
             const first = a[sortDescriptor.column as keyof Contact];
             const second = b[sortDescriptor.column as keyof Contact];
             const cmp = first < second ? -1 : first > second ? 1 : 0;
-
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
     }, [sortDescriptor, items]);
@@ -224,7 +189,6 @@ export default function ContactTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
 
-    // Function to handle edit button click
     const handleEditClick = (contact: Contact) => {
         setSelectedContact(contact);
         form.reset({
@@ -239,8 +203,6 @@ export default function ContactTable() {
         setIsEditOpen(true);
     };
 
-
-    // Function to handle delete button click
     const handleDeleteClick = (contact: Contact) => {
         setSelectedContact(contact);
         setIsDeleteDialogOpen(true);
@@ -248,22 +210,18 @@ export default function ContactTable() {
 
     const handleDeleteConfirm = async () => {
         if (!selectedContact?._id) return;
-
         try {
             const response = await fetch(`http://localhost:8000/api/v1/contact/deleteContact/${selectedContact._id}`, {
                 method: "DELETE",
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to delete contact");
             }
-
             toast({
                 title: "Contact Deleted",
-                description: "The contact has been successfully deleted",
+                description: "The task has been successfully deleted.",
             });
-
             fetchContacts();
         } catch (error) {
             toast({
@@ -278,9 +236,9 @@ export default function ContactTable() {
     };
 
     const [isSubmitting, setIsSubmitting] = useState(false)
+
     async function onEdit(values: z.infer<typeof contactSchema>) {
         if (!selectedContact?._id) return;
-
         setIsSubmitting(true);
         try {
             const response = await fetch(`http://localhost:8000/api/v1/contact/updateContact/${selectedContact._id}`, {
@@ -288,23 +246,17 @@ export default function ContactTable() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to update contact");
             }
-
             toast({
                 title: "Contact Updated",
-                description: "The contact has been successfully updated",
+                description: "The contact has been successfully updated.",
             });
-
-            // Close dialog and reset form
             setIsEditOpen(false);
             setSelectedContact(null);
             form.reset();
-
-            // Refresh the leads list
             fetchContacts();
         } catch (error) {
             toast({
@@ -317,23 +269,14 @@ export default function ContactTable() {
         }
     }
 
-
     const renderCell = React.useCallback((contact: Contact, columnKey: string) => {
         const cellValue = contact[columnKey as keyof Contact];
-
-        // Format dates if the column is "date" or "endDate"
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
             return formatDate(cellValue);
         }
-        // Render note column with a fallback message if there's no note
         if (columnKey === "description") {
             return cellValue || "N/A";
         }
-
-        if (columnKey === "gstNumber") {
-            return cellValue || "N/A";
-        }
-        // Render actions column with edit and delete buttons
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
@@ -356,11 +299,8 @@ export default function ContactTable() {
                 </div>
             );
         }
-
-        // For all other columns, return the raw cell value
         return cellValue;
     }, []);
-
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -388,11 +328,6 @@ export default function ContactTable() {
         }
     }, []);
 
-    const onClear = React.useCallback(() => {
-        setFilterValue("");
-        setPage(1);
-    }, []);
-
     const topContent = React.useMemo(() => {
         return (
             <div className="flex flex-col gap-4">
@@ -410,7 +345,6 @@ export default function ContactTable() {
                             onClear={() => setFilterValue("")}
                         />
                     </div>
-
                     <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
                         <Dropdown>
                             <DropdownTrigger className="w-full sm:w-auto">
@@ -444,7 +378,6 @@ export default function ContactTable() {
                                 ))}
                             </DropdownMenu>
                         </Dropdown>
-
                         <Button
                             className="addButton w-full sm:w-auto flex items-center justify-between"
                             style={{ backgroundColor: 'hsl(339.92deg 91.04% 52.35%)' }}
@@ -532,7 +465,8 @@ export default function ContactTable() {
                                 classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
                                 topContent={topContent}
                                 topContentPlacement="outside"
-                                onSelectionChange={setSelectedKeys}
+                                sortDescriptor={sortDescriptor}
+                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -551,7 +485,7 @@ export default function ContactTable() {
                                         <TableRow key={item._id}>
                                             {(columnKey) => (
                                                 <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                                                    {renderCell(item, columnKey)}
+                                                    {renderCell(item, columnKey.toString())}
                                                 </TableCell>
                                             )}
                                         </TableRow>
@@ -605,7 +539,6 @@ export default function ContactTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -634,7 +567,6 @@ export default function ContactTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -663,7 +595,6 @@ export default function ContactTable() {
                                     )}
                                 />
                             </div>
-
                             <FormField
                                 control={form.control}
                                 name="description"
@@ -682,7 +613,6 @@ export default function ContactTable() {
                                     </FormItem>
                                 )}
                             />
-
                             <Button type="submit" className="w-full" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <>
@@ -709,10 +639,9 @@ export default function ContactTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                        Are you sure you want to delete this contact?,
-                        The data won't be retrieved again.
+                            Are you sure you want to delete this invoice? This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">
@@ -733,8 +662,6 @@ export default function ContactTable() {
                     </div>
                 </DialogContent>
             </Dialog>
-
         </div>
-
     );
 }

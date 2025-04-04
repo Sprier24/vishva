@@ -1,10 +1,8 @@
 "use client"
-
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
-
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -43,7 +41,6 @@ function useSidebar() {
   if (!context) {
     throw new Error("useSidebar must be used within a SidebarProvider.")
   }
-
   return context
 }
 
@@ -80,7 +77,6 @@ const SidebarProvider = React.forwardRef<
         } else {
           _setOpen(openState)
         }
-
         document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
       },
       [setOpenProp, open]
@@ -277,7 +273,6 @@ const SidebarTrigger = React.forwardRef<
           }}
           {...props}
         >
-          {/* Arrow on the left side */}
           <span
             className={cn(
               "absolute -left-1 top-1/2 -translate-y-1/2",
@@ -324,13 +319,12 @@ const SidebarRail = React.forwardRef<
         "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full group-data-[collapsible=offcanvas]:hover:bg-sidebar",
         "[[data-side=left][data-collapsible=offcanvas]_&]:-right-2",
         "[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
-        // Add hover effect
         "after:content-[''] after:transition-opacity after:duration-200 after:ease-in-out",
         "after:hover:before:absolute after:hover:before:top-1/2 after:hover:before:left-1/2 after:hover:before:-translate-x-1/2 after:hover:before:-translate-y-1/2",
         "after:hover:before:whitespace-nowrap after:hover:before:text-xs after:hover:before:font-medium after:hover:before:text-sidebar-foreground",
         state === "collapsed"
-          ? "after:hover:before:content-['Open_Sidebar']" // Show "Open Sidebar" when collapsed
-          : "after:hover:before:content-['Close_Sidebar']", // Show "Close Sidebar" when expanded
+          ? "after:hover:before:content-['Open_Sidebar']"
+          : "after:hover:before:content-['Close_Sidebar']", 
         className
       )}
       {...props}

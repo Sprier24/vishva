@@ -120,7 +120,7 @@ const sendEmailComplaint = async (req, res) => {
 
   try {
       const mailOptions = {
-          from: "purvagalani@gmail.com",
+          from: process.env.EMAIL_USER,
           to: to,
           subject: subject || "(No Subject)", 
           html: message || "(No Message)", 

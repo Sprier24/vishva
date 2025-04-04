@@ -8,6 +8,5 @@ router.post('/createContact', contactController.createContact);
 router.put('/updateContact/:id', contactController.updateContact);
 router.delete('/deleteContact/:id', contactController.deleteContact);
 router.get('/getallContacts', contactController.getAllContacts); 
-router.post("/sendEmailContact", upload.array('attachments[]'), contactController.sendEmailContact); 
 
 module.exports = router;

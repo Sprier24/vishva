@@ -2,22 +2,19 @@
 
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon, CirclePlus, Diff, ReceiptText, SquareUser } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon, ReceiptText, SquareUser } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
-import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
+import { SortDescriptor, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
 import axios from "axios";
 import { format } from "date-fns"
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip } from "@heroui/react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { Calendar } from "@/components/ui/calendar"
 
 interface Lead {
     _id: string;
@@ -35,36 +32,6 @@ interface Lead {
     notes: string;
     isActive: string;
     createdAt: string;
-}
-
-interface Contact {
-    companyName: string;
-    customerName: string;
-    contactNumber: string;
-    emailAddress: string;
-    address: string;
-    gstNumber?: string;
-    description?: string;
-}
-
-interface Invoice {
-    _id: string;
-    companyName: string;
-    customerName: string;
-    contactNumber: string;
-    emailAddress: string;
-    address: string;
-    gstNumber: string;
-    productName: string;
-    amount: number;
-    discount: number;
-    gstRate: number;
-    status: string;
-    date: string;
-    totalWithoutGst: number;
-    totalWithGst: number;
-    paidAmount: number;
-    remainingAmount: number;
 }
 
 export const invoiceSchema = z.object({
@@ -98,16 +65,16 @@ const contactSchema = z.object({
         .nonempty({ message: "Required" }),
     emailAddress: z.string().email({ message: "Required" }),
     address: z.string().nonempty({ message: "Required" }),
-    gstNumber: z.string().optional(),
+    gstNumber: z.string().nonempty({ message: "Required" }),
     description: z.string().optional(),
 });
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
-    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
-    const year = date.getFullYear();  // Get the full year
-    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
+    const day = String(date.getDate()).padStart(2, '0');  
+    const month = String(date.getMonth() + 1).padStart(2, '0');  
+    const year = date.getFullYear();  
+    return `${day}/${month}/${year}`;  
 };
 
 const generateUniqueId = () => {
@@ -175,36 +142,6 @@ export default function LeadTable() {
     const [isInvoiceFormVisible, setIsInvoiceFormVisible] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const [newInvoice, setNewInvoice] = useState<Invoice>({
-        _id: "",
-        companyName: "",
-        customerName: "",
-        contactNumber: "",
-        emailAddress: "",
-        address: "",
-        gstNumber: "",
-        productName: "",
-        amount: 0,
-        discount: 0,
-        gstRate: 0,
-        status: "",
-        date: "",
-        totalWithGst: 0,
-        totalWithoutGst: 0,
-        paidAmount: 0,
-        remainingAmount: 0,
-    });
-
-    const [newContact, setNewContact] = useState<Contact>({
-        companyName: "",
-        customerName: "",
-        contactNumber: "",
-        emailAddress: "",
-        address: "",
-        gstNumber: "",
-        description: "",
-    });
-
     const fetchLeads = async () => {
         try {
             const response = await axios.get(
@@ -228,11 +165,9 @@ export default function LeadTable() {
             if (!Array.isArray(leadsData)) {
                 leadsData = [];
             }
-
             const sortedLeads = [...leadsData].sort((a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
-
             const leadsWithKeys = sortedLeads.map((lead: Lead) => ({
                 ...lead,
                 key: lead._id || generateUniqueId()
@@ -254,21 +189,16 @@ export default function LeadTable() {
         fetchLeads();
     }, []);
 
-    const [isAddNewOpen, setIsAddNewOpen] = useState(false);
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-    const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [sortDescriptor, setSortDescriptor] = useState({
+    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
         column: "createdAt",
         direction: "descending",
     });
     const [page, setPage] = useState(1);
     const router = useRouter();
-    const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
-    const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null);
 
-    // Form setup
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -288,7 +218,6 @@ export default function LeadTable() {
         },
     })
 
-    const contactformSchema = contactSchema;
     const contactform = useForm<z.infer<typeof contactSchema>>({
         resolver: zodResolver(contactSchema),
         defaultValues: {
@@ -320,30 +249,26 @@ export default function LeadTable() {
             date: new Date(),
             totalWithoutGst: 0,
             totalWithGst: 0,
-            paidAmount: "",
+            paidAmount: 0,
             remainingAmount: 0,
         }
     })
 
     const handleAddContactClick = (lead: Lead) => {
         setIsContactFormVisible(true);
-
-        // Pre-populate the contact form with the lead's information
         contactform.reset({
             companyName: lead.companyName,
             customerName: lead.customerName,
-            contactNumber: lead.contactNumber || "", // Default to empty if not available
+            contactNumber: lead.contactNumber || "", 
             emailAddress: lead.emailAddress,
             address: lead.address,
-            gstNumber: lead.gstNumber, // Optional, you can leave this empty or populate based on your needs
-            description: "", // Optional, same as above
+            gstNumber: lead.gstNumber, 
+            description: "", 
         });
     };
 
     const handleAddInvoice = (lead: Lead) => {
         setIsInvoiceFormVisible(true);
-
-        // Pre-populate the invoice form with the lead's information
         invoiceform.reset({
             companyName: lead.companyName,
             customerName: lead.customerName,
@@ -367,19 +292,16 @@ export default function LeadTable() {
     const handleInvoiceSubmit = async (values: z.infer<typeof invoiceSchema>) => {
         try {
             setIsSubmitting(true);
-
-            // Calculate all values
             const {
                 totalWithoutGst,
                 totalWithGst,
                 remainingAmount
             } = calculateGST(
                 values.amount,
-                values.discount,
-                values.gstRate,
-                values.paidAmount
+                values.discount ?? 0,
+                values.gstRate ?? 0,
+                Number(values.paidAmount) || 0
             );
-
             const invoiceData = {
                 ...values,
                 totalWithoutGst,
@@ -387,17 +309,14 @@ export default function LeadTable() {
                 remainingAmount,
                 date: format(values.date, "yyyy-MM-dd")
             };
-
             await axios.post(
                 "http://localhost:8000/api/v1/invoice/invoiceAdd",
                 invoiceData
             );
-
             toast({
-                title: "Invoice Submitted",
+                title: "Invoice Created",
                 description: "The invoice has been successfully created",
             });
-
             setIsInvoiceFormVisible(false);
             invoiceform.reset();
         } catch (error) {
@@ -418,7 +337,6 @@ export default function LeadTable() {
         gstRate: number,
         paidAmount: number
     ) => {
-        // Subtract the discount from the amount to get the discounted amount
         const discountedAmount = amount - (amount * (discount / 100));
         const gstAmount = discountedAmount * (gstRate / 100);
         const totalWithoutGst = discountedAmount;
@@ -434,36 +352,6 @@ export default function LeadTable() {
         };
     };
 
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ) => {
-        const { name, value } = e.target;
-        const updatedInvoice = { ...newInvoice, [name]: value };
-
-        if (
-            name === "amount" ||
-            name === "discount" ||
-            name === "gstRate" ||
-            name === "paidAmount"
-        ) {
-            const { totalWithoutGst, totalWithGst, remainingAmount } = calculateGST(
-                updatedInvoice.amount,
-                updatedInvoice.discount,
-                updatedInvoice.gstRate,
-                updatedInvoice.paidAmount
-            );
-
-            setNewInvoice({
-                ...updatedInvoice,
-                totalWithoutGst,
-                totalWithGst,
-                remainingAmount,
-            });
-        } else {
-            setNewInvoice(updatedInvoice);
-        }
-    };
-
     const updateCalculatedFields = () => {
         const values = invoiceform.getValues();
         const {
@@ -472,9 +360,9 @@ export default function LeadTable() {
             remainingAmount
         } = calculateGST(
             values.amount,
-            values.discount,
-            values.gstRate,
-            values.paidAmount
+            values.discount ?? 0,
+            values.gstRate ?? 0,
+            Number(values.paidAmount) || 0
         );
 
         invoiceform.setValue('totalWithoutGst', totalWithoutGst);
@@ -484,7 +372,7 @@ export default function LeadTable() {
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; // Check if all columns are selected
+        if (visibleColumns.size === columns.length) return columns; 
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
@@ -513,15 +401,8 @@ export default function LeadTable() {
                 );
             });
         }
-
-        if (statusFilter !== "all") {
-            filteredLeads = filteredLeads.filter((lead) =>
-                statusFilter === lead.status
-            );
-        }
-
         return filteredLeads;
-    }, [leads, filterValue, statusFilter]);
+    }, [leads, filterValue]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -545,10 +426,8 @@ export default function LeadTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
-    // Function to handle edit button click
     const handleEditClick = (lead: Lead) => {
         setSelectedLead(lead);
-        // Pre-fill the form with lead data
         form.reset({
             companyName: lead.companyName,
             customerName: lead.customerName,
@@ -567,7 +446,6 @@ export default function LeadTable() {
         setIsEditOpen(true);
     };
 
-    // Function to handle delete button click
     const handleDeleteClick = async (lead: Lead) => {
         setSelectedLead(lead);
         setIsDeleteDialogOpen(true);
@@ -575,23 +453,18 @@ export default function LeadTable() {
 
     const handleDeleteConfirm = async () => {
         if (!selectedLead?._id) return;
-
         try {
             const response = await fetch(`http://localhost:8000/api/v1/lead/deleteLead/${selectedLead._id}`, {
                 method: "DELETE",
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to delete lead");
             }
-
             toast({
                 title: "Lead Deleted",
-                description: "The lead has been successfully deleted",
+                description: "The lead has been successfully deleted.",
             });
-
-            // Refresh the leads list
             fetchLeads();
         } catch (error) {
             toast({
@@ -609,7 +482,6 @@ export default function LeadTable() {
 
     async function onEdit(values: z.infer<typeof formSchema>) {
         if (!selectedLead?._id) return;
-
         setIsSubmitting(true);
         try {
             const response = await fetch(`http://localhost:8000/api/v1/lead/updateLead/${selectedLead._id}`, {
@@ -617,23 +489,17 @@ export default function LeadTable() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to update lead");
             }
-
             toast({
                 title: "Lead Updated",
                 description: "The lead has been successfully updated",
             });
-
-            // Close dialog and reset form
             setIsEditOpen(false);
             setSelectedLead(null);
             form.reset();
-
-            // Refresh the leads list
             fetchLeads();
         } catch (error) {
             toast({
@@ -654,10 +520,8 @@ export default function LeadTable() {
                 "http://localhost:8000/api/v1/contact/createContact",
                 values
             );
-
             setIsContactFormVisible(false);
             contactform.reset();
-
             toast({
                 title: "Contact Submitted",
                 description: "The contact has been successfully created",
@@ -727,10 +591,8 @@ export default function LeadTable() {
                 </div>
             );
         }
-
         return cellValue;
     }, []);
-
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -756,11 +618,6 @@ export default function LeadTable() {
         } else {
             setFilterValue("");
         }
-    }, []);
-
-    const onClear = React.useCallback(() => {
-        setFilterValue("");
-        setPage(1);
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -901,7 +758,8 @@ export default function LeadTable() {
                                 classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
                                 topContent={topContent}
                                 topContentPlacement="outside"
-                                onSelectionChange={setSelectedKeys}
+                                sortDescriptor={sortDescriptor}
+                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -920,7 +778,7 @@ export default function LeadTable() {
                                         <TableRow key={item._id}>
                                             {(columnKey) => (
                                                 <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                                                    {renderCell(item, columnKey)}
+                                                    {renderCell(item, columnKey.toString())}
                                                 </TableCell>
                                             )}
                                         </TableRow>
@@ -948,7 +806,6 @@ export default function LeadTable() {
                     </DialogHeader>
                     <Form {...contactform}>
                         <form onSubmit={contactform.handleSubmit(handleContactSubmit)} className="space-y-6">
-                            {/* First row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={contactform.control}
@@ -985,8 +842,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Second row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={contactform.control}
@@ -1023,8 +878,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Third row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={contactform.control}
@@ -1048,7 +901,7 @@ export default function LeadTable() {
                                     name="gstNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Number (Optional)</FormLabel>
+                                            <FormLabel>GST Number</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     className="w-full"
@@ -1061,8 +914,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Notes */}
                             <FormField
                                 control={contactform.control}
                                 name="description"
@@ -1081,8 +932,6 @@ export default function LeadTable() {
                                     </FormItem>
                                 )}
                             />
-
-                            {/* Submit Button */}
                             <Button type="submit" className="w-full" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <>
@@ -1114,7 +963,6 @@ export default function LeadTable() {
 
                     <Form {...invoiceform}>
                         <form onSubmit={invoiceform.handleSubmit(handleInvoiceSubmit)} className="space-y-6">
-                            {/* First row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={invoiceform.control}
@@ -1149,8 +997,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Second row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={invoiceform.control}
@@ -1161,12 +1007,7 @@ export default function LeadTable() {
                                             <FormControl>
                                                 <Input
                                                     placeholder="Enter contact number"
-                                                    type="tel"
                                                     {...field}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value.replace(/[^0-9]/g, '');
-                                                        field.onChange(value);
-                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -1190,8 +1031,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Third row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={invoiceform.control}
@@ -1226,8 +1065,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Fourth row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={invoiceform.control}
@@ -1267,7 +1104,6 @@ export default function LeadTable() {
                                         </FormItem>
                                     )}
                                 />
-
                                 <FormField
                                     control={invoiceform.control}
                                     name="discount"
@@ -1290,7 +1126,6 @@ export default function LeadTable() {
                                         </FormItem>
                                     )}
                                 />
-
                                 <FormField
                                     control={invoiceform.control}
                                     name="gstRate"
@@ -1319,7 +1154,6 @@ export default function LeadTable() {
                                         </FormItem>
                                     )}
                                 />
-
                                 <FormField
                                     control={invoiceform.control}
                                     name="paidAmount"
@@ -1361,8 +1195,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
-                            {/* Seventh row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <FormField
                                     control={invoiceform.control}
@@ -1413,8 +1245,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
-
                             <Button type="submit" className="w-full" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <>
@@ -1473,7 +1303,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -1510,7 +1339,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
                             <FormField
                                 control={form.control}
                                 name="address"
@@ -1524,7 +1352,6 @@ export default function LeadTable() {
                                     </FormItem>
                                 )}
                             />
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -1561,7 +1388,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -1599,7 +1425,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -1660,7 +1485,6 @@ export default function LeadTable() {
                                     )}
                                 />
                             </div>
-
                             <FormField
                                 control={form.control}
                                 name="notes"
@@ -1679,7 +1503,6 @@ export default function LeadTable() {
                                     </FormItem>
                                 )}
                             />
-
                             <Button type="submit" className="w-full" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <>
@@ -1695,7 +1518,6 @@ export default function LeadTable() {
                 </DialogContent>
             </Dialog>
 
-
             <Dialog open={isDeleteDialogOpen} onOpenChange={(open) => {
                 if (!open) {
                     setIsDeleteDialogOpen(false);
@@ -1707,10 +1529,9 @@ export default function LeadTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this lead?,
-                            The data won't be retrieved again.
+                            Are you sure you want to delete this invoice? This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">

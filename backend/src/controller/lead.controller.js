@@ -41,13 +41,6 @@ const getAllLeads = async (req, res) => {
     try {
         const leads = await Lead.find({});
 
-        if (leads.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No leads found"
-            });
-        }
-
         res.status(200).json({
             success: true,
             data: leads

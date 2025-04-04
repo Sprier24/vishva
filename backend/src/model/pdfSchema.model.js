@@ -5,7 +5,7 @@ const pdfSchema = new mongoose.Schema({
   contactNumber: { type: String, required: true },
   emailAddress: { type: String, required: true },
   gstNumber: { type: String, required: true },
-  logo: { type: String } // Store the image path
+  logo: { type: String }
 });
 
 const  pdf = mongoose.model('pdfs', pdfSchema);

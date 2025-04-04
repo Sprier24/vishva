@@ -8,9 +8,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
+import { SortDescriptor, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
 import axios from "axios";
-import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip } from "@heroui/react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 
@@ -42,8 +42,8 @@ const columns = [
     { name: "Account Type", uid: "accountType", sortable: true, width: "120px" },
     { name: "UPI ID", uid: "UpiId", sortable: true, width: "100px" },
     { name: "Action", uid: "actions", sortable: true, width: "100px" },
-
 ];
+
 const INITIAL_VISIBLE_COLUMNS = ["accountHolderName", "accountNumber", "bankName", "accountType", "IFSCCode", "UpiId", "actions"];
 
 const accountSchema = z.object({
@@ -58,7 +58,7 @@ const accountSchema = z.object({
 export default function AccountTable() {
     const [accounts, setLeads] = useState<Account[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
+    const [selectedKeys, setSelectedKeys] = useState<Set<string> | "all">(new Set());
     const router = useRouter();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
@@ -67,7 +67,6 @@ export default function AccountTable() {
             const response = await axios.get(
                 `http://localhost:8000/api/v1/account/getAllAccounts`
             );
-
             let accountsData;
             if (typeof response.data === 'object' && 'data' in response.data) {
                 accountsData = response.data.data;
@@ -77,20 +76,16 @@ export default function AccountTable() {
                 console.error('Unexpected response format:', response.data);
                 throw new Error('Invalid response format');
             }
-
             if (!Array.isArray(accountsData)) {
                 accountsData = [];
             }
-
             const sortedAccounts = [...accountsData].sort((a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
-
             const accountsWithKeys = sortedAccounts.map((account: Account) => ({
                 ...account,
                 key: account._id || generateUniqueId()
             }));
-
             setLeads(accountsWithKeys);
             setError(null);
         } catch (error) {
@@ -108,37 +103,15 @@ export default function AccountTable() {
         fetchAccounts();
     }, []);
 
-    const [isAddNewOpen, setIsAddNewOpen] = useState(false);
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-    const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [sortDescriptor, setSortDescriptor] = useState({
+    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
         column: "createdAt",
         direction: "descending",
     });
     const [page, setPage] = useState(1);
 
-    const handleSortChange = (column: string) => {
-        setSortDescriptor((prevState) => {
-            if (prevState.column === column) {
-
-                return {
-                    column,
-                    direction: prevState.direction === "ascending" ? "descending" : "ascending",
-                };
-            } else {
-
-                return {
-                    column,
-                    direction: "ascending",
-                };
-            }
-        });
-    };
-
-
-    // Form setup
     const form = useForm<z.infer<typeof accountSchema>>({
         resolver: zodResolver(accountSchema),
         defaultValues: {
@@ -154,13 +127,12 @@ export default function AccountTable() {
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; // Check if all columns are selected
+        if (visibleColumns.size === columns.length) return columns;
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
     const filteredItems = React.useMemo(() => {
         let filteredLeads = [...accounts];
-
         if (hasSearchFilter) {
             filteredLeads = filteredLeads.filter((account) => {
                 const searchableFields = {
@@ -171,13 +143,11 @@ export default function AccountTable() {
                     IFSCCode: account.IFSCCode,
                     UpiId: account.UpiId
                 };
-
                 return Object.values(searchableFields).some(value =>
                     String(value || '').toLowerCase().includes(filterValue.toLowerCase())
                 );
             });
         }
-
         return filteredLeads;
     }, [accounts, filterValue]);
 
@@ -186,7 +156,6 @@ export default function AccountTable() {
     const items = React.useMemo(() => {
         const start = (page - 1) * rowsPerPage;
         const end = start + rowsPerPage;
-
         return filteredItems.slice(start, end);
     }, [page, filteredItems, rowsPerPage]);
 
@@ -195,7 +164,6 @@ export default function AccountTable() {
             const first = a[sortDescriptor.column as keyof Account];
             const second = b[sortDescriptor.column as keyof Account];
             const cmp = first < second ? -1 : first > second ? 1 : 0;
-
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
     }, [sortDescriptor, items]);
@@ -203,24 +171,19 @@ export default function AccountTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
 
-    // Function to handle edit button click
     const handleEditClick = (account: Account) => {
         setSelectedAccount(account);
-        // Pre-fill the form with lead data
         form.reset({
-            _id: account._id,
             accountHolderName: account.accountHolderName,
-            accountNumber: account.accountNumber,
             bankName: account.bankName,
-            accountType: account.accountType,
+            accountNumber: account.accountNumber,    
+            accountType: account.accountType as "Current" | "Savings" | "Other",
             IFSCCode: account.IFSCCode,
             UpiId: account.UpiId
         });
         setIsEditOpen(true);
     };
 
-
-    // Function to handle delete button click
     const handleDeleteClick = (account: Account) => {
         setSelectedAccount(account);
         setIsDeleteDialogOpen(true);
@@ -228,22 +191,18 @@ export default function AccountTable() {
 
     const handleDeleteConfirm = async () => {
         if (!selectedAccount?._id) return;
-
         try {
             const response = await fetch(`http://localhost:8000/api/v1/account/deleteAccount/${selectedAccount._id}`, {
                 method: "DELETE",
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to delete Account");
             }
-
             toast({
                 title: "Account Deleted",
-                description: "The account has been successfully deleted",
+                description: "The account has been successfully deleted.",
             });
-
             fetchAccounts();
         } catch (error) {
             toast({
@@ -258,9 +217,9 @@ export default function AccountTable() {
     };
 
     const [isSubmitting, setIsSubmitting] = useState(false)
+
     async function onEdit(values: z.infer<typeof accountSchema>) {
         if (!selectedAccount?._id) return;
-
         setIsSubmitting(true);
         try {
             const response = await fetch(`http://localhost:8000/api/v1/account/updateAccount/${selectedAccount._id}`, {
@@ -268,23 +227,17 @@ export default function AccountTable() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to update account");
             }
-
             toast({
                 title: "Account Updated",
-                description: "The account has been successfully updated",
+                description: "The account has been successfully updated.",
             });
-
-            // Close dialog and reset form
             setIsEditOpen(false);
             setSelectedAccount(null);
             form.reset();
-
-            // Refresh the leads list
             fetchAccounts();
         } catch (error) {
             toast({
@@ -297,19 +250,14 @@ export default function AccountTable() {
         }
     }
 
-
     const renderCell = React.useCallback((account: Account, columnKey: string) => {
         const cellValue = account[columnKey as keyof Account];
-
-        // Format dates if the column is "date" or "endDate"
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
             return formatDate(cellValue);
         }
-        // Render note column with a fallback message if there's no note
         if (columnKey === "UpiId") {
             return cellValue || "N/A";
         }
-        // Render actions column with edit and delete buttons
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
@@ -335,7 +283,6 @@ export default function AccountTable() {
 
         return cellValue;
     }, []);
-
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -363,11 +310,6 @@ export default function AccountTable() {
         }
     }, []);
 
-    const onClear = React.useCallback(() => {
-        setFilterValue("");
-        setPage(1);
-    }, []);
-
     const topContent = React.useMemo(() => {
         return (
             <div className="flex flex-col gap-4">
@@ -385,7 +327,6 @@ export default function AccountTable() {
                             onClear={() => setFilterValue("")}
                         />
                     </div>
-
                     <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
                         <Dropdown>
                             <DropdownTrigger className="w-full sm:w-auto">
@@ -419,7 +360,6 @@ export default function AccountTable() {
                                 ))}
                             </DropdownMenu>
                         </Dropdown>
-
                         <Button
                             className="addButton w-full sm:w-auto flex items-center justify-between"
                             style={{ backgroundColor: 'hsl(339.92deg 91.04% 52.35%)' }}
@@ -508,7 +448,7 @@ export default function AccountTable() {
                                 topContent={topContent}
                                 topContentPlacement="outside"
                                 sortDescriptor={sortDescriptor}
-                                onSelectionChange={setSelectedKeys}
+                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -527,7 +467,7 @@ export default function AccountTable() {
                                         <TableRow key={item._id}>
                                             {(columnKey) => (
                                                 <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                                                    {renderCell(item, columnKey)}
+                                                    {renderCell(item, columnKey.toString())}
                                                 </TableCell>
                                             )}
                                         </TableRow>
@@ -581,7 +521,6 @@ export default function AccountTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -610,7 +549,6 @@ export default function AccountTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -672,10 +610,9 @@ export default function AccountTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                        Are you sure you want to delete this account?,
-                        The data won't be retrieved again.
+                            Are you sure you want to delete this invoice? This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">
@@ -696,8 +633,6 @@ export default function AccountTable() {
                     </div>
                 </DialogContent>
             </Dialog>
-
         </div>
-
     );
 }

@@ -8,15 +8,13 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Progress } from "@/components/ui/progress";
-import { ChevronsUpDown, LogOut, Cloud, Trash2 } from "lucide-react";
+import { ChevronsUpDown, LogOut, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { z } from "zod";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 
 interface Owner {
   _id: string;
@@ -52,34 +50,7 @@ export function NavUser() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [hover, setHover] = useState(false);
   const [dialogKey, setDialogKey] = useState(0);
-  const storageValue = 33;
-
-  const formSchema = z.object({
-    companyName: z.string().nonempty({ message: "Required" }),
-    ownerName: z.string().nonempty({ message: "Required" }),
-    contactNumber: z
-      .string()
-      .regex(/^\d*$/, { message: "Contact number must be numeric" })
-      .nonempty({ message: "Required" }),
-    companyType: z.string().nonempty({ message: "Required" }),
-    businessRegistration: z.string().nonempty({ message: "Required" }),
-    employeeSize: z.string().nonempty({ message: "Required" }),
-    panNumber: z.string().nonempty({ message: "Required" }),
-    gstNumber: z.string().optional(),
-    website: z.string().optional(),
-    documentType: z.string().nonempty({ message: "Required" }),
-    documentNumber: z.string().nonempty({ message: "Required" }),
-    logo: z.instanceof(File)
-      .refine(file => file.size <= 5 * 1024 * 1024, {
-        message: "Logo must be less than 5MB.",
-      })
-      .refine(file => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type), {
-        message: "Only .jpg, .png, and .webp formats are supported.",
-      })
-      .optional(),
-  });
 
   const form = useForm<Owner>({
     defaultValues: {
@@ -157,7 +128,7 @@ export function NavUser() {
         if (ownerResponse.status === 200) {
           ownerDeleted = true;
         } else {
-          alert(ownerResponse.message || "Error deleting owner account.");
+          alert(ownerResponse.data?.message || "Error deleting owner account.");
           return;
         }
       }
@@ -308,7 +279,6 @@ export function NavUser() {
         </SidebarMenuItem>
       </SidebarMenu>
 
-
       <Dialog open={isDeleteModalOpen} onOpenChange={(open) => {
         if (!open) {
           setDeleteModalOpen(false);
@@ -332,16 +302,24 @@ export function NavUser() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto hide-scrollbar">
+
+         <Dialog open={open} onOpenChange={(open) => {
+                        if (!open) {
+                          setOpen(false);
+                        }
+                    }}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto hide-scrollbar"
+       onInteractOutside={(e) => {
+                               e.preventDefault();
+                           }
+                           } >
           <DialogHeader>
-            <DialogTitle className="text-center">Profile Details</DialogTitle>
+            <DialogTitle className="text-center">Company Profile</DialogTitle>
           </DialogHeader>
           {error ? (
             <div className="text-center text-red-500 py-4">{error}</div>
           ) : currentOwner ? (
             <div className="space-y-6">
-              {/* Profile Header */}
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
                   <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-gray-200">
@@ -354,13 +332,8 @@ export function NavUser() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
-                <div className="text-center">
-                  <h2 className="text-xl font-bold">{currentOwner.ownerName}</h2>
-                  <p className="text-sm text-gray-500">{currentOwner.emailAddress}</p>
-                </div>
               </div>
 
-              {/* Profile Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
                   <CardHeader className="pb-2">
@@ -463,16 +436,21 @@ export function NavUser() {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Edit Profile Modal */}
-      <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto hide-scrollbar">
+        
+        <Dialog open={isEditing} onOpenChange={(open) => {
+                        if (!open) {
+                          setIsEditing(false);
+                        }
+                    }}>
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto hide-scrollbar"
+            onInteractOutside={(e) => {
+              e.preventDefault();
+          }}>
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Logo Upload */}
               <div className="flex flex-col items-center gap-4">
                 <label htmlFor="logo" className="cursor-pointer">
                   <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-dashed border-gray-300">
@@ -492,12 +470,8 @@ export function NavUser() {
                   onChange={handleLogoChange}
                   className="hidden"
                 />
-                <Button variant="outline" size="sm" onClick={() => document.getElementById('logo')?.click()}>
-                  Change Logo
-                </Button>
               </div>
 
-              {/* Form Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}

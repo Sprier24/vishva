@@ -1,7 +1,6 @@
 "use client"
 
 import * as z from "zod"
-import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { format } from "date-fns"
 import { toast } from "@/hooks/use-toast"
@@ -9,10 +8,8 @@ import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const formSchema = z.object({
@@ -116,7 +113,6 @@ export default function LeadForm() {
                         )}
                     />
                 </div>
-
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <FormField
                         control={form.control}
@@ -153,7 +149,6 @@ export default function LeadForm() {
                         )}
                     />
                 </div>
-
                 <FormField
                     control={form.control}
                     name="address"
@@ -167,7 +162,6 @@ export default function LeadForm() {
                         </FormItem>
                     )}
                 />
-
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <FormField
                         control={form.control}
@@ -204,7 +198,6 @@ export default function LeadForm() {
                         )}
                     />
                 </div>
-
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <FormField
                         control={form.control}
@@ -242,7 +235,6 @@ export default function LeadForm() {
                         )}
                     />
                 </div>
-
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <FormField
                         control={form.control}
@@ -303,7 +295,6 @@ export default function LeadForm() {
                         )}
                     />
                 </div>
-
                 <FormField
                     control={form.control}
                     name="notes"
@@ -322,7 +313,6 @@ export default function LeadForm() {
                         </FormItem>
                     )}
                 />
-
                 <div className="flex justify-center sm:justify-end">
                     <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
                         {isSubmitting ? (

@@ -538,4 +538,5 @@ const getUser = async(req,res) => {
 }
 
 
-module.exports = { register, login, deleteUser, forgotPassword, resetPassword, verifyEmail, sendVerificationCode, logout, deleteAccount , getUser };
+
+module.exports = { register, login, deleteUser, forgotPassword, resetPassword, verifyEmail, sendVerificationCode, logout, deleteAccount, getUser };

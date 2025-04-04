@@ -139,7 +139,6 @@ const invoiceAdd = async (req, res) => {
 
         let { status } = req.body;
 
-        // Set default status if missing or invalid
         if (!status || !['Unpaid', 'Paid'].includes(status)) {
             status = 'Unpaid';
         }
@@ -309,67 +308,6 @@ const getPaidInvoices = async (req, res) => {
     }
 };
 
-const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
-
-
-const sendEmailReminder = async ({ to, subject = "(No Subject)", message = "(No Message)" }) => {
-    if (!to) {
-        throw new Error("Recipient email (to) is required.");
-    }
-
-    const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to,
-        subject,
-        html: message,
-    };
-
-    return transporter.sendMail(mailOptions);
-};
-
-const getInvoicesByStatus = async (req, res) => {
-    const { status } = req.query;
-
-    try {
-        const invoices = await Invoice.find({ status }, 'Name email amount');
-        res.status(200).json({
-            success: true,
-            data: invoices
-        });
-    } catch (error) {
-        console.error(`Error fetching ${status} invoices:`, error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error: " + error.message,
-        });
-    }
-};
-
-const updateStatus = async (req, res) => {
-    const { invoiceId, status } = req.body;
-
-    try {
-        const invoice = await Invoice.findById(invoiceId);
-        if (!invoice) {
-            return res.status(404).json({ success: false, message: 'Invoice not found' });
-        }
-
-        invoice.status = status;
-        await invoice.save();
-
-        res.json({ success: true, message: 'invoice status updated successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
-};
-
 module.exports = {
     invoiceAdd,
     updateInvoice,
@@ -378,7 +316,4 @@ module.exports = {
     getInvoiceById,
     getUnpaidInvoices,
     getPaidInvoices,
-    sendEmailReminder,
-    getInvoicesByStatus,
-    updateStatus
 };

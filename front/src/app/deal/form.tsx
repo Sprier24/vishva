@@ -1,7 +1,6 @@
 "use client"
 
 import * as z from "zod"
-import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { format } from "date-fns"
 import { toast } from "@/hooks/use-toast"
@@ -9,10 +8,8 @@ import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const formSchema = z.object({
@@ -26,7 +23,7 @@ const formSchema = z.object({
     address: z.string().nonempty({ message: "Required" }),
     productName: z.string().nonempty({ message: "Required" }),
     amount: z.number().positive({ message: "Required" }),
-    gstNumber: z.string().optional(),
+    gstNumber: z.string().nonempty({ message: "Required" }),
     status: z.enum(["Proposal", "New", "Discussion", "Demo", "Decided"]),
     date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
     endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
@@ -115,7 +112,6 @@ export default function DealForm() {
                         )}
                     />
                 </div>
-
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <FormField
                         control={form.control}
@@ -152,7 +148,6 @@ export default function DealForm() {
                         )}
                     />
                 </div>
-
                 <FormField
                     control={form.control}
                     name="address"
@@ -166,7 +161,6 @@ export default function DealForm() {
                         </FormItem>
                     )}
                 />
-
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <FormField
                         control={form.control}
@@ -203,14 +197,13 @@ export default function DealForm() {
                         )}
                     />
                 </div>
-
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <FormField
                         control={form.control}
                         name="gstNumber"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>GST Number (Optional)</FormLabel>
+                                <FormLabel>GST Number</FormLabel>
                                 <FormControl>
                                     <Input placeholder="Enter GST number" {...field} />
                                 </FormControl>
@@ -241,7 +234,6 @@ export default function DealForm() {
                         )}
                     />
                 </div>
-
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <FormField
                         control={form.control}
@@ -302,7 +294,6 @@ export default function DealForm() {
                         )}
                     />
                 </div>
-
                 <FormField
                     control={form.control}
                     name="notes"
@@ -321,7 +312,6 @@ export default function DealForm() {
                         </FormItem>
                     )}
                 />
-
                 <div className="flex justify-center sm:justify-end">
                     <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
                         {isSubmitting ? (

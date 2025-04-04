@@ -13,8 +13,7 @@ import { IoIosSend, IoMdAttach } from "react-icons/io";
 import { toast } from "@/hooks/use-toast"
 import {
     MdFormatBold, MdFormatItalic, MdFormatUnderlined, MdFormatAlignLeft, MdFormatAlignCenter, MdFormatAlignRight,
-    MdFormatListBulleted, MdFormatListNumbered, MdFormatIndentIncrease, MdFormatIndentDecrease,
-    MdSubscript, MdSuperscript, MdTableChart, MdHorizontalRule
+    MdFormatIndentIncrease, MdFormatIndentDecrease,MdSubscript, MdSuperscript, MdTableChart, MdHorizontalRule
 } from "react-icons/md";
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
@@ -55,12 +54,10 @@ const EmailInput: React.FC = () => {
             });
             return;
         }
-
         if (!subject) {
             setConfirmModalOpen(true);
             return;
         }
-
         sendEmail();
     };
 
@@ -77,14 +74,11 @@ const EmailInput: React.FC = () => {
                 method: 'POST',
                 body: formData,
             });
-
             if (!response.ok) throw new Error("Failed to send email");
-
             toast({
-                title: "Email Submitted",
+                title: "Email Sent Successfully",
                 description: "The email has been sent successfully",
             });
-
             setTo("");
             setSubject("");
             setAttachments([]);

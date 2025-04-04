@@ -94,7 +94,6 @@ export default function AccountForm() {
             )}
           />
         </div>
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -123,7 +122,6 @@ export default function AccountForm() {
             )}
           />
         </div>
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -159,7 +157,6 @@ export default function AccountForm() {
             )}
           />
         </div>
-
         <div className="flex justify-center sm:justify-end">
           <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
             {isSubmitting ? (

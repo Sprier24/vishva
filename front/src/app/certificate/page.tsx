@@ -9,7 +9,6 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 
-
 export default function CertificatePage() {
     return (
         <SidebarProvider>
@@ -49,7 +48,5 @@ export default function CertificatePage() {
                 </div>
             </SidebarInset>
         </SidebarProvider>
-
-
     )
 }

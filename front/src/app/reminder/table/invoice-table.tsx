@@ -1,22 +1,18 @@
 "use client";
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Edit, Trash2, Loader2, SearchIcon, ChevronDownIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
-import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
+import { SortDescriptor, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
 import axios from "axios";
 import { format } from "date-fns"
-import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useRouter } from "next/navigation";
-import { Calendar } from "@/components/ui/calendar"
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip } from "@heroui/react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Invoice {
     _id: string;
@@ -66,10 +62,10 @@ const generateUniqueId = () => {
 };
 
 const formatDate = (date: any) => {
-    if (!date) return "N/A"; // Handle undefined/null values gracefully
+    if (!date) return "N/A"; 
     const parsedDate = new Date(date);
-    if (isNaN(parsedDate.getTime())) return "Invalid Date"; // Handle invalid dates
-    return parsedDate.toLocaleDateString("en-GB"); // Format: DD/MM/YYYY
+    if (isNaN(parsedDate.getTime())) return "Invalid Date";
+    return parsedDate.toLocaleDateString("en-GB"); 
 };
 
 const columns = [
@@ -93,8 +89,7 @@ const columns = [
     },
     { name: "Paid Amount", uid: "paidAmount", sortable: true },
     { name: "Remaining Amount", uid: "remainingAmount", sortable: true },
-    // { name: "Status", uid: "status", sortable: true },
-    // { name: "Action", uid: "actions", sortable: true }
+    { name: "Status", uid: "status", sortable: true },
 ];
 
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "contactNumber", "emailAddress", "address", "gstNumber", "productName", "amount", "discount", "gstRate", "status", "date", "endDate", "totalWithoutGst", "totalWithGst", "paidAmount", "remainingAmount"];
@@ -107,8 +102,6 @@ export default function InvoiceTable() {
     const [isLoading, setIsLoading] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const router = useRouter();
 
     const fetchInvoices = async () => {
         setIsLoading(true);
@@ -156,15 +149,11 @@ export default function InvoiceTable() {
         fetchInvoices();
     }, []);
 
-
-    const [isAddNewOpen, setIsAddNewOpen] = useState(false);
     const [filterValue, setFilterValue] = useState("");
-    const [selectedKeys, setSelectedKeys] = useState(new Set([]));
+    const [selectedKeys, setSelectedKeys] = React.useState<Set<string> | "all">(new Set());    
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-    const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [sortDescriptor, setSortDescriptor] = useState({
+    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
         column: "createdAt",
         direction: "descending",
     });
@@ -195,7 +184,7 @@ export default function InvoiceTable() {
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; // Check if all columns are selected
+        if (visibleColumns.size === columns.length) return columns;
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
@@ -229,15 +218,8 @@ export default function InvoiceTable() {
                 );
             });
         }
-
-        if (statusFilter !== "all") {
-            filteredInvoices = filteredInvoices.filter((invoice) =>
-                statusFilter === invoice.status
-            );
-        }
-
         return filteredInvoices;
-    }, [invoices, filterValue, statusFilter]);
+    }, [invoices, filterValue]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -258,13 +240,8 @@ export default function InvoiceTable() {
         });
     }, [sortDescriptor, items]);
 
-    const [isEditOpen, setIsEditOpen] = useState(false);
-    const [selectedLead, setSelectedLead] = useState<Invoice | null>(null);
-
-    // Function to handle edit button click
     const handleEditClick = (invoice: Invoice) => {
         setSelectedInvoice(invoice);
-        // Pre-fill the form with invoice data
         form.reset({
             companyName: invoice.companyName,
             customerName: invoice.customerName,
@@ -276,7 +253,7 @@ export default function InvoiceTable() {
             amount: invoice.amount,
             discount: invoice.discount || 0,
             gstRate: invoice.gstRate || 0,
-            status: invoice.status as "Unpaid" | "Paid" | "Pending",
+            status: invoice.status as "Unpaid" | "Paid",
             date: invoice.date ? new Date(invoice.date) : undefined,
             totalWithoutGst: invoice.totalWithoutGst || 0,
             totalWithGst: invoice.totalWithGst || 0,
@@ -286,28 +263,22 @@ export default function InvoiceTable() {
         setIsEditDialogOpen(true);
     };
 
-    // Function to handle delete button click
     const handleDeleteClick = async (invoice: Invoice) => {
         if (!window.confirm("Are you sure you want to delete this invoice?")) {
             return;
         }
-
         try {
             const response = await fetch(`http://localhost:8000/api/v1/invoice/deleteInvoice/${invoice._id}`, {
                 method: "DELETE",
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to delete invoice");
             }
-
             toast({
                 title: "Invoice Deleted",
                 description: "The invoice has been successfully deleted.",
             });
-
-            // Refresh the invoices list
             fetchInvoices();
         } catch (error) {
             toast({
@@ -322,7 +293,6 @@ export default function InvoiceTable() {
 
     async function onEdit(values: z.infer<typeof formSchema>) {
         if (!selectedInvoice?._id) return;
-
         setIsLoading(true);
         try {
             const response = await fetch(`http://localhost:8000/api/v1/invoice/updateInvoice/${selectedInvoice._id}`, {
@@ -335,18 +305,13 @@ export default function InvoiceTable() {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to update invoice");
             }
-
             toast({
                 title: "Invoice Updated",
                 description: "The invoice has been successfully updated.",
             });
-
-            // Close dialog and reset form
             setIsEditDialogOpen(false);
             setSelectedInvoice(null);
             form.reset();
-
-            // Refresh the invoices list
             fetchInvoices();
         } catch (error) {
             toast({
@@ -398,7 +363,6 @@ export default function InvoiceTable() {
         }
     }, []);
 
-
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
             setPage(page + 1);
@@ -423,11 +387,6 @@ export default function InvoiceTable() {
         } else {
             setFilterValue("");
         }
-    }, []);
-
-    const onClear = React.useCallback(() => {
-        setFilterValue("");
-        setPage(1);
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -588,7 +547,8 @@ export default function InvoiceTable() {
                                 classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
                                 topContent={topContent}
                                 topContentPlacement="outside"
-                                onSelectionChange={setSelectedKeys}
+                                sortDescriptor={sortDescriptor}
+                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -607,7 +567,7 @@ export default function InvoiceTable() {
                                         <TableRow key={item._id}>
                                             {(columnKey) => (
                                                 <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                                                    {renderCell(item, columnKey)}
+                                                    {renderCell(item, columnKey.toString())}
                                                 </TableCell>
                                             )}
                                         </TableRow>
@@ -654,7 +614,6 @@ export default function InvoiceTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -683,7 +642,6 @@ export default function InvoiceTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -712,7 +670,6 @@ export default function InvoiceTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -741,7 +698,6 @@ export default function InvoiceTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -770,7 +726,6 @@ export default function InvoiceTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -792,7 +747,6 @@ export default function InvoiceTable() {
                                         </FormItem>
                                     )}
                                 />
-
                                 <FormField
                                     control={form.control}
                                     name="date"
@@ -814,8 +768,6 @@ export default function InvoiceTable() {
                                     )}
                                 />
                             </div>
-
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -830,7 +782,6 @@ export default function InvoiceTable() {
                                         </FormItem>
                                     )}
                                 />
-
                                 <FormField
                                     control={form.control}
                                     name="totalWithGst"
@@ -845,8 +796,6 @@ export default function InvoiceTable() {
                                     )}
                                 />
                             </div>
-
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -861,7 +810,6 @@ export default function InvoiceTable() {
                                         </FormItem>
                                     )}
                                 />
-
                                 <FormField
                                     control={form.control}
                                     name="remainingAmount"
@@ -876,8 +824,6 @@ export default function InvoiceTable() {
                                     )}
                                 />
                             </div>
-
-
                             <Button type="submit" className="w-full" disabled={isSubmitting}>
                                 {isSubmitting ? (
                                     <>
@@ -893,8 +839,5 @@ export default function InvoiceTable() {
                 </DialogContent>
             </Dialog>
         </div>
-
-
-
     );
 }

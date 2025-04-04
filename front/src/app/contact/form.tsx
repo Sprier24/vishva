@@ -2,7 +2,7 @@
 
 import * as z from "zod"
 import { useState } from "react"
-import { Loader2, Router } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { useForm } from "react-hook-form"
 import { Input } from "@/components/ui/input"
@@ -20,7 +20,7 @@ const contactSchema = z.object({
     .nonempty({ message: "Required" }),
   emailAddress: z.string().email({ message: "Required" }),
   address: z.string().nonempty({ message: "Required" }),
-  gstNumber: z.string().optional(),
+  gstNumber: z.string().nonempty({ message: "Required" }),
   description: z.string().optional(),
 });
 
@@ -49,7 +49,6 @@ export default function ContactForm() {
         body: JSON.stringify(values),
       });
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.error || "Failed to submit the contact.");
       }
@@ -100,7 +99,6 @@ export default function ContactForm() {
             )}
           />
         </div>
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -137,7 +135,6 @@ export default function ContactForm() {
             )}
           />
         </div>
-
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -157,7 +154,7 @@ export default function ContactForm() {
             name="gstNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>GST Number (Optional) </FormLabel>
+                <FormLabel>GST Number</FormLabel>
                 <FormControl>
                   <Input placeholder="Enter GST number" {...field} />
                 </FormControl>
@@ -166,7 +163,6 @@ export default function ContactForm() {
             )}
           />
         </div>
-
         <FormField
           control={form.control}
           name="description"
@@ -177,7 +173,7 @@ export default function ContactForm() {
                 <textarea
                   placeholder="Enter more details here..."
                   {...field}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
+                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-black resize-none"
                   rows={3}
                 />
               </FormControl>
@@ -185,7 +181,6 @@ export default function ContactForm() {
             </FormItem>
           )}
         />
-
         <div className="flex justify-center sm:justify-end">
           <Button type="submit" className="w-full sm:w-auto flex items-center justify-center" disabled={isSubmitting}>
             {isSubmitting ? (

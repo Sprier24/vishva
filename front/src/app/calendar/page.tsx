@@ -9,10 +9,10 @@ import {
 } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
-import { Calendar1, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import Select from "react-select";
 
 interface Event {
@@ -35,11 +35,16 @@ export default function CalendarPage() {
   const [showEventModal, setShowEventModal] = useState<boolean>(false);
   const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+  const [isClient, setIsClient] = useState(false);
   const calendars: Calendar[] = [
     { id: 1, name: 'High', color: 'bg-blue-500' },
     { id: 2, name: 'Medium', color: 'bg-green-500' },
     { id: 3, name: 'Low', color: 'bg-yellow-500' },
   ];
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -66,15 +71,17 @@ export default function CalendarPage() {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
-  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newMonth = parseInt(e.target.value);
-    setCurrentDate(new Date(currentDate.getFullYear(), newMonth, 1));
-  };
+  const handleMonthChange = (selectedOption: { value: number } | null) => {
+    if (selectedOption?.value !== undefined) {
+      setCurrentDate(new Date(currentDate.getFullYear(), selectedOption.value, 1));
+    }
+  };  
 
-  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newYear = parseInt(e.target.value);
-    setCurrentDate(new Date(newYear, currentDate.getMonth(), 1));
-  };
+  const handleYearChange = (selectedOption: { value: number } | null) => {
+    if (selectedOption?.value !== undefined) {
+      setCurrentDate(new Date(selectedOption.value, currentDate.getMonth(), 1));
+    }
+  };  
 
   const handleAddEvent = () => {
     setSelectedEvent(null);
@@ -198,7 +205,7 @@ export default function CalendarPage() {
   const yearOptions = years.map((year) => ({ value: year, label: year.toString() }));
 
   const customStyles = {
-    control: (base) => ({
+    control: (base: any) => ({
       ...base,
       backgroundColor: "#f3f4f6",
       color: "black",
@@ -208,18 +215,18 @@ export default function CalendarPage() {
       boxShadow: "none",
       "&:hover": { borderColor: "#9ca3af" },
     }),
-    singleValue: (base) => ({
+    singleValue: (base: any) => ({
       ...base,
       color: "black",
     }),
-    menu: (base) => ({
+    menu: (base: any) => ({
       ...base,
       maxHeight: "none",
       overflow: "hidden",
       backgroundColor: "white",
       color: "black",
     }),
-    option: (base, state) => ({
+    option: (base: any, state: { isSelected: any; }) => ({
       ...base,
       backgroundColor: state.isSelected ? "#2563eb" : "white",
       color: state.isSelected ? "white" : "black",
@@ -227,7 +234,7 @@ export default function CalendarPage() {
     }),
   };
 
-  return (
+  return isClient ? (
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
@@ -252,7 +259,7 @@ export default function CalendarPage() {
             <a href="/email" className="relative group">
               <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
               <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Email
+                  Email
               </div>
             </a>
             <div>
@@ -263,20 +270,20 @@ export default function CalendarPage() {
         <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 space-y-4 sm:space-y-0">
             <div className="flex space-x-2">
-              <Select
-                value={months.find((m) => m.value === currentDate.getMonth())}
-                onChange={(selectedOption) => handleMonthChange({ target: { value: selectedOption?.value } })}
-                options={months}
-                className="w-32 text-sm"
-                styles={customStyles}
-              />
-              <Select
-                value={yearOptions.find((option) => option.value === currentDate.getFullYear())}
-                onChange={(selectedOption) => handleYearChange({ target: { value: selectedOption?.value.toString() } })}
-                options={yearOptions}
-                className="w-24 text-sm"
-                styles={customStyles}
-              />
+            <Select
+              value={months.find((m) => m.value === currentDate.getMonth())}
+              onChange={handleMonthChange}
+              options={months}
+              className="w-32 text-sm"
+              styles={customStyles}
+            />
+            <Select
+              value={yearOptions.find((option) => option.value === currentDate.getFullYear())}
+              onChange={handleYearChange}
+              options={yearOptions}
+              className="w-24 text-sm"
+              styles={customStyles}
+            />
             </div>
             <div className="flex space-x-2">
               <button
@@ -319,7 +326,7 @@ export default function CalendarPage() {
         </div>
       </SidebarInset>
     </SidebarProvider>
-  );
+  ): null;
 }
 
 const EventModal = ({ event, onSave, onClose, onDelete, calendars }: { event: Event | null, onSave: (newEvent: Event) => void, onClose: () => void, onDelete: (eventId: string) => void, calendars: Calendar[] }) => {
@@ -327,6 +334,11 @@ const EventModal = ({ event, onSave, onClose, onDelete, calendars }: { event: Ev
   const [date, setDate] = useState<string>(event ? new Date(event.date).toISOString().split('T')[0] : '');
   const [calendarId, setCalendarId] = useState<number>(event ? event.calendarId : calendars[0].id);
   const modalRef = useRef<HTMLDivElement>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -348,7 +360,7 @@ const EventModal = ({ event, onSave, onClose, onDelete, calendars }: { event: Ev
     }
   };
 
-  return (
+  return isClient ? (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div ref={modalRef} className="bg-white dark:bg-gray-800 p-4 rounded-lg w-full max-w-md">
         <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
@@ -360,6 +372,7 @@ const EventModal = ({ event, onSave, onClose, onDelete, calendars }: { event: Ev
               Event
             </label>
             <input
+              placeholder="Event Name"
               type="text"
               id="event"
               value={eventTitle}
@@ -425,5 +438,5 @@ const EventModal = ({ event, onSave, onClose, onDelete, calendars }: { event: Ev
         </form>
       </div>
     </div>
-  );
+  ): null;
 };

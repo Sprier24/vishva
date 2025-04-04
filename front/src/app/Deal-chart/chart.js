@@ -9,29 +9,21 @@ export default function CardChart() {
   const [chartData, setChartData] = useState({});
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
-  const [totalAmount, setTotalAmount] = useState(0);
-
   const statuses = ["Proposal", "New", "Discussion", "Demo", "Decided"];
 
   useEffect(() => {
     const fetchAllData = async () => {
       try {
         const statusData = {};
-        let  total = 0;
-
         for (const status of statuses) {
           const response = await fetch(`http://localhost:8000/api/v1/deal/getDealsByStatus?status=${status}`);
           const data = await response.json();
-          
           if (data.success) {
             const totalAmount = data.data.reduce((sum, deal) => sum + deal.amount, 0);
             statusData[status] = totalAmount;
-            total += totalAmount; 
           }
         }
-
         setChartData(statusData);
-        setTotalAmount(total); 
       } catch (error) {
         console.error("Error fetching deal data:", error);
       }
@@ -48,7 +40,6 @@ export default function CardChart() {
     if (chartInstance.current) {
       chartInstance.current.destroy();
     }
-
     chartInstance.current = new Chart(ctx, {
       type: selectedChartType,
       data: {
@@ -96,12 +87,12 @@ export default function CardChart() {
           y: {
             title: {
               display: true,
-              text: `Total Deal Value  (₹${totalAmount.toLocaleString()})`,
+              text: "Total Deal Value (₹)",
               color: "black",
               font: { size: 14 },
             },
             ticks: { color: "black" },
-            grid: { display: true, color: "rgba(200, 200, 200, 0.3)" }, // Y-axis grid
+            grid: { display: true, color: "rgba(200, 200, 200, 0.3)" }, 
           },
         },
       },
@@ -112,19 +103,18 @@ export default function CardChart() {
         chartInstance.current.destroy();
       }
     };
-  }, [chartData, selectedChartType,totalAmount]);
+  }, [chartData, selectedChartType]);
 
   return (
   <div className="relative flex flex-col min-w-0 break-words w-full mb-6 shadow-lg rounded-lg bg-blueGray-700 border border-gray-150">
-    <h1 className="text-3xl font-bold mb-1 mt-6 text-center">Deal Record</h1>
-    <h1 className="text-1xl mb-6 text-center">Manage and track your deals effectively</h1>
+    <h1 className="text-3xl font-bold mb-1 mt-6 text-center">Deal Manager</h1>
+    <h1 className="text-1xl mb-6 text-center">Manage and track your deals effectively.</h1>
       <div className="rounded-t mb-0 px-4 py-3 bg-transparent">
         <div className="flex flex-wrap items-center justify-between">
           <div className="relative w-full max-w-full flex-grow flex-1">
             <h6 className="uppercase text-blueGray-100 mb-1 text-xs font-semibold">Overview</h6>
-            <h2 className="text-black text-blueGray-100 font-semibold">Total Deal Value (₹ {totalAmount.toLocaleString()})</h2>
+            <h2 className="text-black text-blueGray-100 font-semibold">Total Deal Value</h2>
           </div>
-
           <div className="flex gap-2 bg-gray-200 p-1 rounded-md">
             <button 
               onClick={() => setSelectedChartType("line")} 
@@ -134,7 +124,6 @@ export default function CardChart() {
               <FiTrendingUp className="text-gray-700" />
             </button>
             <Tooltip id="line-chart-tooltip" place="top" content="Line Chart" />
-
             <button 
               onClick={() => setSelectedChartType("bar")} 
               data-tooltip-id="bar-chart-tooltip"
@@ -146,7 +135,6 @@ export default function CardChart() {
           </div>
         </div>
       </div>
-
       <div className="p-4 flex-auto">
         <div className="relative" style={{ height: "500px", width: "100%" }}>
           <canvas ref={chartRef} style={{ height: "100%", width: "100%" }}></canvas>

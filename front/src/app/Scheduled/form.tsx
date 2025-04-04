@@ -1,7 +1,6 @@
 "use client"
 
 import * as z from "zod"
-import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { format } from "date-fns"
 import { toast } from "@/hooks/use-toast"
@@ -9,10 +8,8 @@ import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { CalendarIcon, Loader2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 
 const eventSchema = z.object({
@@ -20,8 +17,8 @@ const eventSchema = z.object({
   assignedUser: z.string().optional(),
   location: z.string().optional(),
   customer: z.string().optional(),
-  eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "FollowUp", "follow-up"], { message: "Required" }),
-  recurrence: z.enum(["OneTime", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
+  eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "Follow-Up", "follow-up"], { message: "Required" }),
+  recurrence: z.enum(["one-time", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
   status: z.enum(["Scheduled", "Completed", "Cancelled", "Postpone"], { message: "Required" }),
   priority: z.enum(["Low", "low", "Medium", "medium", "High", "high"], { message: "Required" }),
   date: z.date().optional(),
@@ -42,7 +39,7 @@ export default function ScheduledEventForm() {
       eventType: "call",
       priority: "Medium",
       description: "",
-      recurrence: "OneTime",
+      recurrence: "one-time",
       date: new Date(),
     },
   });
@@ -155,7 +152,7 @@ export default function ScheduledEventForm() {
                     <option value="call">Call</option>
                     <option value="Meeting">Meeting</option>
                     <option value="Demo">Demo</option>
-                    <option value="FollowUp">Follow Up</option>
+                    <option value="Follow-Up">Follow Up</option>
                   </select>
                 </FormControl>
                 <FormMessage />
@@ -173,7 +170,7 @@ export default function ScheduledEventForm() {
                     {...field}
                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                   >
-                    <option value="OneTime">One Time</option>
+                    <option value="one-time">One Time</option>
                     <option value="Daily">Daily</option>
                     <option value="Weekly">Weekly</option>
                     <option value="Monthly">Monthly</option>

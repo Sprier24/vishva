@@ -78,31 +78,28 @@ body {
   }
 }
 
-/* Hide scrollbar for Chrome, Safari, and Edge */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
 
-/* Hide scrollbar for Firefox */
 .scrollbar-hide {
   scrollbar-width: none;
 }
-/* Hide scrollbar for all scrollable elements */
+
 .scrollable {
   max-height: 650px;
   overflow-y: auto;
-  scrollbar-width: none; /* For Firefox */
-  -ms-overflow-style: none; /* For Internet Explorer and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none; 
   padding: 10px;
 }
 .form-container {
-  padding: 1rem; /* Reduce form padding */
+  padding: 1rem; 
 }
 .scrollable::-webkit-scrollbar {
-  display: none; /* For Chrome, Safari, and Opera */
+  display: none; 
 }
 
-/* Ensure smooth scrolling */
 html {
   scroll-behavior: smooth;
 }
@@ -114,21 +111,17 @@ html {
   min-height: 10svh;
 }
 
-
-/* .p-6{
-  padding: 1.5rem;
-} */
 .card-container {
-  width: 100%; /* Adjust as needed */
-  max-width: 600px; /* Prevent it from being too wide */
-  margin: 0 auto; /* Center it */
+  width: 100%; 
+  max-width: 600px; 
+  margin: 0 auto; 
   display: flex;
   gap: 12px;
 }
 
 .card {
-  width: 100%; /* Adjust as needed */
-  max-width: 500px; /* Prevent it from being too wide */
+  width: 100%;
+  max-width: 500px; 
   margin-top: 8px;
   border-radius: 8px;
   background-color: white;
@@ -140,12 +133,12 @@ html {
 .card p {
   font-size: 14px;
   font-weight: bold;
-  color: #1f2937; /* Dark gray */
+  color: #1f2937; 
 }
 
 .card p span {
   font-weight: normal;
-  color: #6b7280; /* Lighter gray */
+  color: #6b7280; 
 }
 
 General Styles
@@ -154,7 +147,6 @@ body {
   background-color: #f4f6f9;
 }
 
-/* Form Container */
 .form-container {
   display: flex;
   justify-content: center;
@@ -165,7 +157,6 @@ body {
   padding: 20px;
 }
 
-/* Form Box */
 .form-box {
   background: #ffffff;
   padding: 24px;
@@ -175,7 +166,6 @@ body {
   width: 100%;
 }
 
-/* Form Header */
 .form-box h2 {
   font-size: 24px;
   font-weight: 600;
@@ -184,7 +174,6 @@ body {
   margin-bottom: 16px;
 }
 
-/* Input Groups */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -213,7 +202,6 @@ body {
   box-shadow: 0 0 4px rgba(0, 123, 255, 0.2);
 }
 
-/* File Upload (Logo) */
 .logo-container {
   display: flex;
   flex-direction: column;
@@ -239,27 +227,24 @@ body {
   transition: background 0.3s ease;
 }
 
-
 .header-container {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;  
   padding: 16px 24px;
-  z-index: 1000; /* Ensure it stays above other content */
+  z-index: 1000; 
   text-align: center;
 }
 
 .form-container {
-  padding-top: 80px; /* Prevent overlap with the fixed header */
+  padding-top: 80px;
 }
-
 
 .logo-upload-btn:hover {
   background: #0056b3;
 }
 
-/* Submit Button */
 .submit-btn {
   display: flex;
   justify-content: flex-end;
@@ -287,8 +272,6 @@ body {
   cursor: not-allowed;
 }
 
-
-/* Responsive Design */
 @media (max-width: 640px) {
   .form-box {
     padding: 16px;
@@ -318,7 +301,6 @@ body {
   scrollbar-width: none;
 }
 
-
 @media (max-width: 640px) {
   .notification-panel {
     width: 100%;
@@ -335,7 +317,7 @@ body {
 
 @media (min-width: 1025px) {
   .notification-panel {
-    width: 24rem; /* 96 in Tailwind */
+    width: 24rem; 
     height: 100%;
   }
 }

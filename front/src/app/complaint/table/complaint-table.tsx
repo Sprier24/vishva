@@ -1,22 +1,19 @@
 "use client";
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Loader2, PlusCircle, SearchIcon, ChevronDownIcon, Edit, Trash2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
-import { cn } from "@/lib/utils"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
+import { SortDescriptor, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
 import axios from "axios";
 import { format } from "date-fns"
-import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip } from "@heroui/react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { Calendar } from "@/components/ui/calendar"
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface Complaint {
     _id: string;
@@ -38,10 +35,10 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');  // Ensure two digits for day
-    const month = String(date.getMonth() + 1).padStart(2, '0');  // Get month and ensure two digits
-    const year = date.getFullYear();  // Get the full year
-    return `${day}/${month}/${year}`;  // Returns "dd-mm-yyyy"
+    const day = String(date.getDate()).padStart(2, '0'); 
+    const month = String(date.getMonth() + 1).padStart(2, '0');  
+    const year = date.getFullYear();  
+    return `${day}/${month}/${year}`; 
 };
 
 const columns = [
@@ -81,8 +78,6 @@ export default function ComplaintTable() {
     const [error, setError] = useState<string | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
-    const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
-    const [complaintToDelete, setComplaintToDelete] = useState<Complaint | null>(null);
 
     const fetchComplaints = async () => {
         try {
@@ -98,20 +93,16 @@ export default function ComplaintTable() {
                 console.error('Unexpected response format:', response.data);
                 throw new Error('Invalid response format');
             }
-
             if (!Array.isArray(complaintsData)) {
                 complaintsData = [];
             }
-
             const sortedComplaints = [...complaintsData].sort((a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
-
             const complaintsWithKeys = sortedComplaints.map((complaint: Complaint) => ({
                 ...complaint,
                 key: complaint._id || generateUniqueId()
             }));
-
             setComplaints(complaintsWithKeys);
             setError(null);
         } catch (error) {
@@ -125,44 +116,20 @@ export default function ComplaintTable() {
         }
     };
 
-
     useEffect(() => {
         fetchComplaints();
     }, []);
 
-    const [isAddNewOpen, setIsAddNewOpen] = useState(false);
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-    const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [sortDescriptor, setSortDescriptor] = useState({
+    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
         column: "createdAt",
         direction: "descending",
     });
     const [page, setPage] = useState(1);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const handleSortChange = (column: string) => {
-        setSortDescriptor((prevState) => {
-            // Check if the column being clicked is the current sorted column
-            if (prevState.column === column) {
-                // Toggle direction if the same column is clicked again
-                return {
-                    column,
-                    direction: prevState.direction === "ascending" ? "descending" : "ascending",
-                };
-            } else {
-
-                return {
-                    column,
-                    direction: "ascending",
-                };
-            }
-        });
-    };
-
-
-    // Form setup
     const form = useForm<z.infer<typeof complaintSchema>>({
         resolver: zodResolver(complaintSchema),
         defaultValues: {
@@ -181,13 +148,12 @@ export default function ComplaintTable() {
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; // Check if all columns are selected
+        if (visibleColumns.size === columns.length) return columns; 
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
     const filteredItems = React.useMemo(() => {
         let filteredComplaints = [...complaints];
-
         if (hasSearchFilter) {
             filteredComplaints = filteredComplaints.filter((complaint) => {
                 const searchableFields = {
@@ -201,24 +167,19 @@ export default function ComplaintTable() {
                     priority: complaint.priority,
                     caseStatus: complaint.caseStatus,
                 };
-
                 return Object.values(searchableFields).some(value =>
                     String(value || '').toLowerCase().includes(filterValue.toLowerCase())
                 );
             });
         }
-
-
-
         return filteredComplaints;
-    }, [complaints, filterValue, statusFilter]);
+    }, [complaints, filterValue]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
     const items = React.useMemo(() => {
         const start = (page - 1) * rowsPerPage;
         const end = start + rowsPerPage;
-
         return filteredItems.slice(start, end);
     }, [page, filteredItems, rowsPerPage]);
 
@@ -227,7 +188,6 @@ export default function ComplaintTable() {
             const first = a[sortDescriptor.column as keyof Complaint];
             const second = b[sortDescriptor.column as keyof Complaint];
             const cmp = first < second ? -1 : first > second ? 1 : 0;
-
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
     }, [sortDescriptor, items]);
@@ -235,10 +195,8 @@ export default function ComplaintTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedcomplaint, setSelectedcomplaint] = useState<Complaint | null>(null);
 
-    // Function to handle edit button click
     const handleEditClick = (complaint: Complaint) => {
         setSelectedcomplaint(complaint);
-
         form.reset({
             companyName: complaint.companyName,
             complainerName: complaint.complainerName,
@@ -253,8 +211,6 @@ export default function ComplaintTable() {
         setIsEditOpen(true);
     };
 
-
-    // Function to handle delete button click
     const handleDeleteClick = (complaint: Complaint) => {
         setSelectedcomplaint(complaint);
         setIsDeleteDialogOpen(true);
@@ -266,18 +222,14 @@ export default function ComplaintTable() {
             const response = await fetch(`http://localhost:8000/api/v1/complaint/deleteComplaint/${selectedcomplaint._id}`, {
                 method: "DELETE",
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to delete deal");
             }
-
             toast({
-                title: "Complaint Deleted",
-                description: "The complaint has been successfully deleted",
+                title: "deal Deleted",
+                description: "The deal has been successfully deleted.",
             });
-
-            // Refresh the leads list
             fetchComplaints();
         } catch (error) {
             toast({
@@ -290,10 +242,11 @@ export default function ComplaintTable() {
             setSelectedcomplaint(null);
         }
     };
+
     const [isSubmitting, setIsSubmitting] = useState(false)
+
     async function onEdit(values: z.infer<typeof complaintSchema>) {
         if (!selectedcomplaint?._id) return;
-
         setIsSubmitting(true);
         try {
             const response = await fetch(`http://localhost:8000/api/v1/complaint/updateComplaint/${selectedcomplaint._id}`, {
@@ -301,23 +254,17 @@ export default function ComplaintTable() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to update deal");
             }
-
             toast({
                 title: "Complaint Updated",
                 description: "The complaint has been successfully updated",
             });
-
-            // Close dialog and reset form
             setIsEditOpen(false);
             setSelectedcomplaint(null);
             form.reset();
-
-            // Refresh the leads list
             fetchComplaints();
         } catch (error) {
             toast({
@@ -330,21 +277,14 @@ export default function ComplaintTable() {
         }
     }
 
-
     const renderCell = React.useCallback((complaint: Complaint, columnKey: string) => {
         const cellValue = complaint[columnKey as keyof Complaint];
-
-        // Format date fields
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
             return formatDate(cellValue);
         }
-
-        // Handle fields that should default to "N/A" if empty
         if (columnKey === "caseOrigin" || columnKey === "companyName" || columnKey === "contactNumber" || columnKey === "emailAddress") {
             return cellValue || "N/A";
         }
-
-        // Handle actions column with buttons for editing and deleting
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
@@ -367,7 +307,6 @@ export default function ComplaintTable() {
                 </div>
             );
         }
-
         return cellValue;
     }, []);
 
@@ -395,11 +334,6 @@ export default function ComplaintTable() {
         } else {
             setFilterValue("");
         }
-    }, []);
-
-    const onClear = React.useCallback(() => {
-        setFilterValue("");
-        setPage(1);
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -539,7 +473,8 @@ export default function ComplaintTable() {
                                 classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
                                 topContent={topContent}
                                 topContentPlacement="outside"
-                                onSelectionChange={setSelectedKeys}
+                                sortDescriptor={sortDescriptor}
+                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -558,8 +493,7 @@ export default function ComplaintTable() {
                                         <TableRow key={item._id}>
                                             {(columnKey) => (
                                                 <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                                                    {renderCell(item, columnKey)}
-                                                </TableCell>
+                                                {renderCell(item, columnKey.toString())}                                                </TableCell>
                                             )}
                                         </TableRow>
                                     )}
@@ -613,7 +547,6 @@ export default function ComplaintTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -622,15 +555,7 @@ export default function ComplaintTable() {
                                         <FormItem>
                                             <FormLabel>Contact Number (Optional)</FormLabel>
                                             <FormControl>
-                                                <Input
-                                                    placeholder="Enter contact number"
-                                                    type="tel"
-                                                    {...field}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value.replace(/[^0-9]/g, ''); // Allow only numeric values
-                                                        field.onChange(value);
-                                                    }}
-                                                />
+                                                <Input placeholder="Enter contact number" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -650,7 +575,6 @@ export default function ComplaintTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -695,7 +619,6 @@ export default function ComplaintTable() {
                                     )}
                                 />
                             </div>
-
                             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                                 <FormField
                                     control={form.control}
@@ -780,10 +703,9 @@ export default function ComplaintTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this complaint?,
-                            The data won't be retrieved again.
+                            Are you sure you want to delete this invoice? This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">
@@ -804,8 +726,6 @@ export default function ComplaintTable() {
                     </div>
                 </DialogContent>
             </Dialog>
-
         </div>
-
     );
 }
