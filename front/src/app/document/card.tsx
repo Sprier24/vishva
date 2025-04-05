@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 
 type File = {
-  id: string;
+  _id: string;
   name: string;
   type: string;
   parentId: number | null;
@@ -25,7 +25,7 @@ const GoogleDriveClone = () => {
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
   const getFileImage = (fileName: string) => {
-    const extension = fileName.split(".").pop()?.toLowerCase();
+    const extension = fileName.split(".").pop()?.toLowerCase(); // Extract file extension
 
     switch (extension) {
       case "pdf":
@@ -132,7 +132,7 @@ const GoogleDriveClone = () => {
       const data = await response.json();
 
       if (data.success) {
-        setFiles(prevFiles => prevFiles.filter(file => file.id !== fileToDelete));
+        setFiles(prevFiles => prevFiles.filter(file => file._id !== fileToDelete));
         setIsDeleteDialogOpen(false);
         setFileToDelete(null);
       } else {
@@ -151,14 +151,34 @@ const GoogleDriveClone = () => {
     setSelectedFile(null);
   };
 
-  const handleDownload = (file: File) => {
-    const downloadLink = document.createElement('a');
-    downloadLink.href = `http://localhost:8000/uploads/${file.fileUrl}`;
-    downloadLink.download = file.name;
-    downloadLink.click();
-
-    setDownloadStatus('Download Started...');
-    setTimeout(() => setDownloadStatus(null), 2000);
+  const handleDownload = async (file: File) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/file-folder/files/download/${file._id}`);
+      if (!response.ok) {
+        throw new Error('Failed to download file');
+      }
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = file.name;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = url;
+      downloadLink.download = filename;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(downloadLink);
+      setTimeout(() => setDownloadStatus(null), 2000);
+    } catch (error) {
+      console.error("Download failed:", error);
+      setTimeout(() => setDownloadStatus(null), 2000);
+    }
   };
 
   const handleClickOutside = (e: React.MouseEvent) => {
@@ -169,7 +189,6 @@ const GoogleDriveClone = () => {
 
   return (
     <div className="google-drive-clone flex flex-col md:flex-row h-[90vh] bg-gray-100 border border-gray-300 shadow-[0_4px_10px_rgba(0,0,0,0.4)] p-4">
-
       <div className="sidebar w-full md:w-64 p-4 bg-white border-r border-gray-200">
         <input
           type="text"
@@ -178,7 +197,7 @@ const GoogleDriveClone = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="bg-gray-50 text-gray-900 p-2 rounded-md w-full mb-4 border border-gray-300"
         />
-        <h3 className="text-lg font-semibold mb-2 text-gray-800">Files</h3>
+        <h3 className="text-lg font-semibold mb-2 text-gray-800">Documents</h3>
 
         <div className="filter-buttons mb-4 flex space-x-2">
           <button
@@ -197,16 +216,16 @@ const GoogleDriveClone = () => {
             onClick={() => setFilter('photo')}
             className={`filter-btn ${filter === 'photo' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'} py-1 px-3 rounded-md text-sm`}
           >
-            Photos
+            Images
           </button>
         </div>
 
         {filteredFoldersAndFiles
           .filter((item) => item.type === 'folder')
           .map((folder: File) => (
-            <div key={folder.id} className="relative">
+            <div key={folder._id} className="relative">
               <button
-                onClick={() => handleFolderClick(Number(folder.id))}
+                onClick={() => handleFolderClick(Number(folder._id))}
                 className="text-gray-700 py-2 px-4 rounded-md mb-2 w-full text-left hover:bg-gray-100"
               >
                 📁 {folder.name}
@@ -224,7 +243,7 @@ const GoogleDriveClone = () => {
           onClick={() => document.getElementById('fileInput')?.click()}
           className="bg-blue-500 text-white py-2 px-4 rounded-md w-full mt-4 hover:bg-blue-600"
         >
-          Upload File
+          Upload
         </button>
       </div>
 
@@ -233,15 +252,15 @@ const GoogleDriveClone = () => {
           {filteredFoldersAndFiles.map((item: File) =>
             item.type === 'folder' ? (
               <div
-                key={item.id}
-                onClick={() => handleFolderClick(Number(item.id))}
+                key={`folder-${item._id}`}
+                onClick={() => handleFolderClick(Number(item._id))}
                 className="folder p-4 bg-white rounded-lg shadow-sm cursor-pointer hover:shadow-md"
               >
                 <h3 className="text-gray-900">{item.name}</h3>
               </div>
             ) : (
               <div
-                key={item.id}
+                key={`file-${item._id}`}
                 onClick={() => handleFileClick(item)}
                 className="file p-4 bg-white rounded-lg shadow-md cursor-pointer hover:shadow-lg items-center justify-center text-gray-900 text-center max-w-full overflow-hidden text-ellipsis "
               >
@@ -286,7 +305,6 @@ const GoogleDriveClone = () => {
         <div
           className="modal fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4"
           ref={modalBackdropRef}
-          onClick={handleClickOutside}
         >
           <div
             className="modal-content bg-white p-6 rounded-lg w-full sm:w-3/4 max-w-md shadow-lg"
@@ -327,13 +345,21 @@ const GoogleDriveClone = () => {
               >
                 Download
               </button>
+
               <button
-                onClick={() => handleDeleteClick(selectedFile.id)}
-                className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition duration-200"
+                onClick={() => handleDeleteClick(selectedFile._id)}
+                className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition duration-200  mr-2"
               >
                 Delete
               </button>
+              <button
+                onClick={handleModalClose} 
+                className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition duration-200"
+              >
+                Close
+              </button>
             </div>
+
             {downloadStatus && <div className="text-green-500 mt-2">{downloadStatus}</div>}
           </div>
         </div>
