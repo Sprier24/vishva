@@ -210,13 +210,13 @@ export default function ContactPersonDetailsTable() {
                 </label>
             </div>
         );
-    }, [filterValue, onRowsPerPageChange, contactPersons.length]);
+    }, [filterValue, onRowsPerPageChange]);
 
     const bottomContent = React.useMemo(() => {
         return (
             <div className="py-2 px-2 relative flex justify-between items-center">
                 <span className="text-default-400 text-small">
-                    Total {contactPersons.length} contact
+                Total {filteredItems.length} contact{filteredItems.length !== 1 ? 's' : ''}
                 </span>
                 <div className="absolute left-1/2 transform -translate-x-1/2">
                     <Pagination
@@ -254,7 +254,7 @@ export default function ContactPersonDetailsTable() {
                 </div>
             </div>
         );
-    }, [page, pages, onPreviousPage, onNextPage]);
+    }, [page, pages, onPreviousPage, onNextPage, contactPersons.length]);
 
     const renderCell = useCallback((contact: ContactPerson, columnKey: string) => {
         if (columnKey === "actions") {
@@ -374,7 +374,7 @@ export default function ContactPersonDetailsTable() {
                                     {paginatedItems.map((contact) => (
                                         <TableRow key={contact._id}>
                                             {headerColumns.map((column) => (
-                                                <TableCell key={column.uid}>
+                                                <TableCell key={column.uid}  style={{ fontSize: "12px", padding: "8px" }}>
                                                     {renderCell(contact, column.uid)}
                                                 </TableCell>
                                             ))}

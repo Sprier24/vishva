@@ -1,5 +1,5 @@
 "use client";
-
+import { toast } from "@/hooks/use-toast";
 import {
   Card,
   CardContent,
@@ -70,8 +70,8 @@ export default function RegisterPage() {
 
   const handleRegister = async (values: z.infer<typeof registerSchema>) => {
     setLoading(true);
-    setServerError("");
-
+    setServerError(""); // you can still keep this if you want field-level error too
+  
     try {
       const response = await fetch("http://localhost:5000/api/v1/users/register", {
         method: "POST",
@@ -80,21 +80,35 @@ export default function RegisterPage() {
         },
         body: JSON.stringify(values),
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
+        toast({
+          title: "Registration failed",
+          description: data.message || "Something went wrong.",
+          variant: "destructive",
+        });
         setServerError(data.message || "Something went wrong.");
       } else {
-        alert("The user has been successfully created");
+        toast({
+          title: "User Created",
+          description: "The user has been successfully created.",
+        });
         form.reset();
       }
     } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred during registration.",
+        variant: "destructive",
+      });
       setServerError("An error occurred during registration.");
     } finally {
       setLoading(false);
     }
   };
+  
 
   return (
     <SidebarProvider>
