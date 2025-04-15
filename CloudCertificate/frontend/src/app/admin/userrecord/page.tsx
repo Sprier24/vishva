@@ -1,15 +1,20 @@
 'use client';
 import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from 'next/navigation';
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Loader2, SearchIcon, Edit2Icon, DeleteIcon } from "lucide-react";
+import {  SearchIcon,  Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
-import { toast } from "@/hooks/use-toast";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Pagination, Tooltip } from "@heroui/react";
@@ -19,17 +24,14 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  contact: string;
-  key?: string;
-  createdAt?: string; // Add this
+  contact: number;
 }
 
 const columns = [
-  { name: "Name", uid: "name", sortable: true },
-  { name: "Email", uid: "email", sortable: true },
-  { name: "Contact", uid: "contact", sortable: true },
-  // { name: "Created At", uid: "createdAt", sortable: true }, // Optional
-  { name: "Action", uid: "actions", sortable: false },
+  { name: "User Name", uid: "name", sortable: true, width: "120px" },
+  { name: "Email Address", uid: "email", sortable: true, width: "120px" },
+  { name: "Contact Number", uid: "contact", sortable: true, width: "120px" },
+  { name: "ACTIONS", uid: "actions", sortable: false, width: "100px" },
 ];
 
 const INITIAL_VISIBLE_COLUMNS = ["name", "email", "contact", "actions"];
@@ -37,49 +39,26 @@ const INITIAL_VISIBLE_COLUMNS = ["name", "email", "contact", "actions"];
 export default function UserTable() {
   const [users, setUsers] = useState<User[]>([]);
   const [filterValue, setFilterValue] = useState("");
+  const [visibleColumns] = useState<Set<string>>(new Set(INITIAL_VISIBLE_COLUMNS));
   const [rowsPerPage, setRowsPerPage] = useState(15);
   const [page, setPage] = useState(1);
   const router = useRouter();
 
   const [sortDescriptor, setSortDescriptor] = useState({
-    column: "createdAt", // Changed from "name"
-    direction: "descending" as "ascending" | "descending", // Newest first
+    column: "name",
+    direction: "ascending" as "ascending" | "descending",
   });
 
-  const fetchUsers = async () => {
-    try {
-      const response = await axios.get(
-        "http://localhost:5000/api/v1/users/getusers",
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("token")}`
-          }
-        }
-      );
-
-      let usersData = response.data.data || response.data || [];
-
-      // Sort by createdAt descending (newest first)
-      usersData.sort((a: User, b: User) => {
-        const dateA = new Date(a.createdAt || 0).getTime();
-        const dateB = new Date(b.createdAt || 0).getTime();
-        return dateB - dateA;
-      });
-
-      const usersWithKeys = usersData.map((user: User) => ({
-        ...user,
-        key: user._id
-      }));
-
-      setUsers(usersWithKeys);
-    } catch (error) {
-      console.error("Failed to fetch users", error);
-      toast.error("Failed to fetch users");
-    }
-  };
-
   useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/v1/users/getusers");
+        const data = await response.json();
+        setUsers(data);
+      } catch (error) {
+        console.error("Failed to fetch users", error);
+      }
+    };
     fetchUsers();
   }, []);
 
@@ -87,30 +66,20 @@ export default function UserTable() {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
 
     try {
-      await axios.delete(
-        `http://localhost:5000/api/v1/users/deleteuser/${id}`,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("token")}`
-          }
-        }
-      );
-
-      setUsers(prev => prev.filter(user => user._id !== id));
-      toast({
-        title: "Delete Successful!",
-        description: "User deleted successfully!",
-      })
+      const response = await fetch(`http://localhost:5000/api/v1/users/deleteuser/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setUsers(prev => prev.filter(user => user._id !== id));
+      }
     } catch (error) {
       console.error("Failed to delete user", error);
-      toast({
-        title: "Error",
-        description: "Failed to delete user.",
-        variant: "destructive",
-      })
     }
   };
+
+  const headerColumns = React.useMemo(() => {
+    return columns.filter(column => visibleColumns.has(column.uid));
+  }, [visibleColumns]);
 
   const filteredItems = React.useMemo(() => {
     let filtered = [...users];
@@ -131,20 +100,13 @@ export default function UserTable() {
       const first = a[sortDescriptor.column as keyof User] || "";
       const second = b[sortDescriptor.column as keyof User] || "";
 
-      // Special handling for createdAt field
-      if (sortDescriptor.column === 'createdAt') {
-        const dateA = new Date(first as string).getTime();
-        const dateB = new Date(second as string).getTime();
-        const cmp = dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
-        return sortDescriptor.direction === "descending" ? -cmp : cmp;
-      }
+      let cmp = 0;
+      if (first < second) cmp = -1;
+      if (first > second) cmp = 1;
 
-      // Case-insensitive string comparison for other fields
-      const cmp = String(first).localeCompare(String(second), undefined, { sensitivity: 'base' });
       return sortDescriptor.direction === "descending" ? -cmp : cmp;
     });
   }, [filteredItems, sortDescriptor]);
-
 
   const paginatedItems = React.useMemo(() => {
     const start = (page - 1) * rowsPerPage;
@@ -172,7 +134,7 @@ export default function UserTable() {
         <Input
           isClearable
           className="w-full max-w-[300px]"
-          placeholder="Search by name or email"
+          placeholder="Search"
           startContent={<SearchIcon className="h-4 w-5 text-muted-foreground" />}
           value={filterValue}
           onChange={(e) => setFilterValue(e.target.value)}
@@ -200,8 +162,6 @@ export default function UserTable() {
         <span className="text-default-400 text-small">
           Total {users.length} users
         </span>
-
-        {/* Centered Pagination */}
         <div className="absolute left-1/2 transform -translate-x-1/2">
           <Pagination
             isCompact
@@ -217,7 +177,6 @@ export default function UserTable() {
           />
         </div>
 
-        {/* Navigation Buttons */}
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
           <Button
             className="bg-[hsl(339.92deg_91.04%_52.35%)]"
@@ -246,6 +205,8 @@ export default function UserTable() {
     if (columnKey === "actions") {
       return (
         <div className="relative flex items-center gap-2">
+
+
           <Tooltip>
             <span
               className="text-lg text-danger cursor-pointer active:opacity-50"
@@ -254,14 +215,14 @@ export default function UserTable() {
                 handleDelete(user._id);
               }}
             >
-              <DeleteIcon className="h-6 w-6" />
+              <Trash2 className="h-6 w-6" />
             </span>
           </Tooltip>
         </div>
       );
     }
     return user[columnKey as keyof User];
-  }, []);
+  }, [router]);
 
   return (
     <SidebarProvider>
@@ -274,7 +235,7 @@ export default function UserTable() {
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem>
+                <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink href="/admin/dashboard">
                     Dashboard
                   </BreadcrumbLink>
@@ -282,7 +243,7 @@ export default function UserTable() {
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
                   <BreadcrumbLink href="/admin/userform">
-                    Create User
+                    <BreadcrumbPage>Create User</BreadcrumbPage>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
               </BreadcrumbList>
@@ -295,34 +256,36 @@ export default function UserTable() {
               <CardTitle className="text-3xl font-bold text-center">User Record</CardTitle>
             </CardHeader>
             <CardContent>
-              {topContent}
-              <Table>
-                <TableHeader>
-                  {columns.map((column) => (
+              <Table
+                isHeaderSticky
+                aria-label="Users table with custom cells, pagination and sorting"
+                bottomContent={bottomContent}
+                bottomContentPlacement="outside"
+                classNames={{
+                  wrapper: "max-h-[382px] overflow-y-auto",
+                }}
+                sortDescriptor={sortDescriptor}
+                topContent={topContent}
+                topContentPlacement="outside"
+                onSortChange={(descriptor) => {
+                  setSortDescriptor({
+                    column: descriptor.column as string,
+                    direction: descriptor.direction as "ascending" | "descending",
+                  });
+                }}
+              >
+                <TableHeader columns={headerColumns}>
+                  {(column) => (
                     <TableColumn
                       key={column.uid}
-                      onClick={() => {
-                        setSortDescriptor(prev => ({
-                          column: column.uid,
-                          direction: prev.column === column.uid && prev.direction === "ascending"
-                            ? "descending"
-                            : "ascending"
-                        }));
-                      }}
-                      className={column.sortable ? "cursor-pointer" : ""}
+                      align={column.uid === "actions" ? "center" : "start"}
+                      allowsSorting={column.sortable}
                     >
-                      <div className="flex items-center">
-                        {column.name}
-                        {sortDescriptor.column === column.uid && column.sortable && (
-                          <span className="ml-1">
-                            {sortDescriptor.direction === "ascending" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </div>
+                      {column.name}
                     </TableColumn>
-                  ))}
+                  )}
                 </TableHeader>
-                <TableBody emptyContent={"No users found"} items={paginatedItems}>
+                <TableBody emptyContent={"Create user and add data"} items={paginatedItems}>
                   {(item) => (
                     <TableRow key={item._id}>
                       {(columnKey) => <TableCell style={{ fontSize: "12px", padding: "8px" }}>{renderCell(item, columnKey as string)}</TableCell>}
@@ -330,7 +293,6 @@ export default function UserTable() {
                   )}
                 </TableBody>
               </Table>
-              {bottomContent}
             </CardContent>
           </Card>
         </div>

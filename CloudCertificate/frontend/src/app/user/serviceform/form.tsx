@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 import axios from "axios";
-import { toast } from "@heroui/react";
+import { Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface EngineerRemarks {
     serviceSpares: string;
@@ -71,8 +72,9 @@ export default function GenerateService() {
     const [service, setService] = useState<ServiceResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [engineers, setEngineers] = useState<{ name: string; id: string }[]>([]);
-    const [selectedEngineer, setSelectedEngineer] = useState("");
+    const [engineers, setEngineers] = useState<{
+        _id: string; name: string; id: string
+    }[]>([]);
     const [isLoadingEngineers, setIsLoadingEngineers] = useState(true);
     const [serviceEngineers, setServiceEngineers] = useState<ServiceEngineer[]>([]);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -109,7 +111,23 @@ export default function GenerateService() {
         };
         fetchServiceEngineers();
     }, []);
-    
+
+    useEffect(() => {
+        // Generate a report number when the form initializes
+        if (!formData.reportNo) {
+            const generateReportNo = () => {
+                const date = new Date();
+                const randomNum = Math.floor(1000 + Math.random() * 9000);
+                return `SRV-${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}-${randomNum}`;
+            };
+
+            setFormData(prev => ({
+                ...prev,
+                reportNo: generateReportNo()
+            }));
+        }
+    }, []);
+
 
     const handleServiceEngineerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedId = e.target.value;
@@ -168,31 +186,31 @@ export default function GenerateService() {
             'contactNumber', 'serviceEngineer', 'date', 'place',
             'placeOptions', 'natureOfJob', 'reportNo', 'engineerName', 'status'
         ];
-    
+
         for (const field of requiredFields) {
             if (!formData[field as keyof ServiceRequest]?.toString().trim()) {
                 return `Please fill in the ${field.replace(/([A-Z])/g, ' $1').toLowerCase()} field.`;
             }
         }
-    
+
         if (!formData.serviceEngineerId || !formData.serviceEngineer.trim()) {
             return "Please select a service engineer";
         }
-    
+
         if (formData.engineerRemarks.length === 0) {
             return "At least one engineer remark is required.";
         }
-    
+
         for (const remark of formData.engineerRemarks) {
             if (!remark.serviceSpares.trim() || !remark.partNo.trim() ||
                 !remark.rate.trim() || !remark.quantity.trim() || !remark.poNo.trim()) {
                 return "All fields in engineer remarks must be filled.";
             }
         }
-    
+
         return null;
     };
-    
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -226,7 +244,7 @@ export default function GenerateService() {
 
     const handleDownload = async () => {
         const yourAccessToken = localStorage.getItem("authToken");
-    
+
         if (!service?.serviceId) {
             toast({
                 title: "Error",
@@ -235,10 +253,10 @@ export default function GenerateService() {
             });
             return;
         }
-    
+
         try {
             setIsGeneratingPDF(true);
-            
+
             // First ensure the PDF exists
             await axios.get(
                 `http://localhost:5000/api/v1/services/download/${service.serviceId}`,
@@ -256,12 +274,12 @@ export default function GenerateService() {
                 link.setAttribute('download', `service-${service.serviceId}.pdf`);
                 document.body.appendChild(link);
                 link.click();
-                
+
                 // Clean up
                 link.parentNode?.removeChild(link);
                 window.URL.revokeObjectURL(url);
             });
-    
+
             // Then send the notification email
             const response = await axios.post(
                 'http://localhost:5000/api/v1/services/sendMail',
@@ -272,18 +290,25 @@ export default function GenerateService() {
                     }
                 }
             );
-    
+
             toast({
                 title: "Success",
                 description: "Certificate downloaded and email sent successfully",
                 variant: "default",
             });
-    
-        } catch (err) {
+
+        } catch (err: unknown) {
+            let errorMessage = "Failed to download certificate";
+            if (axios.isAxiosError(err)) {
+                errorMessage = err.response?.data?.error || errorMessage;
+            } else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+
             console.error("Error:", err);
             toast({
                 title: "Error",
-                description: err.response?.data?.error || "Failed to download certificate",
+                description: errorMessage,
                 variant: "destructive",
             });
         } finally {
@@ -293,8 +318,6 @@ export default function GenerateService() {
 
     return (
         <div className="container mx-auto p-4">
-            <h1 className="text-2xl font-bold mb-6">Generate Service Report</h1>
-
             {error && (
                 <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
                     <p>{error}</p>
@@ -311,16 +334,16 @@ export default function GenerateService() {
                         onChange={handleChange}
                         className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-
                     <input
                         type="text"
                         name="customerLocation"
-                        placeholder="Customer Location "
+                        placeholder="Site Location "
                         value={formData.customerLocation}
                         onChange={handleChange}
                         className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-
+                </div>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <input
                         type="text"
                         name="contactPerson"
@@ -329,7 +352,16 @@ export default function GenerateService() {
                         onChange={handleChange}
                         className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-
+                    <input
+                        type="text"
+                        name="contactNumber"
+                        placeholder="Contact Number"
+                        value={formData.contactNumber}
+                        onChange={handleChange}
+                        className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <select
                         name="status"
                         value={formData.status}
@@ -340,19 +372,6 @@ export default function GenerateService() {
                         <option value="Checked">Checked</option>
                         <option value="Unchecked">Unchecked</option>
                     </select>
-                </div>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-
-
-                    <input
-                        type="text"
-                        name="contactNumber"
-                        placeholder="Contact Number"
-                        value={formData.contactNumber}
-                        onChange={handleChange}
-                        className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-
                     <select
                         name="serviceEngineerId"
                         value={formData.serviceEngineerId || ""}
@@ -379,7 +398,6 @@ export default function GenerateService() {
                         min="2000-01-01"
                         max="2100-12-31"
                     />
-
                     <input
                         type="text"
                         name="place"
@@ -390,8 +408,7 @@ export default function GenerateService() {
                     />
                 </div>
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-
-                    <label className="font-medium text-gray-700">Place:</label>
+                    <label className="font-medium text-white">Place :</label>
                     <div className="flex gap-4">
                         <label className="flex items-center cursor-pointer">
                             <input
@@ -402,7 +419,7 @@ export default function GenerateService() {
                                 onChange={handleChange}
                                 className="mr-2 text-blue-600 focus:ring-blue-500"
                             />
-                            <span className="text-gray-700">At Site</span>
+                            <span className="text-white">At Site</span>
                         </label>
                         <label className="flex items-center cursor-pointer">
                             <input
@@ -413,12 +430,12 @@ export default function GenerateService() {
                                 onChange={handleChange}
                                 className="mr-2 text-blue-600 focus:ring-blue-500"
                             />
-                            <span className="text-gray-700">In House</span>
+                            <span className="text-white">In House</span>
                         </label>
                     </div>
                 </div>
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                    <label className="font-medium text-gray-700">Nature of Job:</label>
+                    <label className="font-medium text-white">Nature of Job :</label>
                     <div className="flex gap-4">
                         <label className="flex items-center cursor-pointer">
                             <input
@@ -429,7 +446,7 @@ export default function GenerateService() {
                                 onChange={handleChange}
                                 className="mr-2 text-blue-600 focus:ring-blue-500"
                             />
-                            <span className="text-gray-700">AMC</span>
+                            <span className="text-white">AMC</span>
                         </label>
                         <label className="flex items-center cursor-pointer">
                             <input
@@ -440,7 +457,7 @@ export default function GenerateService() {
                                 onChange={handleChange}
                                 className="mr-2 text-blue-600 focus:ring-blue-500"
                             />
-                            <span className="text-gray-700">Charged</span>
+                            <span className="text-white">Charged</span>
                         </label>
                         <label className="flex items-center cursor-pointer">
                             <input
@@ -451,7 +468,7 @@ export default function GenerateService() {
                                 onChange={handleChange}
                                 className="mr-2 text-blue-600 focus:ring-blue-500"
                             />
-                            <span className="text-gray-700">Warranty</span>
+                            <span className="text-white">Warranty</span>
                         </label>
                     </div>
                 </div>
@@ -462,6 +479,7 @@ export default function GenerateService() {
                         placeholder="Report Number"
                         value={formData.reportNo}
                         onChange={handleChange}
+                        readOnly
                         className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <select
@@ -474,7 +492,7 @@ export default function GenerateService() {
                     >
                         <option value="">Select Engineer</option>
                         {isLoadingEngineers ? (
-                            <option>Loading engineers...</option>
+                            <option>Loading engineer...</option>
                         ) : (
                             engineers.map((engineer) => (
                                 <option key={engineer._id} value={engineer._id}>
@@ -487,10 +505,11 @@ export default function GenerateService() {
                 <div className="flex flex-col gap-4">
                     <textarea
                         name="makeModelNumberoftheInstrumentQuantity"
-                        placeholder="Make & Model Number of the Instrument Quantity"
+                        placeholder="Model Number of the Instrument Quantity"
                         value={formData.makeModelNumberoftheInstrumentQuantity}
                         onChange={handleChange}
-                        className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
+                        rows={3}
                     />
 
                     <textarea
@@ -498,19 +517,21 @@ export default function GenerateService() {
                         placeholder="Serial Number of the Instrument Calibrated & OK"
                         value={formData.serialNumberoftheInstrumentCalibratedOK}
                         onChange={handleChange}
-                        className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
+                        rows={3}
                     />
 
                     <textarea
                         name="serialNumberoftheFaultyNonWorkingInstruments"
-                        placeholder="Serial Number of Faulty/Non-Working Instruments"
+                        placeholder="Serial Number of Faulty / Non-Working Instruments"
                         value={formData.serialNumberoftheFaultyNonWorkingInstruments}
                         onChange={handleChange}
-                        className="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
+                        rows={3}
                     />
                 </div>
 
-                <h2 className="text-lg font-bold mt-4">Engineer Remarks Table</h2>
+                <h2 className="text-lg font-bold mt-4 text-center">Engineer Remarks Table</h2>
 
                 <div className="flex justify-end mb-4">
                     <button
@@ -518,19 +539,19 @@ export default function GenerateService() {
                         className="bg-purple-950 text-white px-4 py-2 border rounded hover:bg-gray-900"
                         disabled={formData.engineerRemarks.length >= 10}
                     >
-                        Add Engineer Remark
+                        Create Engineer Remark
                     </button>
                 </div>
                 <table className="table-auto border-collapse border border-gray-500 rounded w-full">
                     <thead>
                         <tr>
                             <th className="border p-2">#</th>
-                            <th className="border p-2">Gas</th>
-                            <th className="border p-2">Before Calibration</th>
-                            <th className="border p-2">After Calibration</th>
-                            <th className="border p-2">Remove</th>
-                            <th className="border p-2">Edit</th>
-                            <th className="border p-2">Save</th>
+                            <th className="border p-2">Service / Spares</th>
+                            <th className="border p-2">Part Number</th>
+                            <th className="border p-2">Rate</th>
+                            <th className="border p-2">Quantity</th>
+                            <th className="border p-2">PO Number</th>
+                            <th className="border p-2">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -585,9 +606,8 @@ export default function GenerateService() {
                                 <td className="border p-2">
                                     <button
                                         onClick={() => removeEngineerRemark(index)}
-                                        className="bg-red-900 text-white px-2 py-1 border rounded hover:bg-red-950"
                                     >
-                                        Remove
+                                        <Trash2 className="h-6 w-6" />
                                     </button>
                                 </td>
                             </tr>
@@ -595,7 +615,7 @@ export default function GenerateService() {
                         {formData.engineerRemarks.length === 0 && (
                             <tr>
                                 <td colSpan={5} className="border p-2 text-center text-gray-500">
-                                    No engineer remarks added yet. Click "Add Engineer Remark" to add one.
+                                    Click "Create Engineer Remark" to add one
                                 </td>
                             </tr>
                         )}
@@ -611,25 +631,26 @@ export default function GenerateService() {
 
                 <button
                     type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                    className="bg-blue-950 hover:bg-blue-900 text-white p-2 rounded-md w-full"
                     disabled={loading}
                 >
                     {loading ? "Generating..." : "Generate Service Report"}
                 </button>
-            </form>
+            </form >
 
             {service && (
-                                <div className="mt-4 text-center">
-                                    <p className="text-green-600 mb-2">Click here to download the certificate</p>
-                                    <button
-                                        onClick={handleDownload}
-                                        className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
-                                        disabled={isGeneratingPDF || loading}
-                                        >
-                                          {isGeneratingPDF ? "Generating PDF..." : "Download Certificate"}
-                                    </button>
-                                </div>
-                            )}
-        </div>
+                <div className="mt-4 text-center">
+                    <p className="text-green-600 mb-2">Click here to download the certificate</p>
+                    <button
+                        onClick={handleDownload}
+                        className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
+                        disabled={isGeneratingPDF || loading}
+                    >
+                        {isGeneratingPDF ? "Generating PDF..." : "Download Certificate"}
+                    </button>
+                </div>
+            )
+            }
+        </div >
     );
 }

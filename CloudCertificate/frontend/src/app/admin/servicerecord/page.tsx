@@ -8,9 +8,9 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { ModeToggle } from "@/components/ModeToggle"
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Loader2, SearchIcon, FileDown, Trash, Edit2Icon, DeleteIcon } from "lucide-react"
+import { Loader2, SearchIcon, FileDown, Trash, Edit2Icon, Download, Edit, Trash2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Selection, ChipProps, Select } from "@heroui/react"
@@ -61,7 +61,7 @@ const columns = [
     { name: "Contact Person", uid: "contactPerson", sortable: true, width: "120px" },
     { name: "Contact Number", uid: "contactNumber", sortable: true, width: "120px" },
     { name: "Service Engineer", uid: "serviceEngineer", sortable: true, width: "120px" },
-    { name: "Report No", uid: "reportNo", sortable: true, width: "120px" },
+    { name: "Report Number", uid: "reportNo", sortable: true, width: "120px" },
     { name: "Action", uid: "actions", sortable: true, width: "100px" },
 ];
 
@@ -119,7 +119,7 @@ export default function AdminServiceTable() {
             }
 
             // Sort by createdAt in descending order (newest first)
-            servicesData.sort((a, b) =>
+            servicesData.sort((a: { createdAt: string | number | Date; }, b: { createdAt: string | number | Date; }) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
 
@@ -155,8 +155,10 @@ export default function AdminServiceTable() {
 
         if (hasSearchFilter) {
             filteredServices = filteredServices.filter((service) =>
-                service.nameAndLocation.toLowerCase().includes(filterValue.toLowerCase()) ||
-                service.contactPerson.toLowerCase().includes(filterValue.toLowerCase())
+                service.contactPerson.toLowerCase().includes(filterValue.toLowerCase()) ||
+                service.contactNumber.toLowerCase().includes(filterValue.toLowerCase()) ||
+                service.serviceEngineer.toLowerCase().includes(filterValue.toLowerCase()) ||
+                service.reportNo.toLowerCase().includes(filterValue.toLowerCase())
             );
         }
 
@@ -174,15 +176,18 @@ export default function AdminServiceTable() {
 
     const sortedItems = React.useMemo(() => {
         return [...items].sort((a, b) => {
-            // Handle date fields specially
-            if (sortDescriptor.column === 'date' || sortDescriptor.column === 'createdAt') {
-                const dateA = new Date(a[sortDescriptor.column]).getTime();
-                const dateB = new Date(b[sortDescriptor.column]).getTime();
+            if (sortDescriptor.column === "date" || sortDescriptor.column === "createdAt") {
+                const dateA = new Date(
+                    sortDescriptor.column === "date" ? a.date : (a as any).createdAt
+                ).getTime();
+                const dateB = new Date(
+                    sortDescriptor.column === "date" ? b.date : (b as any).createdAt
+                ).getTime();
+            
                 const cmp = dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
                 return sortDescriptor.direction === "descending" ? -cmp : cmp;
-            }
+            }            
 
-            // Default string comparison
             const first = a[sortDescriptor.column as keyof Service] || '';
             const second = b[sortDescriptor.column as keyof Service] || '';
             const cmp = String(first).localeCompare(String(second));
@@ -200,8 +205,6 @@ export default function AdminServiceTable() {
         try {
             setIsDownloading(serviceId);
             console.log('Attempting to download service:', serviceId);
-
-            // Now download the PDF directly
             const pdfResponse = await axios.get(
                 `http://localhost:5000/api/v1/services/download/${serviceId}`,
                 {
@@ -213,7 +216,6 @@ export default function AdminServiceTable() {
                 }
             );
 
-            // Verify the content type
             const contentType = pdfResponse.headers['content-type'];
             if (!contentType || !contentType.includes('application/pdf')) {
                 throw new Error('Received invalid content type from server');
@@ -228,10 +230,9 @@ export default function AdminServiceTable() {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-
             toast({
-                title: "Download successful!",
-                description: "Service downloaded successfully!",
+                title: "Service report Downloaded",
+                description: "The service report has been successfully downloaded",
                 variant: "default",
             });
         } catch (err) {
@@ -253,7 +254,6 @@ export default function AdminServiceTable() {
                     errorMessage = "No internet connection. Please check your network.";
                 }
             }
-
             toast({
                 title: "Error",
                 description: errorMessage,
@@ -295,14 +295,13 @@ export default function AdminServiceTable() {
         setPage(1);
     }, []);
 
-
     const topContent = React.useMemo(() => {
         return (
             <div className="flex justify-between items-center gap-4">
                 <Input
                     isClearable
                     className="w-full max-w-[300px]"
-                    placeholder="Search by name or GST"
+                    placeholder="Search"
                     startContent={<SearchIcon className="h-4 w-5 text-muted-foreground" />}
                     value={filterValue}
                     onChange={(e) => setFilterValue(e.target.value)}
@@ -331,8 +330,6 @@ export default function AdminServiceTable() {
                 <span className="text-default-400 text-small">
                     Total {services.length} services
                 </span>
-
-                {/* Centered Pagination */}
                 <div className="absolute left-1/2 transform -translate-x-1/2">
                     <Pagination
                         isCompact
@@ -347,8 +344,6 @@ export default function AdminServiceTable() {
                         }}
                     />
                 </div>
-
-                {/* Navigation Buttons */}
                 <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
                     <Button
                         className="bg-[hsl(339.92deg_91.04%_52.35%)]"
@@ -387,9 +382,9 @@ export default function AdminServiceTable() {
 
 
     const handleDelete = async (serviceId: string) => {
-        if (!window.confirm("Are you sure you want to delete this company data?")) {
-            return;
-        }
+        const confirmDelete = window.confirm("Are you sure you want to delete this service report?");
+        if (!confirmDelete) return;
+
         try {
             console.log("Attempting to delete service ID:", serviceId);
 
@@ -405,11 +400,10 @@ export default function AdminServiceTable() {
             console.log("Delete response:", response.data);
 
             toast({
-                title: "Delete Successful!",
-                description: response.data.message || "Service deleted successfully!",
+                title: "Service report Deleted",
+                description: "The service report has been successfully deleted",
                 variant: "default",
             });
-            // Refresh the services list
             await fetchServices();
 
         } catch (error) {
@@ -430,18 +424,16 @@ export default function AdminServiceTable() {
         }
     };
 
+
     const handleEdit = async (serviceId: string) => {
         try {
-            // Fetch the service data you want to edit or open a modal
             const response = await axios.get(`http://localhost:5000/api/v1/services/${serviceId}`, {
                 headers: {
                     "Authorization": `Bearer ${localStorage.getItem("token")}`,
                 }
             });
             const serviceToEdit = response.data;
-            // Use the service data (for example, to populate a modal or form)
             setService({ serviceId: serviceToEdit._id, message: "Service data loaded", downloadUrl: "" });
-            // Trigger modal open or form field population here
         } catch (error) {
             console.error("Error loading service for edit:", error);
             toast({
@@ -452,28 +444,28 @@ export default function AdminServiceTable() {
         }
     };
 
+    const renderCell = React.useCallback((service: Service, columnKey: string): React.ReactNode => {
+        const cellValue = service[columnKey as keyof Service];
 
+        if ((columnKey === "dateOfCalibration" || columnKey === "calibrationDueDate") && cellValue) {
+            return formatDate(cellValue);
+        }
 
-    const renderCell = useCallback((service: Service, columnKey: string) => {
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
-                    <Tooltip>
+                    <Tooltip color="danger" >
                         <span
-                            className="text-lg text-info cursor-pointer active:opacity-50"
+                            className="text-lg text-danger cursor-pointer active:opacity-50"
                             onClick={(e) => {
                                 e.preventDefault();
                                 handleDownload(service._id);
                             }}
                         >
-                            {isDownloading === service._id ? (
-                                <Loader2 className="h-6 w-6 animate-spin" />
-                            ) : (
-                                <FileDown className="h-6 w-6" />
-                            )}
+                            <Download className="h-6 w-6" />
                         </span>
                     </Tooltip>
-                    <Tooltip>
+                    <Tooltip color="danger" >
                         <span
                             className="text-lg text-info cursor-pointer active:opacity-50"
                             onClick={(e) => {
@@ -481,22 +473,23 @@ export default function AdminServiceTable() {
                                 router.push(`serviceform?id=${service._id}`);
                             }}
                         >
-                            <Edit2Icon className="h-6 w-6" />
+                            <Edit className="h-6 w-6" />
                         </span>
                     </Tooltip>
-
-                    <Tooltip>
+                    <Tooltip color="danger" >
                         <span
                             className="text-lg text-danger cursor-pointer active:opacity-50"
                             onClick={() => handleDelete(service._id)}
                         >
-                            <DeleteIcon className="h-6 w-6" />
+                            <Trash2 className="h-6 w-6" />
                         </span>
                     </Tooltip>
                 </div>
+
             );
         }
-        return service[columnKey as keyof Service];
+
+        return cellValue;
     }, []);
     return (
         <SidebarProvider>
@@ -525,12 +518,11 @@ export default function AdminServiceTable() {
                     </div>
                 </header>
                 <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15">
-                    <Card className="max-w-6xl mx-auto">
+                    <Card className="max-w-7xl mx-auto">
                         <CardHeader>
                             <CardTitle className="text-3xl font-bold text-center">Service Record</CardTitle>
                         </CardHeader>
                         <CardContent>
-
                             <Table
                                 isHeaderSticky
                                 aria-label="Leads table with custom cells, pagination and sorting"
@@ -577,7 +569,7 @@ export default function AdminServiceTable() {
                                         </TableColumn>
                                     )}
                                 </TableHeader>
-                                <TableBody emptyContent={"No service found"} items={sortedItems}>
+                                <TableBody emptyContent={"Create Service and add data"} items={sortedItems}>
                                     {(item) => (
                                         <TableRow key={item._id}>
                                             {(columnKey) => <TableCell style={{ fontSize: "12px", padding: "8px" }}>{renderCell(item as Service, columnKey as string)}</TableCell>}
@@ -590,5 +582,7 @@ export default function AdminServiceTable() {
                 </div>
             </SidebarInset>
         </SidebarProvider>
+
+
     )
 }

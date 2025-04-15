@@ -1,20 +1,21 @@
 'use client';
-import React, { useEffect, useState, useCallback } from "react";
-import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { Button } from "@/components/ui/button";
-import { Loader2, SearchIcon, Edit2Icon, DeleteIcon, FileDown } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+    SidebarInset,
+    SidebarProvider,
+    SidebarTrigger,
+} from "@/components/ui/sidebar"
+import { Separator } from "@/components/ui/separator"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { ModeToggle } from "@/components/ModeToggle"
+import React, { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Loader2, SearchIcon, Edit2Icon, DeleteIcon } from "lucide-react"
+import { toast } from "sonner"
+import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Selection, SortDescriptor, Pagination, Tooltip } from "@heroui/react"
 import axios from "axios";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
-import { ModeToggle } from "@/components/ModeToggle";
-import { Pagination, Tooltip } from "@heroui/react";
+import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
 
 interface ContactPerson {
@@ -26,42 +27,40 @@ interface ContactPerson {
     designation: string;
     _id: string;
     key?: string;
-    createdAt?: string; // Add this
+    createdAt?: string;
+    updatedAt?: string;
 }
 
-const generateUniqueId = () => {
-    return Math.random().toString(36).substring(2) + Date.now().toString(36);
-};
-
 const columns = [
-    { name: "FIRST NAME", uid: "firstName", sortable: true, width: "120px" },
-    { name: "MIDDLE NAME", uid: "middleName", sortable: true, width: "120px" },
-    { name: "LAST NAME", uid: "lastName", sortable: true, width: "120px" },
-    { name: "CONTACT NO", uid: "contactNo", sortable: true, width: "120px" },
-    { name: "EMAIL", uid: "email", sortable: true, width: "120px" },
-    { name: "DESIGNATION", uid: "designation", sortable: true, width: "120px" },
+    { name: "First Name", uid: "firstName", sortable: true, width: "120px" },
+    { name: "Middle Name", uid: "middleName", sortable: true, width: "120px" },
+    { name: "Last Name", uid: "lastName", sortable: true, width: "120px" },
+    { name: "Contact Number", uid: "contactNo", sortable: true, width: "120px" },
+    { name: "Email Address", uid: "email", sortable: true, width: "120px" },
+    { name: "Designation", uid: "designation", sortable: true, width: "120px" },
 ];
 
-const INITIAL_VISIBLE_COLUMNS = ["firstName", "middleName", "lastName", "contactNo", "email", "designation",];
+const INITIAL_VISIBLE_COLUMNS = ["firstName", "middleName", "lastName", "contactNo", "email", "designation"];
 
-export default function ContactPersonDetailsTable() {
+export default function AdminContactTable() {
     const [contactPersons, setContactPersons] = useState<ContactPerson[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set([]));
-    const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(INITIAL_VISIBLE_COLUMNS));
+    const [selectedKeys, setSelectedKeys] = React.useState<Selection>(new Set([]));
+    const [visibleColumns, setVisibleColumns] = React.useState<Selection>(new Set(INITIAL_VISIBLE_COLUMNS));
+    const [statusFilter, setStatusFilter] = React.useState<Selection>("all");
     const [rowsPerPage, setRowsPerPage] = useState(15);
-    const [page, setPage] = useState(1);
-    const [filterValue, setFilterValue] = useState<string>("");
+    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
+        column: "createdAt",
+        direction: "descending" as const, // Explicitly type as "descending"
+    });
 
-    const [isDownloading, setIsDownloading] = useState<boolean | null>(null);
-    const [sortDescriptor, setSortDescriptor] = useState({
-        column: "createdAt", // Change from "firstName" to "createdAt"
-        direction: "descending", // Newest first
-      });
-
+    const [page, setPage] = React.useState(1);
     const router = useRouter();
+    const [filterValue, setFilterValue] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [contactToDelete, setContactToDelete] = useState<ContactPerson | null>(null);
     const hasSearchFilter = Boolean(filterValue);
-
 
     const fetchContactPersons = async () => {
         try {
@@ -93,15 +92,28 @@ export default function ContactPersonDetailsTable() {
         }
     };
 
+    useEffect(() => {
+        fetchContactPersons();
+    }, []);
 
-    const handleDelete = async (contactPersonId: string) => {
-        if (!window.confirm("Are you sure you want to delete this contact person?")) {
-            return;
-        }
+    const handleSelectionChange = (keys: Selection) => {
+        setSelectedKeys(keys);
+    };
+    
+    const handleSortChange = (descriptor: SortDescriptor) => {
+        setSortDescriptor(descriptor);
+    };
+    const handleDeleteClick = (contactPerson: ContactPerson) => {
+        setContactToDelete(contactPerson);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!contactToDelete) return;
 
         try {
             await axios.delete(
-                `http://localhost:5000/api/v1/contactperson/deleteContactPerson/${contactPersonId}`,
+                `http://localhost:5000/api/v1/contactperson/deleteContactPerson/${contactToDelete._id}`,
                 {
                     headers: {
                         "Content-Type": "application/json",
@@ -110,7 +122,9 @@ export default function ContactPersonDetailsTable() {
                 }
             );
 
-            setContactPersons(prev => prev.filter(contact => contact._id !== contactPersonId));
+            setIsDeleteModalOpen(false);
+            setContactToDelete(null);
+            await fetchContactPersons();
             toast.success("Contact person deleted successfully");
         } catch (error) {
             console.error("Error deleting contact person:", error);
@@ -118,22 +132,58 @@ export default function ContactPersonDetailsTable() {
         }
     };
 
-    const filteredItems = React.useMemo<ContactPerson[]>(() => {
-        let filtered = [...contactPersons];
+    const handleCancelDelete = () => {
+        setIsDeleteModalOpen(false);
+        setContactToDelete(null);
+    };
+
+    const ConfirmationDialog = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose: () => void; onConfirm: () => void }) => {
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
+                <div className="bg-black p-6 rounded shadow-md max-w-sm w-full">
+                    <h3 className="text-lg font-semibold text-white">Are you sure you want to delete this contact?</h3>
+                    <div className="mt-4 flex justify-end gap-4">
+                        <Button onClick={onClose} variant="outline" className="text-white border-white">Cancel</Button>
+                        <Button onClick={onConfirm} className="bg-red-500 text-white">Delete</Button>
+                    </div>
+                </div>
+            </div>
+
+
+        );
+    };
+
+    const headerColumns = React.useMemo(() => {
+        if (visibleColumns === "all") return columns;
+        return columns.filter((column) => Array.from(visibleColumns).includes(column.uid));
+    }, [visibleColumns]);
+
+    const filteredItems = React.useMemo(() => {
+        let filteredContacts = [...contactPersons];
 
         if (hasSearchFilter) {
-            const searchLower = filterValue.toLowerCase();
-            filtered = filtered.filter(contact =>
-                contact.firstName.toLowerCase().includes(searchLower) ||
-                contact.middleName.toLowerCase().includes(searchLower) ||
-                contact.lastName.toLowerCase().includes(searchLower) ||
-                contact.contactNo.toLowerCase().includes(searchLower) ||
-                contact.email.toLowerCase().includes(searchLower)
+            filteredContacts = filteredContacts.filter((contact) =>
+                contact.firstName.toLowerCase().includes(filterValue.toLowerCase()) ||
+                contact.middleName.toLowerCase().includes(filterValue.toLowerCase()) ||
+                contact.lastName.toLowerCase().includes(filterValue.toLowerCase()) ||
+                contact.email.toLowerCase().includes(filterValue.toLowerCase()) ||
+                contact.contactNo.toLowerCase().includes(filterValue.toLowerCase()) ||
+                contact.designation.toLowerCase().includes(filterValue.toLowerCase())
             );
         }
 
-        return filtered;
-    }, [contactPersons, filterValue, hasSearchFilter]);
+        return filteredContacts;
+    }, [contactPersons, hasSearchFilter, filterValue]);
+
+    const pages = Math.ceil(filteredItems.length / rowsPerPage);
+
+    const items = React.useMemo(() => {
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        return filteredItems.slice(start, end);
+    }, [page, filteredItems, rowsPerPage]);
 
     const sortedItems = React.useMemo(() => {
         return [...filteredItems].sort((a, b) => {
@@ -147,24 +197,25 @@ export default function ContactPersonDetailsTable() {
         });
     }, [filteredItems, sortDescriptor]);
 
-
-    const paginatedItems = React.useMemo(() => {
-        const start = (page - 1) * rowsPerPage;
-        return sortedItems.slice(start, start + rowsPerPage);
-    }, [sortedItems, page, rowsPerPage]);
-
-    const pages = Math.ceil(filteredItems.length / rowsPerPage) || 1;
-
-    const onNextPage = useCallback(() => {
-        if (page < pages) setPage(page + 1);
+    const onNextPage = React.useCallback(() => {
+        if (page < pages) {
+            setPage(page + 1);
+        }
     }, [page, pages]);
 
-    const onPreviousPage = useCallback(() => {
-        if (page > 1) setPage(page - 1);
+    const onPreviousPage = React.useCallback(() => {
+        if (page > 1) {
+            setPage(page - 1);
+        }
     }, [page]);
 
-    const onRowsPerPageChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const onRowsPerPageChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         setRowsPerPage(Number(e.target.value));
+        setPage(1);
+    }, []);
+
+    const onClear = React.useCallback(() => {
+        setFilterValue("");
         setPage(1);
     }, []);
 
@@ -174,7 +225,7 @@ export default function ContactPersonDetailsTable() {
                 <Input
                     isClearable
                     className="w-full max-w-[300px]"
-                    placeholder="Search by name or GST"
+                    placeholder="Search"
                     startContent={<SearchIcon className="h-4 w-5 text-muted-foreground" />}
                     value={filterValue}
                     onChange={(e) => setFilterValue(e.target.value)}
@@ -200,7 +251,7 @@ export default function ContactPersonDetailsTable() {
         return (
             <div className="py-2 px-2 flex justify-between items-center">
                 <span className="text-default-400 text-small">
-                    Total {contactPersons.length} contacts
+                    Total {contactPersons.length} contact
                 </span>
                 <Pagination
                     isCompact
@@ -238,38 +289,16 @@ export default function ContactPersonDetailsTable() {
         );
     }, [page, pages, onPreviousPage, onNextPage]);
 
-    const renderCell = useCallback((contact: ContactPerson, columnKey: string) => {
-        if (columnKey === "actions") {
-            return (
-                <div className="relative flex items-center gap-2">
-                    <Tooltip>
-                        <span
-                            className="text-lg text-danger cursor-pointer"
-                            onClick={() => handleDelete(contact._id)}
-                        >
-                            <DeleteIcon />
-                        </span>
-                    </Tooltip>
+    const renderCell = React.useCallback((contact: ContactPerson, columnKey: string): React.ReactNode => {
+        const cellValue = contact[columnKey as keyof ContactPerson];
 
-                    <Tooltip>
-                        <span
-                            className="text-lg text-info cursor-pointer active:opacity-50"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                router.push(`admincustomer?id=${contact._id}`);
-                            }}
-                        >
-                            <Edit2Icon className="h-6 w-6" />
-                        </span>
-                    </Tooltip>
-                </div>
-            );
+        switch (columnKey) {
+            case "actions":
+            case "createdAt":
+                return new Date(cellValue as string).toLocaleDateString();
+            default:
+                return cellValue;
         }
-        return contact[columnKey as keyof ContactPerson];
-    }, []);
-
-    useEffect(() => {
-        fetchContactPersons();
     }, []);
 
     return (
@@ -283,12 +312,12 @@ export default function ContactPersonDetailsTable() {
                         <Separator orientation="vertical" className="mr-2 h-4" />
                         <Breadcrumb>
                             <BreadcrumbList>
-                                <BreadcrumbLink href="/admin/dashboard">
+                                <BreadcrumbLink href="/user/dashboard">
                                     Dashboard
                                 </BreadcrumbLink>
                                 <BreadcrumbSeparator className="hidden md:block" />
                                 <BreadcrumbItem>
-                                    <BreadcrumbLink href="/admin/contactform">
+                                    <BreadcrumbLink href="/user/contactform">
                                         Create Contact
                                     </BreadcrumbLink>
                                 </BreadcrumbItem>
@@ -297,13 +326,26 @@ export default function ContactPersonDetailsTable() {
                     </div>
                 </header>
                 <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15">
-                    <Card className="max-w-6xl mx-auto">
+                    <Card className="max-w-7xl mx-auto">
                         <CardHeader>
                             <CardTitle className="text-3xl font-bold text-center">Contact Record</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {topContent}
-                            <Table>
+                            <Table
+                                isHeaderSticky
+                                aria-label="Contacts table with custom cells, pagination, and sorting"
+                                bottomContent={bottomContent}
+                                bottomContentPlacement="outside"
+                                classNames={{
+                                    wrapper: "max-h-[382px] overflow-y-auto",
+                                }}
+                                selectedKeys={selectedKeys}
+                                sortDescriptor={sortDescriptor}
+                                topContent={topContent}
+                                topContentPlacement="outside"
+                                onSelectionChange={setSelectedKeys}
+                                onSortChange={setSortDescriptor}
+                            >
                                 <TableHeader>
                                     {columns.map((column) => (
                                         <TableColumn
@@ -329,20 +371,28 @@ export default function ContactPersonDetailsTable() {
                                         </TableColumn>
                                     ))}
                                 </TableHeader>
-                                <TableBody emptyContent={"No companies found"} items={paginatedItems}>
-                                    {(item) => (
-                                        <TableRow key={item._id}>
-                                            {(columnKey) => <TableCell style={{ fontSize: "12px", padding: "8px" }}>{renderCell(item, columnKey as string)}</TableCell>}
+                                <TableBody emptyContent={"Create contact and add data"}>
+                                    {sortedItems.map((contact) => (
+                                        <TableRow key={contact._id}>
+                                            {headerColumns.map((column) => (
+                                                <TableCell key={column.uid}>
+                                                    {renderCell(contact, column.uid)}
+                                                </TableCell>
+                                            ))}
                                         </TableRow>
-                                    )}
+                                    ))}
                                 </TableBody>
-
                             </Table>
-                            {bottomContent}
                         </CardContent>
                     </Card>
                 </div>
             </SidebarInset>
+
+            <ConfirmationDialog
+                isOpen={isDeleteModalOpen}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+            />
         </SidebarProvider>
     );
 }

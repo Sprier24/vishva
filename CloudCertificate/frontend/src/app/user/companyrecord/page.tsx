@@ -4,21 +4,18 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Button } from "@/components/ui/button";
-import { Loader2, SearchIcon, Edit2Icon, DeleteIcon, FileDown } from "lucide-react";
+import { Loader2, SearchIcon, Edit2Icon, DeleteIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-    SidebarInset,
-    SidebarProvider,
-    SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Pagination, Tooltip } from "@heroui/react";
+import { compareAsc } from "date-fns";
 import { AppSidebar } from "@/components/app-sidebar";
 
 interface CompanyDetails {
@@ -37,13 +34,13 @@ const generateUniqueId = () => {
 };
 
 const columns = [
-    { name: "COMPANY NAME", uid: "companyName", sortable: true, width: "120px" },
-    { name: "ADDRESS", uid: "address", sortable: true, width: "120px" },
-    { name: "GST NUMBER", uid: "gstNumber", sortable: true, width: "120px" },
-    { name: "INDUSTRIES", uid: "industries", sortable: true, width: "120px" },
-    { name: "WEBSITE", uid: "website", sortable: true, width: "120px" },
-    { name: "INDUSTRIES TYPE", uid: "industriesType", sortable: true, width: "120px" },
-    { name: "FLAG", uid: "flag", sortable: true, width: "120px" },
+    { name: "Company Name", uid: "companyName", sortable: true, width: "120px" },
+    { name: "Company Address", uid: "address", sortable: true, width: "120px" },
+    { name: "Industries", uid: "industries", sortable: true, width: "120px" },
+    { name: "Industries Type", uid: "industriesType", sortable: true, width: "120px" },
+    { name: "GST Number", uid: "gstNumber", sortable: true, width: "120px" },
+    { name: "Website", uid: "website", sortable: true, width: "120px" },
+    { name: "Flag", uid: "flag", sortable: true, width: "120px" },
 ];
 
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "address", "gstNumber", "industries", "website", "industriesType", "flag"];
@@ -58,64 +55,25 @@ export default function CompanyDetailsTable() {
     const [filterValue, setFilterValue] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDownloading, setIsDownloading] = useState<string | null>(null);
+    const [contactToDelete, setContactToDelete] = useState<CompanyDetails | null>(null); // To handle contact deletion
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // To toggle delete modal
 
-  const [sortDescriptor, setSortDescriptor] = useState<{
-          column: string | null;
-          direction: "ascending" | "descending";
+    const [sortDescriptor, setSortDescriptor] = useState<{
+        column: string;
+        direction: "ascending" | "descending";
       }>({
-          column: null,
-          direction: "ascending",
+        column: "",
+        direction: "ascending",
       });
       
+
     const router = useRouter();
     const hasSearchFilter = Boolean(filterValue);
 
-     const fetchCompanies = async () => {
-            try {
-                const response = await axios.get(
-                    `http://localhost:5000/api/v1/company/getAllcompanies`,
-                    {
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${localStorage.getItem("token")}`
-                        }
-                    }
-                );
-    
-                const companiesData = Array.isArray(response.data)
-                    ? response.data
-                    : response.data?.data
-                        ? response.data.data
-                        : [];
-    
-                const companiesWithKeys = companiesData
-                    .reverse() // 👈 Latest added data comes first
-                    .map((company: CompanyDetails) => ({
-                        ...company,
-                        key: company._id || generateUniqueId(),
-                    }));
-    
-                setCompanies(companiesWithKeys);
-                setError(null);
-            } catch (error) {
-                console.error("Error fetching companies:", error);
-                setError("Failed to fetch companies. Please try again.");
-                setCompanies([]);
-            }
-        };
-
-    useEffect(() => {
-        fetchCompanies();
-    }, []);
-
-    const handleDelete = async (companyId: string) => {
-        if (!window.confirm("Are you sure you want to delete this company?")) {
-            return;
-        }
-
+    const fetchCompanies = async () => {
         try {
-            await axios.delete(
-                `http://localhost:5000/api/v1/company/deleteCompany/${companyId}`,
+            const response = await axios.get(
+                `http://localhost:5000/api/v1/company/getAllcompanies`,
                 {
                     headers: {
                         "Content-Type": "application/json",
@@ -124,12 +82,80 @@ export default function CompanyDetailsTable() {
                 }
             );
 
-            setCompanies(prev => prev.filter(company => company._id !== companyId));
+            const companiesData = Array.isArray(response.data)
+                ? response.data
+                : response.data?.data
+                    ? response.data.data
+                    : [];
+
+            const companiesWithKeys = companiesData
+                .reverse() // 👈 Latest added data comes first
+                .map((company: CompanyDetails) => ({
+                    ...company,
+                    key: company._id || generateUniqueId(),
+                }));
+
+            setCompanies(companiesWithKeys);
+            setError(null);
+        } catch (error) {
+            console.error("Error fetching companies:", error);
+            setError("Failed to fetch companies. Please try again.");
+            setCompanies([]);
+        }
+    };
+
+    useEffect(() => {
+        fetchCompanies();
+    }, []);
+
+    const handleDeleteClick = (company: CompanyDetails) => {
+        setContactToDelete(company); // Set the company to delete
+        setIsDeleteModalOpen(true); // Open the modal
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!contactToDelete) return;
+
+        try {
+            await axios.delete(
+                `http://localhost:5000/api/v1/company/deleteCompany/${contactToDelete._id}`,
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+                    },
+                }
+            );
+
+            setIsDeleteModalOpen(false);
+            setContactToDelete(null);
+            await fetchCompanies();
             toast.success("Company deleted successfully");
         } catch (error) {
             console.error("Error deleting company:", error);
             toast.error("Failed to delete company");
         }
+    };
+
+    const handleCancelDelete = () => {
+        setIsDeleteModalOpen(false);
+        setContactToDelete(null);
+    };
+
+    const ConfirmationDialog = ({ isOpen, onClose, onConfirm }: { isOpen: boolean; onClose: () => void; onConfirm: () => void }) => {
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
+                <div className="bg-black p-6 rounded shadow-md max-w-sm w-full">
+                    <h3 className="text-lg font-semibold text-white">Are you sure you want to delete this company?</h3>
+                    <div className="mt-4 flex justify-end gap-4">
+                        <Button onClick={onClose} variant="outline" className="text-white border-white">Cancel</Button>
+                        <Button onClick={onConfirm} className="bg-red-500 text-white">Delete</Button>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     const headerColumns = React.useMemo(() => {
@@ -143,31 +169,36 @@ export default function CompanyDetailsTable() {
             const searchLower = filterValue.toLowerCase();
             filtered = filtered.filter(company =>
                 company.companyName.toLowerCase().includes(searchLower) ||
-                company.gstNumber.toLowerCase().includes(searchLower)
+                company.gstNumber.toLowerCase().includes(searchLower) ||
+                company.address.toLowerCase().includes(searchLower) ||
+                company.industries.toLowerCase().includes(searchLower) ||
+                company.industriesType.toLowerCase().includes(searchLower) ||
+                company.website.toLowerCase().includes(searchLower) ||
+                company.flag.toLowerCase().includes(searchLower)
             );
         }
 
         return filtered;
     }, [companies, filterValue, hasSearchFilter]);
 
-      const sortedItems = React.useMemo(() => {
-          if (!sortDescriptor.column) {
-              // No sorting = just show as-is (which is reversed from fetch)
-              return filteredItems;
-          }
-      
-          return [...filteredItems].sort((a, b) => {
-              const first = a[sortDescriptor.column as keyof CompanyDetails] || "";
-              const second = b[sortDescriptor.column as keyof CompanyDetails] || "";
-      
-              let cmp = 0;
-              if (first < second) cmp = -1;
-              if (first > second) cmp = 1;
-      
-              return sortDescriptor.direction === "descending" ? -cmp : cmp;
-          });
-      }, [filteredItems, sortDescriptor]);
-      
+    const sortedItems = React.useMemo(() => {
+        if (!sortDescriptor.column) {
+            // No sorting = just show as-is (which is reversed from fetch)
+            return filteredItems;
+        }
+
+        return [...filteredItems].sort((a, b) => {
+            const first = a[sortDescriptor.column as keyof CompanyDetails] || "";
+            const second = b[sortDescriptor.column as keyof CompanyDetails] || "";
+
+            let cmp = 0;
+            if (first < second) cmp = -1;
+            if (first > second) cmp = 1;
+
+            return sortDescriptor.direction === "descending" ? -cmp : cmp;
+        });
+    }, [filteredItems, sortDescriptor]);
+
     const paginatedItems = React.useMemo(() => {
         const start = (page - 1) * rowsPerPage;
         return sortedItems.slice(start, start + rowsPerPage);
@@ -194,7 +225,7 @@ export default function CompanyDetailsTable() {
                 <Input
                     isClearable
                     className="w-full max-w-[300px]"
-                    placeholder="Search by name or GST"
+                    placeholder="Search"
                     startContent={<SearchIcon className="h-4 w-5 text-muted-foreground" />}
                     value={filterValue}
                     onChange={(e) => setFilterValue(e.target.value)}
@@ -220,7 +251,7 @@ export default function CompanyDetailsTable() {
         return (
             <div className="py-2 px-2 flex justify-between items-center">
                 <span className="text-default-400 text-small">
-                    Total {companies.length} companies
+                    Total {companies.length} company
                 </span>
                 <div className="absolute left-1/2 transform -translate-x-1/2">
                     <Pagination
@@ -262,34 +293,6 @@ export default function CompanyDetailsTable() {
 
     const renderCell = useCallback((company: CompanyDetails, columnKey: string) => {
         if (columnKey === "actions") {
-            return (
-                <div className="relative flex items-center gap-2">
-
-                    <Tooltip>
-                        <span
-                            className="text-lg text-info cursor-pointer active:opacity-50"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                router.push(`adminCompany?id=${company._id}`);
-                            }}
-                        >
-                            <Edit2Icon className="h-6 w-6" />
-                        </span>
-                    </Tooltip>
-
-                    <Tooltip>
-                        <span
-                            className="text-lg text-danger cursor-pointer active:opacity-50"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                handleDelete(company._id);
-                            }}
-                        >
-                            <DeleteIcon className="h-6 w-6" />
-                        </span>
-                    </Tooltip>
-                </div>
-            );
         }
         return company[columnKey as keyof CompanyDetails];
     }, [isDownloading, router]);
@@ -346,33 +349,33 @@ export default function CompanyDetailsTable() {
                                     });
                                 }}
                             >
-                              <TableHeader>
-                                                                  {columns.map((column) => (
-                                                                      <TableColumn
-                                                                          key={column.uid}
-                                                                          allowsSorting={column.sortable}
-                                                                          onClick={() => {
-                                                                              if (!column.sortable) return;
-                                                                              setSortDescriptor(prev => ({
-                                                                                  column: column.uid,
-                                                                                  direction:
-                                                                                      prev.column === column.uid && prev.direction === "ascending"
-                                                                                          ? "descending"
-                                                                                          : "ascending",
-                                                                              }));
-                                                                          }}
-                                                                          style={{ cursor: column.sortable ? "pointer" : "default" }}
-                                                                      >
-                                                                          {column.name}
-                                                                          {sortDescriptor.column === column.uid && (
-                                                                              <span className="ml-1">
-                                                                                  {sortDescriptor.direction === "ascending" ? "▲" : "▼"}
-                                                                              </span>
-                                                                          )}
-                                                                      </TableColumn>
-                                                                  ))}
-                                                              </TableHeader>
-                                <TableBody emptyContent={"No companies found"} items={paginatedItems}>
+                                <TableHeader>
+                                    {columns.map((column) => (
+                                        <TableColumn
+                                            key={column.uid}
+                                            allowsSorting={column.sortable}
+                                            onClick={() => {
+                                                if (!column.sortable) return;
+                                                setSortDescriptor(prev => ({
+                                                    column: column.uid,
+                                                    direction:
+                                                        prev.column === column.uid && prev.direction === "ascending"
+                                                            ? "descending"
+                                                            : "ascending",
+                                                }));
+                                            }}
+                                            style={{ cursor: column.sortable ? "pointer" : "default" }}
+                                        >
+                                            {column.name}
+                                            {sortDescriptor.column === column.uid && (
+                                                <span className="ml-1">
+                                                    {sortDescriptor.direction === "ascending" ? "▲" : "▼"}
+                                                </span>
+                                            )}
+                                        </TableColumn>
+                                    ))}
+                                </TableHeader>
+                                <TableBody emptyContent={"Create company and add data"} items={paginatedItems}>
                                     {(item) => (
                                         <TableRow key={item._id}>
                                             {(columnKey) => <TableCell style={{ fontSize: "12px", padding: "8px" }}>{renderCell(item, columnKey as string)}</TableCell>}
@@ -384,6 +387,11 @@ export default function CompanyDetailsTable() {
                     </Card>
                 </div>
             </SidebarInset>
+            <ConfirmationDialog
+                isOpen={isDeleteModalOpen}
+                onClose={handleCancelDelete}
+                onConfirm={handleConfirmDelete}
+            />
         </SidebarProvider>
     );
 }

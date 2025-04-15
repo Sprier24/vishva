@@ -94,7 +94,7 @@ export function LoginForm() {
           title: "Login successful",
           description: "You have logged in successfully",
         });
-        router.push("user/dashboard");
+        router.push("/user/dashboard");
         return;
       }
 

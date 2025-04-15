@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Loader2, SearchIcon, FileDown, ChevronDownIcon } from "lucide-react"
+import { Loader2, SearchIcon, FileDown, Trash2, Download } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Selection, ChipProps, Select } from "@heroui/react"
@@ -11,8 +11,8 @@ import { Pagination, Tooltip } from "@heroui/react"
 import { useRouter } from "next/navigation";
 
 interface Service {
-    [x: string]: string | null;
     _id: string;
+    // nameAndLocation: string;
     contactPerson: string;
     contactNumber: string;
     serviceEngineer: string;
@@ -51,8 +51,7 @@ const columns = [
     { name: "Contact Person", uid: "contactPerson", sortable: true, width: "120px" },
     { name: "Contact Number", uid: "contactNumber", sortable: true, width: "120px" },
     { name: "Service Engineer", uid: "serviceEngineer", sortable: true, width: "120px" },
-    { name: "Date", uid: "date", sortable: true, width: "120px" }, // Added date column
-    { name: "Report No", uid: "reportNo", sortable: true, width: "120px" },
+    { name: "Report Number", uid: "reportNo", sortable: true, width: "120px" },
     { name: "Action", uid: "actions", sortable: true, width: "100px" },
 ];
 
@@ -90,45 +89,45 @@ export default function Servicetable() {
 
 
     const fetchServices = async () => {
-            try {
-                const response = await axios.get(
-                    "http://localhost:5000/api/v1/services/getServices",
-                    {
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Authorization": `Bearer ${localStorage.getItem("token")}`
-                        }
+        try {
+            const response = await axios.get(
+                "http://localhost:5000/api/v1/services/getServices",
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem("token")}`
                     }
-                );
-    
-                let servicesData;
-                if (typeof response.data === 'object' && 'data' in response.data) {
-                    servicesData = response.data.data;
-                } else if (Array.isArray(response.data)) {
-                    servicesData = response.data;
-                } else {
-                    throw new Error('Invalid response format');
                 }
-    
-                // Sort by createdAt in descending order (newest first)
-                servicesData.sort((a, b) =>
-                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                );
-    
-                const servicesWithKeys = servicesData.map((service: Service) => ({
-                    ...service,
-                    key: service._id || generateUniqueId()
-                }));
-    
-                setServices(servicesWithKeys);
-                setError(null);
-            } catch (error) {
-                console.error("Error fetching services:", error);
-                setError("Failed to fetch services.");
-                setServices([]);
+            );
+
+            let servicesData;
+            if (typeof response.data === 'object' && 'data' in response.data) {
+                servicesData = response.data.data;
+            } else if (Array.isArray(response.data)) {
+                servicesData = response.data;
+            } else {
+                throw new Error('Invalid response format');
             }
-        };
-    
+
+            // Sort by createdAt in descending order (newest first)
+            servicesData.sort((a, b) =>
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+
+            const servicesWithKeys = servicesData.map((service: Service) => ({
+                ...service,
+                key: service._id || generateUniqueId()
+            }));
+
+            setServices(servicesWithKeys);
+            setError(null);
+        } catch (error) {
+            console.error("Error fetching services:", error);
+            setError("Failed to fetch services.");
+            setServices([]);
+        }
+    };
+
     useEffect(() => {
         fetchServices();
     }, []);
@@ -147,8 +146,10 @@ export default function Servicetable() {
 
         if (hasSearchFilter) {
             filteredServices = filteredServices.filter((service) =>
-                // service.nameAndLocation.toLowerCase().includes(filterValue.toLowerCase()) ||
-                service.contactPerson.toLowerCase().includes(filterValue.toLowerCase())
+                service.contactPerson.toLowerCase().includes(filterValue.toLowerCase()) ||
+                service.contactNumber.toLowerCase().includes(filterValue.toLowerCase()) ||
+                service.serviceEngineer.toLowerCase().includes(filterValue.toLowerCase()) ||
+                service.reportNo.toLowerCase().includes(filterValue.toLowerCase())
             );
         }
 
@@ -164,24 +165,24 @@ export default function Servicetable() {
         return filteredItems.slice(start, end);
     }, [page, filteredItems, rowsPerPage]);
 
-      const sortedItems = React.useMemo(() => {
-          return [...items].sort((a, b) => {
-              // Handle date fields specially
-              if (sortDescriptor.column === 'date' || sortDescriptor.column === 'createdAt') {
-                  const dateA = new Date(a[sortDescriptor.column]).getTime();
-                  const dateB = new Date(b[sortDescriptor.column]).getTime();
-                  const cmp = dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
-                  return sortDescriptor.direction === "descending" ? -cmp : cmp;
-              }
-  
-              // Default string comparison
-              const first = a[sortDescriptor.column as keyof Service] || '';
-              const second = b[sortDescriptor.column as keyof Service] || '';
-              const cmp = String(first).localeCompare(String(second));
-  
-              return sortDescriptor.direction === "descending" ? -cmp : cmp;
-          });
-      }, [sortDescriptor, items]);
+    const sortedItems = React.useMemo(() => {
+        return [...items].sort((a, b) => {
+            // Handle date fields specially
+            if (sortDescriptor.column === 'date' || sortDescriptor.column === 'createdAt') {
+                const dateA = new Date(a[sortDescriptor.column]).getTime();
+                const dateB = new Date(b[sortDescriptor.column]).getTime();
+                const cmp = dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
+                return sortDescriptor.direction === "descending" ? -cmp : cmp;
+            }
+
+            // Default string comparison
+            const first = a[sortDescriptor.column as keyof Service] || '';
+            const second = b[sortDescriptor.column as keyof Service] || '';
+            const cmp = String(first).localeCompare(String(second));
+
+            return sortDescriptor.direction === "descending" ? -cmp : cmp;
+        });
+    }, [sortDescriptor, items]);
 
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -222,8 +223,8 @@ export default function Servicetable() {
             window.URL.revokeObjectURL(url);
 
             toast({
-                title: "Success",
-                description: "Service downloaded successfully",
+                title: "Service report Downloaded",
+                description: "The service report has been successfully downloaded",
                 variant: "default",
             });
         } catch (err) {
@@ -294,7 +295,7 @@ export default function Servicetable() {
                 <Input
                     isClearable
                     className="w-full max-w-[300px]"
-                    placeholder="Search by name or GST"
+                    placeholder="Search"
                     startContent={<SearchIcon className="h-4 w-5 text-muted-foreground" />}
                     value={filterValue}
                     onChange={(e) => setFilterValue(e.target.value)}
@@ -376,27 +377,33 @@ export default function Servicetable() {
         setVisibleColumns(keys);
     };
 
-    const renderCell = useCallback((service: Service, columnKey: string) => {
+    const renderCell = React.useCallback((service: Service, columnKey: string): React.ReactNode => {
+        const cellValue = service[columnKey as keyof Service];
+
+        if ((columnKey === "dateOfCalibration" || columnKey === "calibrationDueDate") && cellValue) {
+            return formatDate(cellValue);
+        }
+
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
-                    <Tooltip>
+                    <Tooltip color="danger">
                         <span
                             className="text-lg text-danger cursor-pointer active:opacity-50"
-                            onClick={() => handleDownload(service._id)}
-                        > {isDownloading === service.serviceId ? (
-                            <Loader2 className="h-6 w-6 animate-spin" />
-                        ) : (
-                            <FileDown className="h-6 w-6" />
-                        )}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleDownload(service._id);
+                            }}
+                        >
+                            <Download className="h-6 w-6" />
                         </span>
                     </Tooltip>
                 </div>
             );
         }
-        return service[columnKey as keyof Service];
-    }, []);
 
+        return cellValue;
+    }, []);
 
     return (
         <Table
@@ -419,33 +426,33 @@ export default function Servicetable() {
                 });
             }}
         >
-             <TableHeader columns={headerColumns}>
-                                                {(column) => (
-                                                    <TableColumn
-                                                        key={column.uid}
-                                                        align={column.uid === "actions" ? "center" : "start"}
-                                                        allowsSorting={column.sortable}
-                                                        onClick={() => {
-                                                            setSortDescriptor(prev => ({
-                                                                column: column.uid,
-                                                                direction: prev.column === column.uid && prev.direction === 'ascending'
-                                                                    ? 'descending'
-                                                                    : 'ascending'
-                                                            }));
-                                                        }}
-                                                    >
-                                                        <div className="flex items-center">
-                                                            {column.name}
-                                                            {sortDescriptor.column === column.uid && (
-                                                                <span className="ml-1">
-                                                                    {sortDescriptor.direction === 'ascending' ? '↑' : '↓'}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </TableColumn>
-                                                )}
-                                            </TableHeader>
-            <TableBody emptyContent={"No service found"} items={sortedItems}>
+            <TableHeader columns={headerColumns}>
+                {(column) => (
+                    <TableColumn
+                        key={column.uid}
+                        align={column.uid === "actions" ? "center" : "start"}
+                        allowsSorting={column.sortable}
+                        onClick={() => {
+                            setSortDescriptor(prev => ({
+                                column: column.uid,
+                                direction: prev.column === column.uid && prev.direction === 'ascending'
+                                    ? 'descending'
+                                    : 'ascending'
+                            }));
+                        }}
+                    >
+                        <div className="flex items-center">
+                            {column.name}
+                            {sortDescriptor.column === column.uid && (
+                                <span className="ml-1">
+                                    {sortDescriptor.direction === 'ascending' ? '↑' : '↓'}
+                                </span>
+                            )}
+                        </div>
+                    </TableColumn>
+                )}
+            </TableHeader>
+            <TableBody emptyContent={"Create Service and add data"} items={sortedItems}>
                 {(item) => (
                     <TableRow key={item._id}>
                         {(columnKey) => <TableCell style={{ fontSize: "12px", padding: "8px" }}>{renderCell(item as Service, columnKey as string)}</TableCell>}
@@ -453,7 +460,5 @@ export default function Servicetable() {
                 )}
             </TableBody>
         </Table>
-
-
     );
 }

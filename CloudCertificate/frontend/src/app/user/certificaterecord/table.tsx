@@ -1,7 +1,7 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react"
+import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon, Printer, FileDown } from "lucide-react"
+import { CalendarIcon, Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon, Printer, FileDown, Download } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
@@ -14,7 +14,6 @@ import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Select
 import axios from "axios";
 import { format } from "date-fns"
 import { Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip, User } from "@heroui/react"
-// import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { Calendar } from "@/components/ui/calendar"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,7 +31,6 @@ interface Certificate {
   dateOfCalibration: string;
   calibrationDueDate: string;
   engineerName: string;
-  createdAt?: string; // Add this if your backend provides it
   [key: string]: string;
 }
 
@@ -53,28 +51,21 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
-  return date.toISOString().split("T")[0]; // Returns "YYYY-MM-DD"
+  return date.toISOString().split("T")[0]; 
 };
 
 const columns = [
-  { name: "Certificate No", uid: "certificateNo", sortable: true, width: "120px" },
-  { name: "Customer", uid: "customerName", sortable: true, width: "120px" },
+  { name: "Certificate Number", uid: "certificateNo", sortable: true, width: "120px" },
+  { name: "Customer Name", uid: "customerName", sortable: true, width: "120px" },
   { name: "Site Location", uid: "siteLocation", sortable: true, width: "120px" },
-  { name: "Make Model", uid: "makeModel", sortable: true, width: "120px" },
-  // { name: "RANGE", uid: "range", sortable: true, width: "120px" },
-  { name: "Serial No", uid: "serialNo", sortable: true, width: "120px" },
-  // { name: "CALIBRATION GAS", uid: "calibrationGas", sortable: true, width: "120px" },
-  // { name: "GAS CANISTER DETAILS", uid: "gasCanisterDetails", sortable: true, width: "120px" },
-  // { name: "DATE OF CALIBRATION", uid: "dateOfCalibration", sortable: true, width: "120px" },
-  // { name: "CALIBRATION DUE DATE", uid: "calibrationDueDate", sortable: true, width: "120px" },
+  { name: "Model", uid: "makeModel", sortable: true, width: "120px" },
+  { name: "Serial Number", uid: "serialNo", sortable: true, width: "120px" },
   { name: "Engineer Name", uid: "engineerName", sortable: true, width: "120px" },
-
-  { name: "Action", uid: "actions", sortable: true, width: "100px" },
+  { name: "Download", uid: "actions", sortable: true, width: "100px" },
 ];
-const INITIAL_VISIBLE_COLUMNS = ["certificateNo", "customerName", "siteLocation", "makeModel", "range", "serialNo", "calibrationGas", "gasCanisterDetails", "dateOfCalibration", "calibrationDueDate", "engineerName", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["certificateNo", "customerName", "siteLocation", "makeModel", "serialNo", "engineerName", "actions"];
 
-
-export default function CertificateTable() {
+export default function Certificatetable() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [certificate, setCertificate] = useState<CertificateResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -112,11 +103,10 @@ export default function CertificateTable() {
         certificatesData = [];
       }
 
-      // Sort by date in descending order (newest first)
       const sortedData = certificatesData.sort((a: Certificate, b: Certificate) => {
         const dateA = new Date(a.dateOfCalibration || a.createdAt || 0).getTime();
         const dateB = new Date(b.dateOfCalibration || b.createdAt || 0).getTime();
-        return dateB - dateA; // Descending order
+        return dateB - dateA; 
       });
 
       const certificatesWithKeys = sortedData.map((certificate: Certificate) => ({
@@ -152,7 +142,11 @@ export default function CertificateTable() {
     if (hasSearchFilter) {
       filteredCertificates = filteredCertificates.filter((certificate) =>
         certificate.certificateNo.toLowerCase().includes(filterValue.toLowerCase()) ||
-        certificate.customerName.toLowerCase().includes(filterValue.toLowerCase())
+        certificate.customerName.toLowerCase().includes(filterValue.toLowerCase()) ||
+        certificate.siteLocation.toLowerCase().includes(filterValue.toLowerCase()) ||
+        certificate.makeModel.toLowerCase().includes(filterValue.toLowerCase()) ||
+        certificate.serialNo.toLowerCase().includes(filterValue.toLowerCase()) ||
+        certificate.engineerName.toLowerCase().includes(filterValue.toLowerCase())
       );
     }
 
@@ -173,7 +167,6 @@ export default function CertificateTable() {
       const first = a[sortDescriptor.column as keyof Certificate];
       const second = b[sortDescriptor.column as keyof Certificate];
 
-      // Handle date fields specially
       if (sortDescriptor.column.includes('Date') || sortDescriptor.column === 'dateOfCalibration' || sortDescriptor.column === 'calibrationDueDate') {
         const dateA = new Date(first as string).getTime();
         const dateB = new Date(second as string).getTime();
@@ -181,7 +174,6 @@ export default function CertificateTable() {
         return sortDescriptor.direction === "descending" ? -cmp : cmp;
       }
 
-      // Handle numeric fields
       if (sortDescriptor.column === 'certificateNo') {
         const numA = parseInt(first as string, 10);
         const numB = parseInt(second as string, 10);
@@ -191,7 +183,6 @@ export default function CertificateTable() {
         }
       }
 
-      // Default string comparison
       const cmp = String(first).localeCompare(String(second));
       return sortDescriptor.direction === "descending" ? -cmp : cmp;
     });
@@ -206,10 +197,8 @@ export default function CertificateTable() {
     try {
       setIsDownloading(certificateId);
       console.log('Attempting to download certificate:', certificateId);
-
-      // Download the PDF
       const pdfResponse = await axios.get(
-        `http://localhost:5000/api/v1/certificates/downloadCertificate/${certificateId}`,
+        `http://localhost:5000/api/v1/certificates/download/${certificateId}`,
         {
           responseType: 'blob',
           headers: {
@@ -219,38 +208,24 @@ export default function CertificateTable() {
         }
       );
 
-      // Create blob from response
-      const blob = new Blob([pdfResponse.data], { type: 'application/pdf' });
+      const contentType = pdfResponse.headers['content-type'];
+      if (!contentType || !contentType.includes('application/pdf')) {
+        throw new Error('Received invalid content type from server');
+      }
 
-      // Create download link
+      const blob = new Blob([pdfResponse.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-
-      // Try to get filename from headers or use default
-      const contentDisposition = pdfResponse.headers['content-disposition'];
-      let filename = `certificate-${certificateId}.pdf`;
-
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1];
-        }
-      }
-
-      link.setAttribute('download', filename);
+      link.setAttribute('download', `certificate-${certificateId}.pdf`);
       document.body.appendChild(link);
       link.click();
-
-      // Cleanup
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
+      link.remove();
+      window.URL.revokeObjectURL(url);
 
       toast({
-        title: "Success",
-        description: "Certificate downloaded successfully",
+        title: "Certificate Downloaded",
+        description: "The certificate has been successfully downloaded",
         variant: "default",
       });
     } catch (err) {
@@ -320,7 +295,7 @@ export default function CertificateTable() {
         <Input
           isClearable
           className="w-full max-w-[300px]"
-          placeholder="Search by name or GST"
+          placeholder="Search"
           startContent={<SearchIcon className="h-4 w-5 text-muted-foreground" />}
           value={filterValue}
           onChange={(e) => setFilterValue(e.target.value)}
@@ -348,8 +323,6 @@ export default function CertificateTable() {
         <span className="text-default-400 text-small">
           Total {certificates.length} certificates
         </span>
-
-        {/* Centered Pagination */}
         <div className="absolute left-1/2 transform -translate-x-1/2">
           <Pagination
             isCompact
@@ -364,8 +337,6 @@ export default function CertificateTable() {
             }}
           />
         </div>
-
-        {/* Navigation Buttons */}
         <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
           <Button
             className="bg-[hsl(339.92deg_91.04%_52.35%)]"
@@ -402,78 +373,81 @@ export default function CertificateTable() {
     setVisibleColumns(keys);
   };
 
-  const renderCell = useCallback((certificate: Certificate, columnKey: string) => {
+  const renderCell = React.useCallback((certificate: Certificate, columnKey: string): React.ReactNode => {
+    const cellValue = certificate[columnKey];
+
+    if ((columnKey === "dateOfCalibration" || columnKey === "calibrationDueDate") && cellValue) {
+      return formatDate(cellValue);
+    }
+
     if (columnKey === "actions") {
       return (
         <div className="relative flex items-center gap-2">
-          <Tooltip>
+          <Tooltip color="danger">
             <span
               className="text-lg text-danger cursor-pointer active:opacity-50"
-              onClick={() => handleDownload(certificate._id)}
-            > {isDownloading === certificate.certificateId ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <FileDown className="h-6 w-6" />
-            )}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDownload(certificate.certificateId);
+              }}
+            >
+              <Download className="h-6 w-6" />
             </span>
           </Tooltip>
         </div>
       );
     }
-    return certificate[columnKey as keyof Certificate];
+
+    return cellValue;
   }, []);
 
   return (
-    <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 max-h-screen-xl max-w-screen-xl">
-      <Table
-        isHeaderSticky
-        aria-label="Leads table with custom cells, pagination and sorting"
-        bottomContent={bottomContent}
-        bottomContentPlacement="outside"
-        classNames={{
-          wrapper: "max-h-[382px] ower-flow-y-auto",
-        }}
-        selectedKeys={selectedKeys}
-        sortDescriptor={sortDescriptor}
-        topContent={topContent}
-        topContentPlacement="outside"
-        onSelectionChange={handleSelectionChange}
-        onSortChange={(descriptor) => {
-          setSortDescriptor({
-            column: descriptor.column as string,
-            direction: descriptor.direction as "ascending" | "descending",
-          });
-        }}
-      >
-        <TableHeader columns={headerColumns}>
-          {(column) => (
-            <TableColumn
-              key={column.uid}
-              align={column.uid === "actions" ? "center" : "start"}
-              allowsSorting={column.sortable}
-            >
-              <div className="flex items-center">
-                {column.name}
-                {sortDescriptor.column === column.uid && (
-                  <ChevronDownIcon
-                    className={`ml-2 h-4 w-4 transition-transform ${sortDescriptor.direction === "ascending" ? "rotate-180" : ""
-                      }`}
-                  />
-                )}
-              </div>
-            </TableColumn>
-          )}
-        </TableHeader>
-        <TableBody emptyContent={"No certificate found"} items={sortedItems}>
-          {(item) => (
-            <TableRow key={item._id}>
-              {(columnKey) => <TableCell style={{ fontSize: "12px", padding: "8px" }}>{renderCell(item as Certificate, columnKey as string)}</TableCell>}
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-
-    </div>
-
+    <Table
+      isHeaderSticky
+      aria-label="Leads table with custom cells, pagination and sorting"
+      bottomContent={bottomContent}
+      bottomContentPlacement="outside"
+      classNames={{
+        wrapper: "max-h-[382px] ower-flow-y-auto",
+      }}
+      selectedKeys={selectedKeys}
+      sortDescriptor={sortDescriptor}
+      topContent={topContent}
+      topContentPlacement="outside"
+      onSelectionChange={handleSelectionChange}
+      onSortChange={(descriptor) => {
+        setSortDescriptor({
+          column: descriptor.column as string,
+          direction: descriptor.direction as "ascending" | "descending",
+        });
+      }}
+    >
+      <TableHeader columns={headerColumns}>
+        {(column) => (
+          <TableColumn
+            key={column.uid}
+            align={column.uid === "actions" ? "center" : "start"}
+            allowsSorting={column.sortable}
+          >
+            <div className="flex items-center">
+              {column.name}
+              {sortDescriptor.column === column.uid && (
+                <ChevronDownIcon
+                  className={`ml-2 h-4 w-4 transition-transform ${sortDescriptor.direction === "ascending" ? "rotate-180" : ""
+                    }`}
+                />
+              )}
+            </div>
+          </TableColumn>
+        )}
+      </TableHeader>
+      <TableBody emptyContent={"Create certificate and add data"} items={sortedItems}>
+        {(item) => (
+          <TableRow key={item._id}>
+            {(columnKey) => <TableCell style={{ fontSize: "12px", padding: "8px" }}>{renderCell(item as Certificate, columnKey as string)}</TableCell>}
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
   );
 }

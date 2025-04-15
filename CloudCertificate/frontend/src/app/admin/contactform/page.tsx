@@ -18,14 +18,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 
 const contactSchema = z.object({
-  firstName: z.string().min(1, { message: "First name is required" }),
-  middleName: z.string().min(1, { message: "Middle name is required" }),
-  lastName: z.string().min(1, { message: "Last name is required" }),
+  firstName: z.string().nonempty({ message: "Required" }),
+  middleName: z.string().nonempty({ message: "Required" }),
+  lastName: z.string().nonempty({ message: "Required" }),
   contactNo: z.string()
     .regex(/^\d*$/, { message: "Contact number must be numeric" })
     .nonempty({ message: "Required" }),
-  email: z.string().email({ message: "mailaddress is required" }),
-  designation: z.string().min(1, { message: "Designation is required" }),
+  email: z.string().email({ message: "Required" }),
+  designation: z.string().nonempty({ message: "Required" }),
 });
 
 export default function Customer() {
@@ -67,7 +67,7 @@ export default function Customer() {
         } catch (error: any) {
           toast({
             title: "Error",
-            description: error.response?.data?.message || "Failed to fetch contact details",
+            description: error.response?.data?.message || "Failed to fetch contact details.",
             variant: "destructive",
           });
           console.error("Fetch error:", error);
@@ -86,14 +86,14 @@ export default function Customer() {
       if (contactId) {
         await axios.put(`http://localhost:5000/api/v1/contactperson/updateContactPerson/${contactId}`, values);
         toast({
-          title: "Update Successfull!",
-          description: "Contact has been updated successfully!",
+          title: "Contact Updated",
+          description: "The contact has been successfully updated",
         });
       } else {
         await axios.post("http://localhost:5000/api/v1/contactperson/generateContactPerson", values);
         toast({
-          title: "Create Successfull",
-          description: "Contact has been created successfully!",
+          title: "Contact Submitted",
+          description: "The contact has been successfully created",
         });
         form.reset();
       }
@@ -113,16 +113,18 @@ export default function Customer() {
     <SidebarProvider>
       <AdminSidebar />
       <SidebarInset>
-      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <ModeToggle />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbLink href="/admin/dashboard">
-                  Dashboard
-                </BreadcrumbLink>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href="/admin/dashboard">
+                    Dashboard
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
                   <BreadcrumbLink href="/admin/contactrecord">
@@ -205,15 +207,15 @@ export default function Customer() {
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
-                          <Input
-                            placeholder="Contact Number"
-                            type="tel"
-                            {...field}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9]/g, '');
-                              field.onChange(value);
-                            }}
-                          />
+                            <Input
+                              placeholder="Contact Number"
+                              {...field}
+                              disabled={isSubmitting}
+                              onChange={(e) => {
+                                const numericValue = e.target.value.replace(/\D/g, '');
+                                field.onChange(numericValue);
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

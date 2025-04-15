@@ -3,18 +3,23 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from 'next/navigation';
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Loader2, SearchIcon, Edit2Icon, DeleteIcon, FileDown } from "lucide-react";
+import {  SearchIcon, Edit, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import axios from "axios";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+    SidebarInset,
+    SidebarProvider,
+    SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Pagination, Tooltip } from "@heroui/react";
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { AiOutlineInsertRowBelow } from "react-icons/ai";
 
 interface CompanyDetails {
     _id: string;
@@ -25,7 +30,11 @@ interface CompanyDetails {
     website: string;
     industriesType: string;
     flag: string;
-    key?: string;
+}
+
+interface SortDescriptor {
+    column: string;  
+    direction: "ascending" | "descending";
 }
 
 const generateUniqueId = () => {
@@ -34,13 +43,13 @@ const generateUniqueId = () => {
 
 const columns = [
     { name: "Company Name", uid: "companyName", sortable: true, width: "120px" },
-    { name: "Address", uid: "address", sortable: true, width: "120px" },
-    { name: "GST Number", uid: "gstNumber", sortable: true, width: "120px" },
+    { name: "Company Address", uid: "address", sortable: true, width: "120px" },
     { name: "Industries", uid: "industries", sortable: true, width: "120px" },
+    { name: "Industries Type", uid: "industriesType", sortable: true, width: "120px" },
+    { name: "GST Number", uid: "gstNumber", sortable: true, width: "120px" },
     { name: "Website", uid: "website", sortable: true, width: "120px" },
-    { name: "Industries Tyre", uid: "industriesType", sortable: true, width: "120px" },
     { name: "Flag", uid: "flag", sortable: true, width: "120px" },
-    { name: "Action", uid: "actions", sortable: false, width: "100px" },
+    { name: "Actions", uid: "actions", sortable: false, width: "120px" },
 ];
 
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "address", "gstNumber", "industries", "website", "industriesType", "flag", "actions"];
@@ -53,15 +62,13 @@ export default function CompanyDetailsTable() {
     const [rowsPerPage, setRowsPerPage] = useState(15);
     const [page, setPage] = useState(1);
     const [filterValue, setFilterValue] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDownloading, setIsDownloading] = useState<string | null>(null);
-    const [sortDescriptor, setSortDescriptor] = useState<{
-        column: string | null;
-        direction: "ascending" | "descending";
-    }>({
-        column: null,
-        direction: "ascending",
+
+    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
+        column: "createdAt", 
+        direction: "descending",
     });
-    
     const router = useRouter();
     const hasSearchFilter = Boolean(filterValue);
 
@@ -84,7 +91,7 @@ export default function CompanyDetailsTable() {
                     : [];
 
             const companiesWithKeys = companiesData
-                .reverse() // 👈 Latest added data comes first
+                .reverse() 
                 .map((company: CompanyDetails) => ({
                     ...company,
                     key: company._id || generateUniqueId(),
@@ -123,16 +130,19 @@ export default function CompanyDetailsTable() {
             toast({
                 title: "Delete Successful!",
                 description: "Company deleted successfully!",
-            });
+            });        
         } catch (error) {
             console.error("Error deleting company:", error);
             toast({
-                title: "Error",
-                description: "Failed to delete company.",
-                variant: "destructive",
-            });
-        }
+                title: "Delete Successful!",
+                description: "Company deleted successfully!",
+            });       
+         }
     };
+
+    const headerColumns = React.useMemo(() => {
+        return columns.filter(column => visibleColumns.has(column.uid));
+    }, [visibleColumns]);
 
     const filteredItems = React.useMemo(() => {
         let filtered = [...companies];
@@ -141,7 +151,12 @@ export default function CompanyDetailsTable() {
             const searchLower = filterValue.toLowerCase();
             filtered = filtered.filter(company =>
                 company.companyName.toLowerCase().includes(searchLower) ||
-                company.gstNumber.toLowerCase().includes(searchLower)
+                company.address.toLowerCase().includes(searchLower) ||
+                company.industries.toLowerCase().includes(searchLower) ||
+                company.industriesType.toLowerCase().includes(searchLower) ||
+                company.gstNumber.toLowerCase().includes(searchLower) ||
+                company.website.toLowerCase().includes(searchLower) ||
+                company.flag.toLowerCase().includes(searchLower)
             );
         }
 
@@ -149,11 +164,6 @@ export default function CompanyDetailsTable() {
     }, [companies, filterValue, hasSearchFilter]);
 
     const sortedItems = React.useMemo(() => {
-        if (!sortDescriptor.column) {
-            // No sorting = just show as-is (which is reversed from fetch)
-            return filteredItems;
-        }
-    
         return [...filteredItems].sort((a, b) => {
             const first = a[sortDescriptor.column as keyof CompanyDetails] || "";
             const second = b[sortDescriptor.column as keyof CompanyDetails] || "";
@@ -165,7 +175,6 @@ export default function CompanyDetailsTable() {
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
     }, [filteredItems, sortDescriptor]);
-    
 
     const paginatedItems = React.useMemo(() => {
         const start = (page - 1) * rowsPerPage;
@@ -193,7 +202,7 @@ export default function CompanyDetailsTable() {
                 <Input
                     isClearable
                     className="w-full max-w-[300px]"
-                    placeholder="Search by name or GST"
+                    placeholder="Search"
                     startContent={<SearchIcon className="h-4 w-5 text-muted-foreground" />}
                     value={filterValue}
                     onChange={(e) => setFilterValue(e.target.value)}
@@ -219,10 +228,8 @@ export default function CompanyDetailsTable() {
         return (
             <div className="py-2 px-2 relative flex justify-between items-center">
                 <span className="text-default-400 text-small">
-                    Total {companies.length} companies
+                    Total {companies.length} company
                 </span>
-
-                {/* Centered Pagination */}
                 <div className="absolute left-1/2 transform -translate-x-1/2">
                     <Pagination
                         isCompact
@@ -237,8 +244,6 @@ export default function CompanyDetailsTable() {
                         }}
                     />
                 </div>
-
-                {/* Navigation Buttons */}
                 <div className="rounded-lg bg-default-100 hover:bg-default-200 hidden sm:flex w-[30%] justify-end gap-2">
                     <Button
                         className="bg-[hsl(339.92deg_91.04%_52.35%)]"
@@ -275,10 +280,9 @@ export default function CompanyDetailsTable() {
                                 router.push(`companyform?id=${company._id}`);
                             }}
                         >
-                            <Edit2Icon className="h-6 w-6" />
+                            <Edit className="h-6 w-6" />
                         </span>
                     </Tooltip>
-
                     <Tooltip>
                         <span
                             className="text-lg text-danger cursor-pointer active:opacity-50"
@@ -287,14 +291,14 @@ export default function CompanyDetailsTable() {
                                 handleDelete(company._id);
                             }}
                         >
-                            <DeleteIcon className="h-6 w-6" />
+                            <Trash2 className="h-6 w-6" />
                         </span>
                     </Tooltip>
                 </div>
             );
         }
         return company[columnKey as keyof CompanyDetails];
-    }, [router]);
+    }, [isDownloading, router]);
 
     return (
         <SidebarProvider>
@@ -328,8 +332,26 @@ export default function CompanyDetailsTable() {
                             <CardTitle className="text-3xl font-bold text-center">Company Record</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {topContent}
-                            <Table>
+                            <Table
+                                isHeaderSticky
+                                aria-label="Companies table with custom cells, pagination and sorting"
+                                bottomContent={bottomContent}
+                                bottomContentPlacement="outside"
+                                classNames={{
+                                    wrapper: "max-h-[382px] overflow-y-auto",
+                                }}
+                                selectedKeys={selectedKeys}
+                                sortDescriptor={sortDescriptor}
+                                topContent={topContent}
+                                topContentPlacement="outside"
+                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string>)}
+                                onSortChange={(descriptor) => {
+                                    setSortDescriptor({
+                                        column: descriptor.column as string,
+                                        direction: descriptor.direction as "ascending" | "descending",
+                                    });
+                                }}
+                            >
                                 <TableHeader>
                                     {columns.map((column) => (
                                         <TableColumn
@@ -356,7 +378,8 @@ export default function CompanyDetailsTable() {
                                         </TableColumn>
                                     ))}
                                 </TableHeader>
-                                <TableBody emptyContent={"No companies found"} items={paginatedItems}>
+
+                                <TableBody emptyContent={"Create company and add data"} items={paginatedItems}>
                                     {(item) => (
                                         <TableRow key={item._id}>
                                             {(columnKey) => <TableCell style={{ fontSize: "12px", padding: "8px" }}>{renderCell(item, columnKey as string)}</TableCell>}
@@ -364,7 +387,6 @@ export default function CompanyDetailsTable() {
                                     )}
                                 </TableBody>
                             </Table>
-                            {bottomContent}
                         </CardContent>
                     </Card>
                 </div>

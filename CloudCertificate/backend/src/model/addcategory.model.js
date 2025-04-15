@@ -5,7 +5,7 @@ const addCategorySchema = new mongoose.Schema(
     model_name: {
       type: String,
       required: true,
-      unique: true,  
+      unique: true,
     },
     range: {
       type: String,
@@ -13,7 +13,7 @@ const addCategorySchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, 
+    timestamps: true,
   }
 );
 

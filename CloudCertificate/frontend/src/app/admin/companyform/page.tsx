@@ -18,28 +18,21 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 
 const companySchema = z.object({
-  companyName: z.string().min(1, { message: "Company name is required" }),
-  address: z.string().min(1, { message: "Address is required" }),
-  gstNumber: z.preprocess(
-    (val) => (val === "" ? undefined : val),
-    z.string({
-      required_error: "GST number is required"
-    })
-    .min(15, { message: "Invalid GST number" })
-    .max(15, { message: "Invalid GST number" })
-  ),
-  industries: z.string().min(1, { message: "Industries is required" }),
-  website: z.preprocess((val) => (val === "" ? undefined : val),
-  z.string({
-    required_error: "Website is required",
-    invalid_type_error: "Invalid website URL"
-  }).url("Invalid website URL")
-),
-  industriesType: z.string().min(1, { message: "Industries type is required" }),
-  flag: z.enum(["Red", "Yellow", "Green"], {
-    errorMap: () => ({ message: "Flag is required" }),
-  }),
-  });
+    companyName: z.string().nonempty({ message: "Required" }),
+    address: z.string().nonempty({ message: "Required" }),
+    industries: z.string().nonempty({ message: "Required" }),
+    industriesType: z.string().nonempty({ message: "Required" }),
+    gstNumber: z.string().nonempty({ message: "Required" }),
+    website: z.preprocess((val) => (val === "" ? undefined : val),
+        z.string({
+            required_error: "Required",
+            invalid_type_error: "Invalid website URL"
+        }).url("Invalid website URL")
+    ),
+    flag: z.enum(["Red", "Yellow", "Green"], {
+        errorMap: () => ({ message: "Required" }),
+    }),
+});
 
 export default function AddCategory() {
     const searchParams = useSearchParams();
@@ -99,14 +92,14 @@ export default function AddCategory() {
             if (certificateId) {
                 response = await axios.put(`http://localhost:5000/api/v1/company/updatecompany/${certificateId}`, values);
                 toast({
-                    title: "Update Successful!",
-                    description: "Company updated successfully!",
+                    title: "Company Updated",
+                    description: "The company has been successfully updated",
                 });
             } else {
                 response = await axios.post("http://localhost:5000/api/v1/company/createcompany", values);
                 toast({
-                    title: "Create Successful!",
-                    description: "Company created successfully!",
+                    title: "Company Submitted",
+                    description: "The company has been successfully created",
                 });
                 form.reset();
             }
@@ -174,9 +167,9 @@ export default function AddCategory() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input 
-                                                            placeholder="Company name" 
-                                                            {...field} 
+                                                        <Input
+                                                            placeholder="Company name"
+                                                            {...field}
                                                             disabled={isSubmitting}
                                                         />
                                                     </FormControl>
@@ -190,9 +183,9 @@ export default function AddCategory() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input 
-                                                            placeholder="Address" 
-                                                            {...field} 
+                                                        <Input
+                                                            placeholder="Company Address"
+                                                            {...field}
                                                             disabled={isSubmitting}
                                                         />
                                                     </FormControl>
@@ -209,9 +202,43 @@ export default function AddCategory() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input 
-                                                            placeholder="Industries" 
-                                                            {...field} 
+                                                        <Input
+                                                            placeholder="Industries"
+                                                            {...field}
+                                                            disabled={isSubmitting}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                        <FormField
+                                            control={form.control}
+                                            name="industriesType"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="Industries Type"
+                                                            {...field}
+                                                            disabled={isSubmitting}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                                        <FormField
+                                            control={form.control}
+                                            name="gstNumber"
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <Input
+                                                            placeholder="GST Number"
+                                                            {...field}
                                                             disabled={isSubmitting}
                                                         />
                                                     </FormControl>
@@ -225,43 +252,9 @@ export default function AddCategory() {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input 
-                                                            placeholder="Website URL" 
-                                                            {...field} 
-                                                            disabled={isSubmitting}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                                        <FormField
-                                            control={form.control}
-                                            name="industriesType"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <Input 
-                                                            placeholder="Industries Type" 
-                                                            {...field} 
-                                                            disabled={isSubmitting}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="gstNumber"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <Input 
-                                                            placeholder="15-character GST number" 
-                                                            {...field} 
+                                                        <Input
+                                                            placeholder="Website"
+                                                            {...field}
                                                             disabled={isSubmitting}
                                                         />
                                                     </FormControl>

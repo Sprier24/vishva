@@ -3,7 +3,7 @@ import * as React from "react"
 import { usePathname } from "next/navigation"
 import { NavUser } from "@/components/nav-user"
 import { NavMain } from "@/components/nav-main"
-import { CirclePlay, File, InfoIcon } from "lucide-react"
+import { Building2, Files, LayoutDashboard } from "lucide-react"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar"
 
 const data = {}
@@ -14,7 +14,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {
         title: "Dashboard",
         url: "#",
-        icon: CirclePlay,
+        icon: LayoutDashboard,
         items: [
           {
             title: "Dashboard",
@@ -23,9 +23,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         ],
       },
       {
-        title: "Company Details",
+        title: "Company Info",
         url: "#",
-        icon: InfoIcon,
+        icon: Building2,
         items: [
           {
             title: "Create Company",
@@ -48,7 +48,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {
         title: "Documentation",
         url: "#",
-        icon: File,
+        icon: Files,
         items: [
           {
             title: "Create Certificate",

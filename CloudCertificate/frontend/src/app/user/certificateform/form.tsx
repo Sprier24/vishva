@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { Trash2 } from "lucide-react";
 
 interface Observation {
   gas: string;
@@ -46,7 +47,7 @@ interface engineer {
 
 export default function GenerateCertificate() {
   const [formData, setFormData] = useState<CertificateRequest>({
-    certificateNo: "", 
+    certificateNo: "",
     customerName: "",
     siteLocation: "",
     makeModel: "",
@@ -57,15 +58,14 @@ export default function GenerateCertificate() {
     dateOfCalibration: new Date(),
     calibrationDueDate: new Date(),
     observations: [{ gas: "", before: "", after: "" }],
-    engineerId: "", // ✅ added
+    engineerId: "",
     engineerName: "",
     status: "",
   });
-  
+
   const [certificate, setCertificate] = useState<CertificateResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [timePeriod, setTimePeriod] = useState<number | null>(null);
@@ -108,7 +108,7 @@ export default function GenerateCertificate() {
     fetchEngineers();
   }, []);
 
-  
+
 
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,7 +220,6 @@ export default function GenerateCertificate() {
     console.log('Form data before submission:', formData);
 
     try {
-      // Ensure dates are properly formatted
       const submissionData = {
         ...formData,
         dateOfCalibration: startDate ? new Date(startDate) : null,
@@ -243,38 +242,35 @@ export default function GenerateCertificate() {
   };
 
   const handleDownload = async () => {
-    if (!certificate?.certificateId) return;
-  
+    if (!certificate?.downloadUrl) return;
+
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/v1/certificates/download/${certificate.certificateId}`,
-        { responseType: 'blob' } // Must be 'blob' for file downloads
+        `http://localhost:5000${certificate.downloadUrl}`,
+        { responseType: 'blob' }
       );
-  
-      // const blob = new Blob([response.data], { type: 'application/pdf' });
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `certificate-${certificate.certificateId}.pdf`);
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Download error:", err);
       setError("Failed to download certificate. Please try again.");
     }
   };
-  
 
   return (
     <div>
-      {/* <h1 className="text-2xl font-bold mb-4">Generate Your Certificate</h1> */}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <input
             type="text"
             name="customerName"
-            placeholder="Enter Name"
+            placeholder="Customer Name"
             value={formData.customerName}
             onChange={handleChange}
             className="p-2 border rounded"
@@ -282,7 +278,7 @@ export default function GenerateCertificate() {
           <input
             type="text"
             name="siteLocation"
-            placeholder="Enter Site Location"
+            placeholder="Site Location"
             value={formData.siteLocation}
             onChange={handleChange}
             className="p-2 border rounded"
@@ -297,7 +293,7 @@ export default function GenerateCertificate() {
             required
             disabled={isLoadingModels}
           >
-            <option value="">Select Make and Model</option>
+            <option value="">Select Model</option>
             {isLoadingModels ? (
               <option value="" disabled>Loading models...</option>
             ) : models.length > 0 ? (
@@ -308,9 +304,6 @@ export default function GenerateCertificate() {
               ))
             ) : (
               <>
-                <option value="GMIleakSurveyor">GMI leak Surveyor</option>
-                <option value="GMIGT41Series">GMI GT 41 Series</option>
-                <option value="GMIGT44">GMI GT 44</option>
               </>
             )}
           </select>
@@ -329,7 +322,7 @@ export default function GenerateCertificate() {
           <input
             type="text"
             name="serialNo"
-            placeholder="Enter Serial Number"
+            placeholder="Serial Number"
             value={formData.serialNo}
             onChange={handleChange}
             className="p-2 border rounded"
@@ -338,7 +331,7 @@ export default function GenerateCertificate() {
           <input
             type="text"
             name="calibrationGas"
-            placeholder="Enter Calibration Gas"
+            placeholder="Calibration Gas"
             value={formData.calibrationGas}
             onChange={handleChange}
             className="p-2 border rounded"
@@ -348,11 +341,11 @@ export default function GenerateCertificate() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-1">
           <textarea
             name="gasCanisterDetails"
-            placeholder="Enter Gas Canister Details"
+            placeholder="Gas Canister Details"
             value={formData.gasCanisterDetails}
             onChange={handleChange}
-            className="p-2 border rounded"
-
+            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black resize-none"
+            rows={3}
           />
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -432,14 +425,15 @@ export default function GenerateCertificate() {
           </select>
         </div>
 
-        <h2 className="text-lg font-bold mt-4">Observation Table</h2>
+        <h2 className="text-lg font-bold mt-4 text-center">Observation Table</h2>
+
         <div className="flex justify-end mb-4">
           <button
             onClick={addObservation}
-            className="bg-black-500 text-white px-4 py-2 border rounded hover:bg-gray-900"
+            className="bg-purple-950 text-white px-4 py-2 border rounded hover:bg-gray-900"
             disabled={formData.observations.length >= 5}
           >
-            Add Observation
+            Create Observation
           </button>
         </div>
         <table className="table-auto border-collapse border border-gray-500 rounded w-full">
@@ -449,7 +443,7 @@ export default function GenerateCertificate() {
               <th className="border p-2">Gas</th>
               <th className="border p-2">Before Calibration</th>
               <th className="border p-2">After Calibration</th>
-              <th className="border p-2">Remove</th>
+              <th className="border p-2">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -486,9 +480,8 @@ export default function GenerateCertificate() {
                 <td className="border p-2">
                   <button
                     onClick={() => removeObservation(index)}
-                    className="bg-black-500 text-white px-2 py-1 border rounded hover:bg-red-950"
                   >
-                    Remove
+                    <Trash2 className="h-6 w-6" />
                   </button>
                 </td>
               </tr>
@@ -496,7 +489,7 @@ export default function GenerateCertificate() {
             {formData.observations.length === 0 && (
               <tr>
                 <td colSpan={5} className="border p-2 text-center text-gray-500">
-                  No observations added yet. Click "Add Observation" to add one.
+                  Click "Create Observation" to add one
                 </td>
               </tr>
             )}
@@ -512,7 +505,7 @@ export default function GenerateCertificate() {
 
         <button
           type="submit"
-          className="bg-blue-950 hover:bg-blue-900 text-white p-2 rounded-md"
+          className="bg-blue-950 hover:bg-blue-900 text-white p-2 rounded-md w-full"
           disabled={loading}
         >
           {loading ? "Generating..." : "Generate Certificate"}
