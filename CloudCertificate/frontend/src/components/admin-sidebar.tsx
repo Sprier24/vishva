@@ -19,23 +19,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { usePathname } from "next/navigation";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {LogOut} from 'lucide-react'
-export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const pathname = usePathname();
 
-  const [admin, setAdmin] = React.useState({
-    name: "Admin",
-    email: "admin@example.com",
-  });
-
-  // Load admin info from localStorage
-  React.useEffect(() => {
-    const name = localStorage.getItem("adminName") || "Admin";
-    const email = localStorage.getItem("adminEmail") || "admin@example.com";
-    setAdmin({ name, email });
-  }, []);
-
-  const navMain = React.useMemo(
-    () => [
+  const data = {
+   NavMain: [
       {
         title: "Dashboard",
         url: "#",
@@ -120,13 +106,56 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
         ],
       },
     ],
-    [pathname],
+  };
+
+export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [isClient, setIsClient] = React.useState(false);
+  const [activePath, setActivePath] = React.useState("");
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
+
+
+  const [admin, setAdmin] = React.useState({
+    name: "Admin",
+    email: "admin@example.com",
+  });
+
+  // Load admin info from localStorage
+  React.useEffect(() => {
+    const name = localStorage.getItem("adminName") || "Admin";
+    const email = localStorage.getItem("adminEmail") || "admin@example.com";
+    setAdmin({ name, email });
+  }, []);
+
+  React.useEffect(() => {
+    if (!sidebarRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        setIsCollapsed(width < 80); 
+      }
+    });
+    observer.observe(sidebarRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const updatedNavMain = React.useMemo(
+    () =>
+      data.NavMain.map((item) => ({
+        ...item,
+        isActive: isClient && activePath === item.url,
+        items: item.items?.map((subItem) => ({
+          ...subItem,
+          isActive: isClient && activePath === subItem.url,
+        })),
+      })),
+    [isClient, activePath]
   );
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain items={updatedNavMain} />
       </SidebarContent>
       <SidebarFooter>
         <DropdownMenu>

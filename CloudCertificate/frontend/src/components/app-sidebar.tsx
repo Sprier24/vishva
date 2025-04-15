@@ -6,11 +6,8 @@ import { NavMain } from "@/components/nav-main"
 import { Building2, Files, LayoutDashboard } from "lucide-react"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from "@/components/ui/sidebar"
 
-const data = {}
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const pathname = usePathname()
-  const navMain = React.useMemo(
-    () => [
+const data = {
+ navMain : [
       {
         title: "Dashboard",
         url: "#",
@@ -69,16 +66,46 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         ],
       },
     ],
-    [pathname],
-  )
+  };
 
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+ const [isClient, setIsClient] = React.useState(false);
+  const [activePath, setActivePath] = React.useState("");
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
+
+  React.useEffect(() => {
+      if (!sidebarRef.current) return;
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const width = entry.contentRect.width;
+          setIsCollapsed(width < 80); 
+        }
+      });
+      observer.observe(sidebarRef.current);
+      return () => observer.disconnect();
+    }, []);
+  
+    const updatedNavMain = React.useMemo(
+      () =>
+        data.navMain.map((item) => ({
+          ...item,
+          isActive: isClient && activePath === item.url,
+          items: item.items?.map((subItem) => ({
+            ...subItem,
+            isActive: isClient && activePath === subItem.url,
+          })),
+        })),
+      [isClient, activePath]
+    );
+  
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain items={updatedNavMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser  />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
