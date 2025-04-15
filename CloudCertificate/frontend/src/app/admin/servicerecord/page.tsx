@@ -18,6 +18,7 @@ import axios from "axios";
 import { Pagination, Tooltip } from "@heroui/react"
 import { useRouter } from "next/navigation";
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { jsPDF } from "jspdf";
 
 interface Service {
     _id: string;
@@ -183,10 +184,10 @@ export default function AdminServiceTable() {
                 const dateB = new Date(
                     sortDescriptor.column === "date" ? b.date : (b as any).createdAt
                 ).getTime();
-            
+
                 const cmp = dateA < dateB ? -1 : dateA > dateB ? 1 : 0;
                 return sortDescriptor.direction === "descending" ? -cmp : cmp;
-            }            
+            }
 
             const first = a[sortDescriptor.column as keyof Service] || '';
             const second = b[sortDescriptor.column as keyof Service] || '';
@@ -201,67 +202,138 @@ export default function AdminServiceTable() {
 
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    const handleDownload = async (serviceId: string) => {
-        try {
-            setIsDownloading(serviceId);
-            console.log('Attempting to download service:', serviceId);
-            const pdfResponse = await axios.get(
-                `http://localhost:5000/api/v1/services/download/${serviceId}`,
-                {
-                    responseType: 'blob',
-                    headers: {
-                        "Authorization": `Bearer ${localStorage.getItem("token")}`,
-                        "Accept": "application/pdf"
-                    }
-                }
-            );
+    const handleDownload = (service: Service) => {
+        const logo = new Image();
+        logo.src = "/img/rps.png";
 
-            const contentType = pdfResponse.headers['content-type'];
-            if (!contentType || !contentType.includes('application/pdf')) {
-                throw new Error('Received invalid content type from server');
-            }
+        logo.onload = () => {
+            const infoImage = new Image();
+            infoImage.src = "/img/handf.png";
 
-            const blob = new Blob([pdfResponse.data], { type: 'application/pdf' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `service-${serviceId}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-            toast({
-                title: "Service report Downloaded",
-                description: "The service report has been successfully downloaded",
-                variant: "default",
-            });
-        } catch (err) {
-            console.error('Download error:', err);
-            let errorMessage = "Failed to download service. Please try again.";
+            infoImage.onload = () => {
+                const doc = new jsPDF();
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
 
-            if (axios.isAxiosError(err)) {
-                console.error('Error details:', {
-                    status: err.response?.status,
-                    data: err.response?.data,
-                    url: err.config?.url
+                const leftMargin = 15;
+                const rightMargin = 15;
+                const topMargin = 20;
+                let y = topMargin;
+
+                const logoWidth = 50;
+                const logoHeight = 15;
+                doc.addImage(logo, "PNG", leftMargin, y, logoWidth, logoHeight);
+                y += logoHeight + 5;
+
+                const infoImageWidth = 180;
+                const infoImageHeight = 20;
+                doc.addImage(infoImage, "PNG", leftMargin, y, infoImageWidth, infoImageHeight);
+                y += infoImageHeight + 10;
+
+                y += 10;
+
+                doc.setFont("times", "bold").setFontSize(13).setTextColor(0, 51, 153);
+                doc.text("SERVICE / CALIBRATION / INSTALLATION  JOBREPORT", pageWidth / 2, y, { align: "center" });
+                y += 10;
+
+                const addRow = (label: string, value: string) => {
+                    const labelOffset = 65;
+                    doc.setFont("times", "bold").setFontSize(10).setTextColor(0);
+                    doc.text(label + ":", leftMargin, y);
+                    doc.setFont("times", "normal").setTextColor(50);
+                    doc.text(value || "N/A", leftMargin + labelOffset, y);
+                    y += 7;
+                };
+
+                addRow("Contact Person", service.contactPerson);
+                addRow("Contact Number", service.contactNumber);
+                addRow("Service Engineer", service.serviceEngineer);
+                addRow("Date", formatDate(service.date));
+                addRow("Place", service.place);
+                addRow("Place Options", service.placeOptions);
+                addRow("Nature of Job", service.natureOfJob);
+                addRow("Report No.", service.reportNo);
+                addRow("Make & Model Number", service.makeModelNumberoftheInstrumentQuantity);
+
+                y += 5;
+                addRow("Calibrated & Tested OK", service.serialNumberoftheInstrumentCalibratedOK);
+                addRow("Sr.No Faulty/Non-Working", service.serialNumberoftheFaultyNonWorkingInstruments);
+
+                y += 10;
+                doc.setDrawColor(0);
+                doc.setLineWidth(0.5);
+                doc.line(leftMargin, y, pageWidth - rightMargin, y);
+
+                doc.addPage();
+                y = topMargin;
+
+                doc.setFont("times", "bold").setFontSize(10).setTextColor(0);
+                doc.text("ENGINEER REMARKS", leftMargin, y);
+                y += 8;
+
+                const tableHeaders = ["Sr. No.", "Service/Spares", "Part No.", "Rate", "Quantity", "PO No."];
+                const colWidths = [20, 60, 25, 25, 25, 25];
+                let x = leftMargin;
+
+                tableHeaders.forEach((header, i) => {
+                    doc.rect(x, y, colWidths[i], 8);
+                    doc.text(header, x + 2, y + 6);
+                    x += colWidths[i];
                 });
 
-                if (err.response?.status === 401) {
-                    errorMessage = "Please login again to download the service.";
-                } else if (err.response?.status === 404) {
-                    errorMessage = "Service not found.";
-                } else if (!navigator.onLine) {
-                    errorMessage = "No internet connection. Please check your network.";
-                }
-            }
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive",
-            });
-        } finally {
-            setIsDownloading(null);
-        }
+                y += 8;
+
+                const engineerRemarks = (service as any).engineerRemarks || [];
+
+                engineerRemarks.forEach((item: any, index: number) => {
+                    x = leftMargin;
+                    const values = [
+                        String(index + 1),
+                        item.serviceSpares || "",
+                        item.partNo || "",
+                        item.rate || "",
+                        item.quantity || "",
+                        item.poNo || ""
+                    ];
+                    values.forEach((val, i) => {
+                        doc.rect(x, y, colWidths[i], 8);
+                        doc.text(val, x + 2, y + 6);
+                        x += colWidths[i];
+                    });
+                    y += 8;
+
+                    if (y + 20 > pageHeight) {
+                        doc.addPage();
+                        y = topMargin;
+                    }
+                });
+
+                y += 10;
+                doc.setFont("times", "normal");
+                doc.text("Service Engineer", pageWidth - rightMargin - 40, y);
+                doc.text(service.serviceEngineer || "", pageWidth - rightMargin - 40, y + 5);
+
+                const now = new Date();
+                const pad = (n: number) => n.toString().padStart(2, "0");
+                const date = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`;
+                const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+                const printDateTime = `${date} ${time}`;
+                doc.setFontSize(9).setTextColor(100);
+                doc.text(`Report Generated On: ${printDateTime}`, leftMargin, pageHeight - 10);
+
+                doc.save(`service-${service.reportNo || service._id}.pdf`);
+            };
+
+            infoImage.onerror = () => {
+                console.error("Failed to load company info image.");
+                alert("Company info image not found. Please check the path.");
+            };
+        };
+
+        logo.onerror = () => {
+            console.error("Failed to load logo image.");
+            alert("Logo image not found. Please check the path.");
+        };
     };
 
     const onNextPage = React.useCallback(() => {
@@ -400,8 +472,8 @@ export default function AdminServiceTable() {
             console.log("Delete response:", response.data);
 
             toast({
-                title: "Service report Deleted",
-                description: "The service report has been successfully deleted",
+                title: "Service Deleted",
+                description: "Service successfully deleted",
                 variant: "default",
             });
             await fetchServices();
@@ -454,16 +526,20 @@ export default function AdminServiceTable() {
         if (columnKey === "actions") {
             return (
                 <div className="relative flex items-center gap-2">
-                    <Tooltip color="danger" >
-                        <span
+                    <Tooltip content="Download Report">
+                        <Button
+                            variant="ghost"
+                            size="sm"
                             className="text-lg text-danger cursor-pointer active:opacity-50"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                handleDownload(service._id);
-                            }}
+                            onClick={() => handleDownload(service)}
+                            disabled={isDownloading === service._id}
                         >
-                            <Download className="h-6 w-6" />
-                        </span>
+                            {isDownloading === service._id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Download className="h-6 w-6" />
+                            )}
+                        </Button>
                     </Tooltip>
                     <Tooltip color="danger" >
                         <span

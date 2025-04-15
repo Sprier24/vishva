@@ -7,6 +7,9 @@ import {
   InfoIcon,
   CirclePlay,
   ChevronsUpDown,
+  LayoutDashboard,
+  Building2,
+  Component,
 } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
 import {
@@ -18,95 +21,95 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { usePathname } from "next/navigation";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import {LogOut} from 'lucide-react'
+import { LogOut } from 'lucide-react'
 
-  const data = {
-   NavMain: [
-      {
-        title: "Dashboard",
-        url: "#",
-        icon: CirclePlay,
-        items: [
-          {
-            title: "Dashboard",
-            url: "/admin/dashboard",
-          },
-        ],
-      },
-      {
-        title: "Company Details",
-        url: "#",
-        icon: InfoIcon,
-        items: [
-          {
-            title: "Create Company",
-            url: "/admin/companyform",
-          },
-          {
-            title: "Company Record",
-            url: "/admin/companyrecord",
-          },
-          {
-            title: "Create Contact",
-            url: "/admin/contactform",
-          },
-          {
-            title: "Contact Record",
-            url: "/admin/contactrecord",
-          },
-        ],
-      },
-      {
-        title: "User",
-        url: "#",
-        icon: CircleUser,
-        items: [
-          {
-            title: "Create User",
-            url: "/admin/userform",
-          },
-          {
-            title: "User Record",
-            url: "/admin/userrecord",
-          },
-        ],
-      },
-      {
-        title: "Documentation",
-        url: "#",
-        icon: File,
-        items: [
-          {
-            title: "Create Certificate",
-            url: "/admin/certificateform",
-          },
-          {
-            title: "Certificate Record",
-            url: "/admin/certificaterecord",
-          },
-          {
-            title: "Create Service",
-            url: "/admin/serviceform",
-          },
-          {
-            title: "Service Record",
-            url: "/admin/servicerecord",
-          },
-        ],
-      },
-      {
-        title: "Settings",
-        url: "#",
-        icon: Settings,
-        items: [
-          {
-            title: "Create Model",
-            url: "/admin/addmodel",
-          },
-        ],
-      },
-    ],
-  };
+const data = {
+  NavMain: [
+    {
+      title: "Dashboard",
+      url: "#",
+      icon: LayoutDashboard,
+      items: [
+        {
+          title: "Dashboard",
+          url: "/admin/dashboard",
+        },
+      ],
+    },
+    {
+      title: "Company Info",
+      url: "#",
+      icon: Building2,
+      items: [
+        {
+          title: "Create Company",
+          url: "/admin/companyform",
+        },
+        {
+          title: "Company Record",
+          url: "/admin/companyrecord",
+        },
+        {
+          title: "Create Contact",
+          url: "/admin/contactform",
+        },
+        {
+          title: "Contact Record",
+          url: "/admin/contactrecord",
+        },
+      ],
+    },
+    {
+      title: "User",
+      url: "#",
+      icon: CircleUser,
+      items: [
+        {
+          title: "Create User",
+          url: "/admin/userform",
+        },
+        {
+          title: "User Record",
+          url: "/admin/userrecord",
+        },
+      ],
+    },
+    {
+      title: "Documentation",
+      url: "#",
+      icon: File,
+      items: [
+        {
+          title: "Create Certificate",
+          url: "/admin/certificateform",
+        },
+        {
+          title: "Certificate Record",
+          url: "/admin/certificaterecord",
+        },
+        {
+          title: "Create Service",
+          url: "/admin/serviceform",
+        },
+        {
+          title: "Service Record",
+          url: "/admin/servicerecord",
+        },
+      ],
+    },
+    {
+      title: "Create Model",
+      url: "#",
+      icon: Component,
+      items: [
+        {
+          title: "Create Model",
+          url: "/admin/addmodel",
+        },
+      ],
+    },
+  ],
+};
 
 export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [isClient, setIsClient] = React.useState(false);
@@ -132,7 +135,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
-        setIsCollapsed(width < 80); 
+        setIsCollapsed(width < 80);
       }
     });
     observer.observe(sidebarRef.current);

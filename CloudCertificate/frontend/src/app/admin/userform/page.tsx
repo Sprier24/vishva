@@ -92,8 +92,8 @@ export default function RegisterPage() {
         setServerError(data.message || "Something went wrong.");
       } else {
         toast({
-          title: "User Created",
-          description: "The user has been successfully created.",
+          title: "User Submitted",
+          description: "The user has been successfully created",
         });
         form.reset();
       }

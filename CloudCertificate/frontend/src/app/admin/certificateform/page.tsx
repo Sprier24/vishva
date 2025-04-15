@@ -11,6 +11,7 @@ import { AdminSidebar } from "@/components/admin-sidebar";
 import { ModeToggle } from "@/components/ModeToggle";
 import { Trash2 } from "lucide-react";
 import router from "next/router";
+import { jsPDF } from "jspdf";
 
 interface Observation {
     gas: string;
@@ -122,24 +123,7 @@ export default function AddCategory() {
         const fetchCertificateData = async () => {
             const today = new Date().toISOString().split('T')[0];
 
-            if (!certificateId) {
-                setFormData({
-                    certificateNo: "",
-                    customerName: "",
-                    siteLocation: "",
-                    makeModel: "",
-                    range: "",
-                    serialNo: "",
-                    calibrationGas: "",
-                    gasCanisterDetails: "",
-                    dateOfCalibration: today,
-                    calibrationDueDate: today,
-                    observations: [{ gas: "", before: "", after: "" }],
-                    engineerName: "",
-                    status: ""
-                });
-                return;
-            }
+            if (!certificateId) return;
 
             try {
                 setLoading(true);
@@ -153,8 +137,6 @@ export default function AddCategory() {
                         }
                     }
                 );
-
-                console.log("Full API Response:", response);
 
                 if (!response.data.success) {
                     throw new Error(response.data.message || "Failed to fetch certificate");
@@ -184,22 +166,21 @@ export default function AddCategory() {
                     status: certificateData.status || ""
                 };
 
-                console.log("Transformed Data:", transformedData);
                 setFormData(transformedData);
                 setStartDate(transformedData.dateOfCalibration);
                 setEndDate(transformedData.calibrationDueDate);
-
-            }catch (error) {
+            } catch (error) {
                 const err = error as Error;
                 console.error("Error fetching certificate:", err);
                 setError(err.message || "Failed to load certificate data");
             } finally {
                 setLoading(false);
-            }            
+            }
         };
 
         fetchCertificateData();
     }, [certificateId]);
+
 
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newStartDate = e.target.value;
@@ -349,7 +330,7 @@ export default function AddCategory() {
             setCertificate(response.data);
 
             toast({
-                title: "Submitted",
+                title: "Success",
                 description: certificateId ? "Certificate updated successfully" : "Certificate generated successfully",
                 variant: "default",
             });
@@ -370,35 +351,128 @@ export default function AddCategory() {
         }
     };
 
-    const handleDownload = async () => {
-        if (!certificate?.downloadUrl) return;
+    const handleDownload = () => {
+        const logo = new Image();
+        logo.src = "/img/rps.png";
 
-        try {
-            const response = await axios.get(
-                `http://localhost:5000${certificate.downloadUrl}`,
-                {
-                    responseType: 'blob',
-                    headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-                }
-            );
+        logo.onload = () => {
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
 
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `certificate-${certificate.certificateId}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (err) {
-            console.error("Download error:", err);
-            setError("Failed to download certificate. Please try again.");
-            toast({
-                title: "Error",
-                description: "Failed to download certificate",
-                variant: "destructive",
+            const leftMargin = 15;
+            const rightMargin = 15;
+            const topMargin = 20;
+            const bottomMargin = 20;
+            const contentWidth = pageWidth - leftMargin - rightMargin;
+            let y = topMargin;
+
+            const logoWidth = 80;
+            const logoHeight = 20;
+            const logoX = leftMargin;
+            doc.addImage(logo, "PNG", logoX, y, logoWidth, logoHeight);
+
+            y += logoHeight + 10;
+            doc.setFont("times", "bold").setFontSize(16).setTextColor(0, 51, 102);
+            doc.text("CALIBRATION CERTIFICATE", pageWidth / 2, y, { align: "center" });
+
+            y += 10;
+
+            const labelX = leftMargin;
+            const labelWidth = 55;
+            const valueX = labelX + labelWidth + 2;
+            const lineGap = 8;
+
+            const addRow = (labelText: string, value: string) => {
+                doc.setFont("times", "bold").setFontSize(11).setTextColor(0);
+                doc.text(labelText, labelX, y);
+                doc.setFont("times", "normal").setTextColor(50);
+                doc.text(": " + (value || "N/A"), valueX, y);
+                y += lineGap;
+            };
+
+            addRow("Certificate No.", formData.certificateNo);
+            addRow("Customer Name", formData.customerName);
+            addRow("Site Location", formData.siteLocation);
+            addRow("Make & Model", formData.makeModel);
+            addRow("Range", formData.range);
+            addRow("Serial No.", formData.serialNo);
+            addRow("Calibration Gas", formData.calibrationGas);
+            addRow("Gas Canister Details", formData.gasCanisterDetails);
+
+            y += 5;
+            addRow("Date of Calibration", formData.dateOfCalibration);
+            addRow("Calibration Due Date", formData.calibrationDueDate);
+            addRow("Status", formData.status);
+
+            y += 5;
+            doc.setDrawColor(180);
+            doc.setLineWidth(0.3);
+            doc.line(leftMargin, y, pageWidth - rightMargin, y);
+            y += 10;
+
+            doc.setFont("times", "bold").setFontSize(12).setTextColor(0, 51, 102);
+            doc.text("OBSERVATIONS", leftMargin, y);
+            y += 10;
+
+            const colWidths = [20, 70, 40, 40];
+            const headers = ["Sr. No.", "Concentration of Gas", "Reading Before", "Reading After"];
+            let x = leftMargin;
+
+            doc.setFont("times", "bold").setFontSize(10).setTextColor(0);
+            headers.forEach((header, i) => {
+                doc.rect(x, y - 5, colWidths[i], 8);
+                doc.text(header, x + 2, y);
+                x += colWidths[i];
             });
-        }
+            y += 8;
+
+            doc.setFont("times", "normal").setFontSize(10);
+            formData.observations.forEach((obs, index) => {
+                let x = leftMargin;
+                const rowY = y + index * 8;
+
+                const rowData = [
+                    `${index + 1}`,
+                    obs.gas || "",
+                    obs.before || "",
+                    obs.after || ""
+                ];
+
+                rowData.forEach((text, colIndex) => {
+                    doc.rect(x, rowY - 6, colWidths[colIndex], 8);
+                    doc.text(text, x + 2, rowY);
+                    x += colWidths[colIndex];
+                });
+            });
+
+            y += formData.observations.length * 8 + 15;
+
+            const conclusion = "The above-mentioned Gas Detector was calibrated successfully, and the result confirms that the performance of the instrument is within acceptable limits.";
+            doc.setFont("times", "normal").setFontSize(10).setTextColor(0);
+            const conclusionLines = doc.splitTextToSize(conclusion, contentWidth);
+            doc.text(conclusionLines, leftMargin, y);
+            y += conclusionLines.length * 6 + 15;
+
+            doc.setFont("times", "bold");
+            doc.text("Tested & Calibrated By", pageWidth - rightMargin, y, { align: "right" });
+            doc.setFont("times", "normal");
+            doc.text(formData.engineerName || "________________", pageWidth - rightMargin, y + 10, { align: "right" });
+
+            doc.setDrawColor(180);
+            doc.line(leftMargin, pageHeight - bottomMargin - 10, pageWidth - rightMargin, pageHeight - bottomMargin - 10);
+
+            doc.setFontSize(8).setTextColor(100);
+            doc.text("This certificate is electronically generated and does not require a physical signature.", leftMargin, pageHeight - bottomMargin - 5);
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, leftMargin, pageHeight - bottomMargin);
+
+            doc.save("calibration-certificate.pdf");
+        };
+
+        logo.onerror = () => {
+            console.error("Failed to load logo image.");
+            alert("Logo image not found. Please check the path.");
+        };
     };
 
     if (loading && certificateId) {
