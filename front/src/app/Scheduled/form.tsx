@@ -17,8 +17,8 @@ const eventSchema = z.object({
   assignedUser: z.string().optional(),
   location: z.string().optional(),
   customer: z.string().optional(),
-  eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "Follow-Up", "follow-up"], { message: "Required" }),
-  recurrence: z.enum(["one-time", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
+  eventType: z.enum(["call", "Call", "Meeting", "meeting", "Demo", "demo", "FollowUp", "follow-up"], { message: "Required" }),
+  recurrence: z.enum(["OneTime", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
   status: z.enum(["Scheduled", "Completed", "Cancelled", "Postpone"], { message: "Required" }),
   priority: z.enum(["Low", "low", "Medium", "medium", "High", "high"], { message: "Required" }),
   date: z.date().optional(),
@@ -39,7 +39,7 @@ export default function ScheduledEventForm() {
       eventType: "call",
       priority: "Medium",
       description: "",
-      recurrence: "one-time",
+      recurrence: "OneTime",
       date: new Date(),
     },
   });
@@ -152,7 +152,7 @@ export default function ScheduledEventForm() {
                     <option value="call">Call</option>
                     <option value="Meeting">Meeting</option>
                     <option value="Demo">Demo</option>
-                    <option value="Follow-Up">Follow Up</option>
+                    <option value="FollowUp">Follow Up</option>
                   </select>
                 </FormControl>
                 <FormMessage />
@@ -244,8 +244,8 @@ export default function ScheduledEventForm() {
                   onChange={(e) => field.onChange(new Date(e.target.value))}
                   className="w-full p-3 border border-gray-400 rounded-md text-black custom-input cursor-pointer"
                   required
-              />
-              <style>
+                />
+                <style>
                   {`
               .custom-input:focus {
                   border-color: black !important;
@@ -253,7 +253,7 @@ export default function ScheduledEventForm() {
                   outline: none !important;
               }
               `}
-              </style>
+                </style>
               </div>
             )}
           />

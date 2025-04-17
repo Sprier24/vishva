@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import Image from "next/image";
 
 type File = {
   _id: string;
@@ -25,7 +26,7 @@ const GoogleDriveClone = () => {
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
   const getFileImage = (fileName: string) => {
-    const extension = fileName.split(".").pop()?.toLowerCase(); // Extract file extension
+    const extension = fileName.split(".").pop()?.toLowerCase(); 
 
     switch (extension) {
       case "pdf":
@@ -181,12 +182,6 @@ const GoogleDriveClone = () => {
     }
   };
 
-  const handleClickOutside = (e: React.MouseEvent) => {
-    if (modalBackdropRef.current && !modalRef.current?.contains(e.target as Node)) {
-      setSelectedFile(null);
-    }
-  };
-
   return (
     <div className="google-drive-clone flex flex-col md:flex-row h-[90vh] bg-gray-100 border border-gray-300 shadow-[0_4px_10px_rgba(0,0,0,0.4)] p-4">
       <div className="sidebar w-full md:w-64 p-4 bg-white border-r border-gray-200">
@@ -245,6 +240,10 @@ const GoogleDriveClone = () => {
         >
           Upload
         </button>
+
+        <div className="file-count mt-4 p-4 bg-gray-100 border border-gray-300 rounded-md shadow-md text-sm text-gray-600">
+          Total: {filteredFoldersAndFiles.length} {filter === 'all' ? 'files' : filter === 'file' ? 'files' : 'images'}
+        </div>
       </div>
 
       <div className="main-content flex-1 p-6 bg-gray-60 overflow-y-auto scrollbar-hide">
@@ -266,10 +265,12 @@ const GoogleDriveClone = () => {
               >
                 {item.fileType === 'image' ? (
                   <div className="flex flex-col items-center">
-                    <img
+                    <Image
                       src={`http://localhost:8000/uploads/${item.fileUrl}`}
                       alt={item.name}
                       className="w-32 h-32 object-cover mb-2 rounded-md"
+                      width={200}
+                      height={200}
                     />
                     <p className="text-gray-900 text-center max-w-full overflow-hidden text-ellipsis">
                       {item.name}
@@ -285,10 +286,12 @@ const GoogleDriveClone = () => {
                   </video>
                 ) : (
                   <div className="flex flex-col items-center">
-                    <img
+                    <Image
                       src={getFileImage(item.name)}
                       alt={item.name}
                       className="w-20 h-20 object-contain mb-2"
+                      width={200}
+                      height={200}
                     />
                     <p className="text-gray-900 text-center max-w-full overflow-hidden text-ellipsis mt-2">
                       {item.name}
@@ -313,10 +316,12 @@ const GoogleDriveClone = () => {
 
             <div className="mb-4">
               {selectedFile.fileType === "image" ? (
-                <img
+                <Image
                   src={`http://localhost:8000/uploads/${selectedFile.fileUrl}`}
                   alt={selectedFile.name}
                   className="w-full max-h-[80vh] object-contain rounded-md"
+                  width={200}
+                  height={200}
                 />
               ) : selectedFile.fileType === "video" ? (
                 <video
@@ -328,10 +333,12 @@ const GoogleDriveClone = () => {
                 </video>
               ) : (
                 <div className="text-black text-center mb-2 flex flex-col items-center">
-                  <img
+                  <Image
                     src={getFileImage(selectedFile?.name)}
                     alt={selectedFile?.name}
                     className="w-20 h-20 object-contain mb-2"
+                    width={200}
+                    height={200}
                   />
                   <h3 className="truncate">{selectedFile?.name}</h3>
                 </div>
@@ -353,7 +360,7 @@ const GoogleDriveClone = () => {
                 Delete
               </button>
               <button
-                onClick={handleModalClose} 
+                onClick={handleModalClose}
                 className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition duration-200"
               >
                 Close
@@ -377,9 +384,10 @@ const GoogleDriveClone = () => {
           }}
         >
           <DialogHeader>
-            <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+            <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
             <DialogDescription className="text-sm xs:text-xs">
-              Are you sure you want to delete this file? This action cannot be undone.
+              Are you sure you want to delete this file?
+              The data won&apos;t be retrieved again.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-4 mt-4">

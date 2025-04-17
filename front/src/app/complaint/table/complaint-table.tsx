@@ -35,10 +35,10 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0'); 
-    const month = String(date.getMonth() + 1).padStart(2, '0');  
-    const year = date.getFullYear();  
-    return `${day}/${month}/${year}`; 
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 };
 
 const columns = [
@@ -53,12 +53,13 @@ const columns = [
         uid: "date",
         sortable: true,
         width: "150px",
-        render: (row: any) => formatDate(row.date),
+        render: (row: Complaint) => formatDate(row.date),
     },
     { name: "Priority", uid: "priority", sortable: true, width: "100px" },
     { name: "Case Status", uid: "caseStatus", sortable: true, width: "100px" },
     { name: "Action", uid: "actions", sortable: true, width: "100px" },
 ];
+
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "complainerName", "contactNumber", "emailAddress", "subject", "date", "caseStatus", "priority", "caseOrigin", "actions"];
 
 const complaintSchema = z.object({
@@ -76,10 +77,9 @@ const complaintSchema = z.object({
 export default function ComplaintTable() {
     const [complaints, setComplaints] = useState<Complaint[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
 
-    const fetchComplaints = async () => {
+    const fetchComplaints = React.useCallback(async () => {
         try {
             const response = await axios.get(
                 "http://localhost:8000/api/v1/complaint/getAllComplaints"
@@ -114,11 +114,11 @@ export default function ComplaintTable() {
             }
             setComplaints([]);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchComplaints();
-    }, []);
+    }, [fetchComplaints]);
 
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -148,7 +148,7 @@ export default function ComplaintTable() {
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; 
+        if (visibleColumns.size === columns.length) return columns;
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
@@ -173,7 +173,7 @@ export default function ComplaintTable() {
             });
         }
         return filteredComplaints;
-    }, [complaints, filterValue]);
+    }, [complaints, filterValue, hasSearchFilter]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -195,7 +195,7 @@ export default function ComplaintTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedcomplaint, setSelectedcomplaint] = useState<Complaint | null>(null);
 
-    const handleEditClick = (complaint: Complaint) => {
+    const handleEditClick = React.useCallback((complaint: Complaint) => {
         setSelectedcomplaint(complaint);
         form.reset({
             companyName: complaint.companyName,
@@ -209,14 +209,14 @@ export default function ComplaintTable() {
             caseOrigin: complaint.caseOrigin,
         });
         setIsEditOpen(true);
-    };
+    }, [form]);
 
-    const handleDeleteClick = (complaint: Complaint) => {
+    const handleDeleteClick = React.useCallback((complaint: Complaint) => {
         setSelectedcomplaint(complaint);
         setIsDeleteDialogOpen(true);
-    };
+    }, []);
 
-    const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = React.useCallback(async () => {
         if (!selectedcomplaint?._id) return;
         try {
             const response = await fetch(`http://localhost:8000/api/v1/complaint/deleteComplaint/${selectedcomplaint._id}`, {
@@ -227,8 +227,8 @@ export default function ComplaintTable() {
                 throw new Error(errorData.message || "Failed to delete deal");
             }
             toast({
-                title: "deal Deleted",
-                description: "The deal has been successfully deleted.",
+                title: "Complaint Deleted",
+                description: "The complaint has been successfully deleted",
             });
             fetchComplaints();
         } catch (error) {
@@ -241,7 +241,7 @@ export default function ComplaintTable() {
             setIsDeleteDialogOpen(false);
             setSelectedcomplaint(null);
         }
-    };
+    }, [selectedcomplaint, fetchComplaints]);
 
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -308,7 +308,7 @@ export default function ComplaintTable() {
             );
         }
         return cellValue;
-    }, []);
+    }, [handleEditClick, handleDeleteClick]);
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -325,15 +325,6 @@ export default function ComplaintTable() {
     const onRowsPerPageChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         setRowsPerPage(Number(e.target.value));
         setPage(1);
-    }, []);
-
-    const onSearchChange = React.useCallback((value: string) => {
-        if (value) {
-            setFilterValue(value);
-            setPage(1);
-        } else {
-            setFilterValue("");
-        }
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -416,7 +407,7 @@ export default function ComplaintTable() {
                 </div>
             </div>
         );
-    }, [filterValue, visibleColumns, onRowsPerPageChange, complaints.length, onSearchChange]);
+    }, [filterValue, visibleColumns, onRowsPerPageChange, complaints.length, router]);
 
     const bottomContent = React.useMemo(() => {
         return (
@@ -455,7 +446,7 @@ export default function ComplaintTable() {
                 </div>
             </div>
         );
-    }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+    }, [page, pages, onPreviousPage, onNextPage]);
 
     return (
         <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 max-w-screen-xl">
@@ -474,7 +465,6 @@ export default function ComplaintTable() {
                                 topContent={topContent}
                                 topContentPlacement="outside"
                                 sortDescriptor={sortDescriptor}
-                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -493,7 +483,7 @@ export default function ComplaintTable() {
                                         <TableRow key={item._id}>
                                             {(columnKey) => (
                                                 <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                                                {renderCell(item, columnKey.toString())}                                                </TableCell>
+                                                    {renderCell(item, columnKey.toString())}                                                </TableCell>
                                             )}
                                         </TableRow>
                                     )}
@@ -555,7 +545,15 @@ export default function ComplaintTable() {
                                         <FormItem>
                                             <FormLabel>Contact Number (Optional)</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Enter contact number" {...field} />
+                                                <Input
+                                                    placeholder="Enter contact number"
+                                                    type="tel"
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value.replace(/[^0-9]/g, ''); // Allow only numeric values
+                                                        field.onChange(value);
+                                                    }}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -703,9 +701,10 @@ export default function ComplaintTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                            Are you sure you want to delete this complaint?
+                            The data won&apos;t be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">
@@ -726,6 +725,7 @@ export default function ComplaintTable() {
                     </div>
                 </DialogContent>
             </Dialog>
+            {error && <div className="text-red-500 p-2">{error}</div>}
         </div>
     );
 }

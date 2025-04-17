@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
 import { Calendar1, Mail } from "lucide-react"
@@ -22,16 +22,18 @@ export default function CertificatePage() {
                         <SidebarTrigger className="-ml-1" />
                         <Separator orientation="vertical" className="mr-2 h-4" />
                         <Breadcrumb>
-                            <BreadcrumbList>
-                                <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink href="/dashboard">
-                                        Dashboard
-                                    </BreadcrumbLink>
+                            <BreadcrumbList className="flex items-center space-x-2">
+                                <BreadcrumbItem className="hidden sm:block md:block">
+                                    <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
                                 </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block" />
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage>Data</BreadcrumbPage>
+                                <BreadcrumbSeparator className="hidden sm:block md:block" />
+                                <BreadcrumbItem className="hidden sm:block md:block">
+                                    <BreadcrumbLink href="/deal/table">Deal</BreadcrumbLink>
                                 </BreadcrumbItem>
+                                <BreadcrumbSeparator className="hidden sm:block md:block" />
+                                <span className="hidden sm:block md:block">
+                                    Graph
+                                </span>
                             </BreadcrumbList>
                         </Breadcrumb>
                     </div>

@@ -59,7 +59,6 @@ const getAllDeals = async (): Promise<Deal[]> => {
 
 export default function DealBoard() {
   const [groupedDeals, setGroupedDeals] = useState<Record<string, Deal[]>>({});
-  const [error, setError] = useState("");
   const [draggedOver, setDraggedOver] = useState<string | null>(null);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,7 +76,7 @@ export default function DealBoard() {
         setGroupedDeals(grouped);
         setTotalValue(fetchedDeals.reduce((sum, deal) => sum + deal.amount, 0));
       } catch (error) {
-        setError(error instanceof Error ? error.message : "An unknown error occurred");
+        console.error("Error fetching Deals:", error);
       }
     };
     fetchDeals();

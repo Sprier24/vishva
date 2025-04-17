@@ -18,6 +18,7 @@ import SearchBar from "@/components/globalSearch";
 import Notification from "@/components/notification";
 import { Calendar1, Mail, X } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
 
 interface Lead {
   _id: string;
@@ -59,7 +60,6 @@ const getAllLeads = async (): Promise<Lead[]> => {
 
 export default function LeadBoard() {
   const [groupedLeads, setGroupedLeads] = useState<Record<string, Lead[]>>({});
-  const [error, setError] = useState("");
   const [draggedOver, setDraggedOver] = useState<string | null>(null);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,7 +78,11 @@ export default function LeadBoard() {
         setGroupedLeads(grouped);
         setTotalValue(fetchedLeads.reduce((sum, lead) => sum + lead.amount, 0));
       } catch (error) {
-        setError(error instanceof Error ? error.message : "An unknown error occurred");
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message :  "There was an error fetching leads",
+          variant: "destructive",
+      }); 
       }
     };
     fetchLeads();
@@ -208,8 +212,6 @@ export default function LeadBoard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
             {Object.keys(statusColors).map((status) => {
               const leads = groupedLeads[status] || [];
-              const statusTotal = leads.reduce((sum, lead) => sum + lead.amount, 0);
-              const percentage = totalValue > 0 ? (statusTotal / totalValue) * 100 : 0;
               return (
                 <div
                   key={status}

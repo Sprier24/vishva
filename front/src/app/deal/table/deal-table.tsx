@@ -64,7 +64,7 @@ const contactSchema = z.object({
         .nonempty({ message: "Required" }),
     emailAddress: z.string().email({ message: "Required" }),
     address: z.string().nonempty({ message: "Required" }),
-    gstNumber: z.string().nonempty({ message: "Required" }),
+    gstNumber: z.string().optional(),
     description: z.string().optional(),
 });
 
@@ -74,10 +74,10 @@ const generateUniqueId = () => {
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');  
-    const month = String(date.getMonth() + 1).padStart(2, '0');  
-    const year = date.getFullYear();  
-    return `${day}/${month}/${year}`; 
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 };
 
 const columns = [
@@ -94,7 +94,7 @@ const columns = [
         uid: "date",
         sortable: true,
         width: "170px",
-        render: (row: any) => formatDate(row.date),
+        render: (row: Deal) => formatDate(row.date),
     }
     ,
     {
@@ -102,7 +102,7 @@ const columns = [
         uid: "endDate",
         sortable: true,
         width: "120px",
-        render: (row: any) => formatDate(row.endDate)
+        render: (row: Deal) => formatDate(row.endDate)
     },
     {
         name: "Notes",
@@ -126,7 +126,7 @@ const formSchema = z.object({
     address: z.string().nonempty({ message: "Required" }),
     productName: z.string().nonempty({ message: "Required" }),
     amount: z.number().positive({ message: "Required" }),
-    gstNumber: z.string().nonempty({ message: "Required" }),
+    gstNumber: z.string().optional(),
     status: z.enum(["Proposal", "New", "Discussion", "Demo", "Decided"]),
     date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
     endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
@@ -137,13 +137,12 @@ const formSchema = z.object({
 export default function DealTable() {
     const [Deals, setDeals] = useState<Deal[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
     const [isContactFormVisible, setIsContactFormVisible] = useState(false);
     const [isInvoiceFormVisible, setIsInvoiceFormVisible] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const fetchdeal = async () => {
+    const fetchdeal = React.useCallback(async () => {
         try {
             const response = await axios.get(
                 'http://localhost:8000/api/v1/deal/getAllDeals'
@@ -178,11 +177,11 @@ export default function DealTable() {
             }
             setDeals([]);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchdeal();
-    }, []);
+    }, [fetchdeal]);
 
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -248,20 +247,20 @@ export default function DealTable() {
         }
     })
 
-    const handleAddContactClick = (deal: Deal) => {
+    const handleAddContactClick = React.useCallback((deal: Deal) => {
         setIsContactFormVisible(true);
         contactform.reset({
             companyName: deal.companyName,
             customerName: deal.customerName,
-            contactNumber: deal.contactNumber || "", 
+            contactNumber: deal.contactNumber || "",
             emailAddress: deal.emailAddress,
             address: deal.address,
-            gstNumber: deal.gstNumber, 
-            description: "", 
+            gstNumber: deal.gstNumber,
+            description: "",
         });
-    };
+    }, [contactform]);
 
-    const handleAddInvoice = (deal: Deal) => {
+    const handleAddInvoice = React.useCallback((deal: Deal) => {
         setIsInvoiceFormVisible(true);
         invoiceform.reset({
             companyName: deal.companyName,
@@ -281,7 +280,7 @@ export default function DealTable() {
             paidAmount: 0,
             remainingAmount: 0,
         });
-    };
+    }, [invoiceform]);
 
     const handleInvoiceSubmit = async (values: z.infer<typeof invoiceSchema>) => {
         try {
@@ -308,7 +307,7 @@ export default function DealTable() {
                 invoiceData
             );
             toast({
-                title: "Invoice Created",
+                title: "Invoice Submmited",
                 description: "The invoice has been successfully created",
             });
             setIsInvoiceFormVisible(false);
@@ -391,7 +390,7 @@ export default function DealTable() {
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; 
+        if (visibleColumns.size === columns.length) return columns;
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
@@ -419,7 +418,7 @@ export default function DealTable() {
             });
         }
         return filteredDeals;
-    }, [Deals, filterValue]);
+    }, [Deals, filterValue, hasSearchFilter]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -441,7 +440,7 @@ export default function DealTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
 
-    const handleEditClick = (Deals: Deal) => {
+    const handleEditClick = React.useCallback((Deals: Deal) => {
         setSelectedDeal(Deals);
         form.reset({
             companyName: Deals.companyName,
@@ -459,13 +458,14 @@ export default function DealTable() {
             isActive: Deals.isActive === "true",
         });
         setIsEditOpen(true);
-    };
-    const handleDeleteClick = (Deals: Deal) => {
+    }, [form]);
+
+    const handleDeleteClick = React.useCallback((Deals: Deal) => {
         setSelectedDeal(Deals);
         setIsDeleteDialogOpen(true);
-    };
+    }, []);
 
-    const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = React.useCallback(async () => {
         if (!selectedDeal?._id) return;
         try {
             const response = await fetch(`http://localhost:8000/api/v1/deal/deleteDeal/${selectedDeal._id}`, {
@@ -490,7 +490,7 @@ export default function DealTable() {
             setIsDeleteDialogOpen(false);
             setSelectedDeal(null);
         }
-    };
+    }, [selectedDeal,fetchdeal]);
 
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -531,6 +531,9 @@ export default function DealTable() {
         const cellValue = Deals[columnKey as keyof Deal];
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
             return formatDate(cellValue);
+        }
+        if (columnKey === "gstNumber") {
+            return cellValue || "N/A";
         }
         if (columnKey === "notes") {
             return cellValue || "N/A";
@@ -574,7 +577,7 @@ export default function DealTable() {
             );
         }
         return cellValue;
-    }, []);
+    }, [handleAddContactClick, handleAddInvoice, handleDeleteClick, handleEditClick]);
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -593,15 +596,6 @@ export default function DealTable() {
         setPage(1);
     }, []);
 
-    const onSearchChange = React.useCallback((value: string) => {
-        if (value) {
-            setFilterValue(value);
-            setPage(1);
-        } else {
-            setFilterValue("");
-        }
-    }, []);
-
     const topContent = React.useMemo(() => {
         return (
             <div className="flex flex-col gap-4">
@@ -609,7 +603,7 @@ export default function DealTable() {
                     <div className="relative w-full sm:max-w-[20%]">
                         <Input
                             isClearable
-                            className="w-full pr-12 sm:pr-14 pl-12" 
+                            className="w-full pr-12 sm:pr-14 pl-12"
                             startContent={
                                 <SearchIcon className="h-4 w-5 text-muted-foreground absolute left-3 top-1/2 transform -translate-y-1/2" />
                             }
@@ -682,7 +676,7 @@ export default function DealTable() {
                 </div>
             </div>
         );
-    }, [filterValue, visibleColumns, onRowsPerPageChange, Deals.length, onSearchChange]);
+    }, [filterValue, visibleColumns, onRowsPerPageChange, Deals.length, router]);
 
     const bottomContent = React.useMemo(() => {
         return (
@@ -721,7 +715,7 @@ export default function DealTable() {
                 </div>
             </div>
         );
-    }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+    }, [page, pages, onPreviousPage, onNextPage]);
 
     return (
         <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 max-w-screen-xl">
@@ -740,7 +734,6 @@ export default function DealTable() {
                                 topContent={topContent}
                                 topContentPlacement="outside"
                                 sortDescriptor={sortDescriptor}
-                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -782,9 +775,10 @@ export default function DealTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                            Are you sure you want to delete this deal?
+                            The data won&apos;t be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">
@@ -940,7 +934,7 @@ export default function DealTable() {
                                     name="gstNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Number</FormLabel>
+                                            <FormLabel>GST Number (Optional)</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="Enter GST number" {...field} />
                                             </FormControl>
@@ -1124,9 +1118,13 @@ export default function DealTable() {
                                             <FormLabel>Contact Number</FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    className="w-full"
                                                     placeholder="Enter contact number"
+                                                    type="tel"
                                                     {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value.replace(/[^0-9]/g, '');
+                                                        field.onChange(value);
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -1174,7 +1172,7 @@ export default function DealTable() {
                                     name="gstNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Number</FormLabel>
+                                            <FormLabel>GST Number (Optional)</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     className="w-full"
@@ -1279,7 +1277,12 @@ export default function DealTable() {
                                             <FormControl>
                                                 <Input
                                                     placeholder="Enter contact number"
+                                                    type="tel"
                                                     {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value.replace(/[^0-9]/g, '');
+                                                        field.onChange(value);
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -1531,6 +1534,7 @@ export default function DealTable() {
                     </Form>
                 </DialogContent>
             </Dialog>
+            {error && <div className="text-red-500 p-2">{error}</div>}
         </div>
     );
 }

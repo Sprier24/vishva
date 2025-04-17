@@ -2,6 +2,15 @@
 
 import { createClient } from "@libsql/client"
 
+interface User {
+  _id?: string;
+  name?: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  verificationCode: string;
+}
+
 const client = createClient({
   url: process.env.TURSO_CONNECTION_URL!,
   authToken: process.env.TURSO_AUTH_TOKEN!,
@@ -25,7 +34,7 @@ export async function authenticate(formData: FormData) {
       return { error: "Invalid credentials" }
     }
 
-    const user = result.rows[0] as any
+    const user = result.rows[0] as unknown as User
 
     if (user.password !== password) {
       return { error: "Invalid credentials" }

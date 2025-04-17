@@ -65,16 +65,16 @@ const contactSchema = z.object({
         .nonempty({ message: "Required" }),
     emailAddress: z.string().email({ message: "Required" }),
     address: z.string().nonempty({ message: "Required" }),
-    gstNumber: z.string().nonempty({ message: "Required" }),
+    gstNumber: z.string().optional(),
     description: z.string().optional(),
 });
 
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0');  
-    const month = String(date.getMonth() + 1).padStart(2, '0');  
-    const year = date.getFullYear();  
-    return `${day}/${month}/${year}`;  
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 };
 
 const generateUniqueId = () => {
@@ -95,14 +95,14 @@ const columns = [
         uid: "date",
         sortable: true,
         width: "170px",
-        render: (row: any) => formatDate(row.date),
+        render: (row: Lead) => formatDate(row.date),
     },
     {
         name: "Final Date",
         uid: "endDate",
         sortable: true,
         width: "120px",
-        render: (row: any) => formatDate(row.endDate)
+        render: (row: Lead) => formatDate(row.endDate)
     },
     {
         name: "Notes",
@@ -137,7 +137,6 @@ const formSchema = z.object({
 export default function LeadTable() {
     const [leads, setLeads] = useState<Lead[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const [isContactFormVisible, setIsContactFormVisible] = useState(false);
     const [isInvoiceFormVisible, setIsInvoiceFormVisible] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -254,20 +253,20 @@ export default function LeadTable() {
         }
     })
 
-    const handleAddContactClick = (lead: Lead) => {
+    const handleAddContactClick = React.useCallback((lead: Lead) => {
         setIsContactFormVisible(true);
         contactform.reset({
             companyName: lead.companyName,
             customerName: lead.customerName,
-            contactNumber: lead.contactNumber || "", 
+            contactNumber: lead.contactNumber || "",
             emailAddress: lead.emailAddress,
             address: lead.address,
-            gstNumber: lead.gstNumber, 
-            description: "", 
+            gstNumber: lead.gstNumber,
+            description: "",
         });
-    };
+    }, [contactform]);
 
-    const handleAddInvoice = (lead: Lead) => {
+    const handleAddInvoice = React.useCallback((lead: Lead) => {
         setIsInvoiceFormVisible(true);
         invoiceform.reset({
             companyName: lead.companyName,
@@ -287,7 +286,7 @@ export default function LeadTable() {
             paidAmount: 0,
             remainingAmount: 0,
         });
-    };
+    }, [invoiceform]);
 
     const handleInvoiceSubmit = async (values: z.infer<typeof invoiceSchema>) => {
         try {
@@ -314,7 +313,7 @@ export default function LeadTable() {
                 invoiceData
             );
             toast({
-                title: "Invoice Created",
+                title: "Invoice Submitted",
                 description: "The invoice has been successfully created",
             });
             setIsInvoiceFormVisible(false);
@@ -372,7 +371,7 @@ export default function LeadTable() {
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; 
+        if (visibleColumns.size === columns.length) return columns;
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
@@ -402,7 +401,7 @@ export default function LeadTable() {
             });
         }
         return filteredLeads;
-    }, [leads, filterValue]);
+    }, [leads, filterValue, hasSearchFilter]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -426,7 +425,7 @@ export default function LeadTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
-    const handleEditClick = (lead: Lead) => {
+    const handleEditClick = React.useCallback((lead: Lead) => {
         setSelectedLead(lead);
         form.reset({
             companyName: lead.companyName,
@@ -444,14 +443,14 @@ export default function LeadTable() {
             isActive: lead.isActive === "true",
         });
         setIsEditOpen(true);
-    };
+    }, [form]);
 
-    const handleDeleteClick = async (lead: Lead) => {
+    const handleDeleteClick = React.useCallback(async (lead: Lead) => {
         setSelectedLead(lead);
         setIsDeleteDialogOpen(true);
-    };
+    }, []);
 
-    const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = React.useCallback(async () => {
         if (!selectedLead?._id) return;
         try {
             const response = await fetch(`http://localhost:8000/api/v1/lead/deleteLead/${selectedLead._id}`, {
@@ -463,7 +462,7 @@ export default function LeadTable() {
             }
             toast({
                 title: "Lead Deleted",
-                description: "The lead has been successfully deleted.",
+                description: "The lead has been successfully deleted",
             });
             fetchLeads();
         } catch (error) {
@@ -476,7 +475,7 @@ export default function LeadTable() {
             setIsDeleteDialogOpen(false);
             setSelectedLead(null);
         }
-    };
+    }, [selectedLead,]);
 
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -592,7 +591,7 @@ export default function LeadTable() {
             );
         }
         return cellValue;
-    }, []);
+    }, [handleAddContactClick, handleAddInvoice, handleDeleteClick, handleEditClick]);
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -609,15 +608,6 @@ export default function LeadTable() {
     const onRowsPerPageChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         setRowsPerPage(Number(e.target.value));
         setPage(1);
-    }, []);
-
-    const onSearchChange = React.useCallback((value: string) => {
-        if (value) {
-            setFilterValue(value);
-            setPage(1);
-        } else {
-            setFilterValue("");
-        }
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -701,7 +691,7 @@ export default function LeadTable() {
                 </div>
             </div>
         );
-    }, [filterValue, visibleColumns, onRowsPerPageChange, leads.length, onSearchChange]);
+    }, [filterValue, visibleColumns, onRowsPerPageChange, leads.length, router]);
 
     const bottomContent = React.useMemo(() => {
         return (
@@ -740,7 +730,7 @@ export default function LeadTable() {
                 </div>
             </div>
         );
-    }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+    }, [page, pages, onPreviousPage, onNextPage]);
 
     return (
         <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 max-w-screen-xl">
@@ -759,7 +749,6 @@ export default function LeadTable() {
                                 topContent={topContent}
                                 topContentPlacement="outside"
                                 sortDescriptor={sortDescriptor}
-                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -851,9 +840,13 @@ export default function LeadTable() {
                                             <FormLabel>Contact Number</FormLabel>
                                             <FormControl>
                                                 <Input
-                                                    className="w-full"
                                                     placeholder="Enter contact number"
+                                                    type="tel"
                                                     {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value.replace(/[^0-9]/g, '');
+                                                        field.onChange(value);
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -901,7 +894,7 @@ export default function LeadTable() {
                                     name="gstNumber"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>GST Number</FormLabel>
+                                            <FormLabel>GST Number (Optional)</FormLabel>
                                             <FormControl>
                                                 <Input
                                                     className="w-full"
@@ -1007,7 +1000,12 @@ export default function LeadTable() {
                                             <FormControl>
                                                 <Input
                                                     placeholder="Enter contact number"
+                                                    type="tel"
                                                     {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value.replace(/[^0-9]/g, '');
+                                                        field.onChange(value);
+                                                    }}
                                                 />
                                             </FormControl>
                                             <FormMessage />
@@ -1529,9 +1527,10 @@ export default function LeadTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                            Are you sure you want to delete this lead?
+                            The data won&apos;t be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">
@@ -1552,6 +1551,7 @@ export default function LeadTable() {
                     </div>
                 </DialogContent>
             </Dialog>
+            {error && <div className="text-red-500 p-2">{error}</div>}
         </div>
     );
 }

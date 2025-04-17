@@ -12,7 +12,6 @@ interface SearchResult {
 const SearchBar = () => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const handleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
@@ -20,7 +19,6 @@ const SearchBar = () => {
       setResults(null);
       return;
     }
-    setLoading(true);
 
     try {
       const { data } = await axios.get<SearchResult>(`http://localhost:8000/api/v1/search?q=${e.target.value}`);
@@ -29,7 +27,6 @@ const SearchBar = () => {
       console.error("Search error:", error);
     }
 
-    setLoading(false);
   };
 
   return (

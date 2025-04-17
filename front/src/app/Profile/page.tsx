@@ -1,4 +1,6 @@
 'use client';
+
+import Image from "next/image";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -43,7 +45,6 @@ const NewProfile: React.FC = () => {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [isGoogleUser, setIsGoogleUser] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -95,7 +96,7 @@ const NewProfile: React.FC = () => {
         });
         router.push('/login');
       } finally {
-        setIsLoading(false);
+        setIsRedirecting(false);
       }
     };
 
@@ -225,10 +226,12 @@ const NewProfile: React.FC = () => {
               <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between mb-6 w-full">
                 <div className="text-center">
                   <label htmlFor="logo">
-                    <img
+                    <Image
                       src={logoPreview || 'https://via.placeholder.com/80'}
                       className="w-20 h-20 rounded-full border border-gray-300 mx-auto"
                       alt=""
+                      width={80}
+                      height={80}
                     />
                   </label>
                   <input
@@ -492,7 +495,3 @@ const NewProfile: React.FC = () => {
 };
 
 export default NewProfile;
-
-function setIsLoading(arg0: boolean) {
-  throw new Error('Function not implemented.');
-}

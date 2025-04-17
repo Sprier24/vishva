@@ -61,13 +61,6 @@ const generateUniqueId = () => {
     return Math.random().toString(36).substring(2) + Date.now().toString(36);
 };
 
-const formatDate = (date: any) => {
-    if (!date) return "N/A"; 
-    const parsedDate = new Date(date);
-    if (isNaN(parsedDate.getTime())) return "Invalid Date";
-    return parsedDate.toLocaleDateString("en-GB"); 
-};
-
 const columns = [
     { name: "Company Name", uid: "companyName", sortable: true },
     { name: "Client / Customer Name", uid: "customerName", sortable: true },
@@ -85,11 +78,10 @@ const columns = [
         name: "Invoice Date",
         uid: "date",
         sortable: true,
-        render: (row: any) => formatDate(row.date)
+        render: (row: Invoice) => (row.date)
     },
     { name: "Paid Amount", uid: "paidAmount", sortable: true },
     { name: "Remaining Amount", uid: "remainingAmount", sortable: true },
-    { name: "Status", uid: "status", sortable: true },
 ];
 
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "contactNumber", "emailAddress", "address", "gstNumber", "productName", "amount", "discount", "gstRate", "status", "date", "endDate", "totalWithoutGst", "totalWithGst", "paidAmount", "remainingAmount"];
@@ -99,12 +91,10 @@ const formSchema = invoiceSchema;
 export default function InvoiceTable() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-    const fetchInvoices = async () => {
-        setIsLoading(true);
+    const fetchInvoices = React.useCallback(async () => {
         try {
             const response = await axios.get(
                 "http://localhost:8000/api/v1/invoice/getUnpaidInvoices"
@@ -143,14 +133,13 @@ export default function InvoiceTable() {
             }
             setInvoices([]);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchInvoices();
-    }, []);
+    }, [fetchInvoices]);
 
     const [filterValue, setFilterValue] = useState("");
-    const [selectedKeys, setSelectedKeys] = React.useState<Set<string> | "all">(new Set());    
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
@@ -188,7 +177,6 @@ export default function InvoiceTable() {
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
-
     const filteredItems = React.useMemo(() => {
         let filteredInvoices = [...invoices];
 
@@ -219,7 +207,7 @@ export default function InvoiceTable() {
             });
         }
         return filteredInvoices;
-    }, [invoices, filterValue]);
+    }, [invoices, filterValue, hasSearchFilter]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -240,7 +228,7 @@ export default function InvoiceTable() {
         });
     }, [sortDescriptor, items]);
 
-    const handleEditClick = (invoice: Invoice) => {
+    const handleEditClick = React.useCallback((invoice: Invoice) => {
         setSelectedInvoice(invoice);
         form.reset({
             companyName: invoice.companyName,
@@ -254,16 +242,16 @@ export default function InvoiceTable() {
             discount: invoice.discount || 0,
             gstRate: invoice.gstRate || 0,
             status: invoice.status as "Unpaid" | "Paid",
-            date: invoice.date ? new Date(invoice.date) : undefined,
+            date: invoice.date ? new Date(invoice.date) : new Date(),
             totalWithoutGst: invoice.totalWithoutGst || 0,
             totalWithGst: invoice.totalWithGst || 0,
             paidAmount: invoice.paidAmount || 0,
             remainingAmount: invoice.remainingAmount || 0,
         });
         setIsEditDialogOpen(true);
-    };
+    }, [form]);
 
-    const handleDeleteClick = async (invoice: Invoice) => {
+    const handleDeleteClick = React.useCallback(async (invoice: Invoice) => {
         if (!window.confirm("Are you sure you want to delete this invoice?")) {
             return;
         }
@@ -287,13 +275,13 @@ export default function InvoiceTable() {
                 variant: "destructive",
             });
         }
-    };
+    }, [fetchInvoices]);
 
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     async function onEdit(values: z.infer<typeof formSchema>) {
         if (!selectedInvoice?._id) return;
-        setIsLoading(true);
+        setIsSubmitting(true);
         try {
             const response = await fetch(`http://localhost:8000/api/v1/invoice/updateInvoice/${selectedInvoice._id}`, {
                 method: "PUT",
@@ -320,7 +308,7 @@ export default function InvoiceTable() {
                 variant: "destructive",
             });
         } finally {
-            setIsLoading(false);
+            setIsSubmitting(false);
         }
     }
 
@@ -349,19 +337,26 @@ export default function InvoiceTable() {
                         </Tooltip>
                     </div>
                 );
-            case "date":
-                return formatDate(cellValue);
-            case "endDate":
-                return formatDate(cellValue);
             case "contactNumber":
             case "emailAddress":
             case "address":
-            case "gstNumber":
                 return cellValue ? cellValue : "N/A";
+            case "date": {
+                if (!cellValue) return "N/A";
+
+                const date = new Date(cellValue);
+                if (isNaN(date.getTime())) return "Invalid Date";
+
+                const day = String(date.getDate()).padStart(2, "0");
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const year = date.getFullYear();
+
+                return `${day}/${month}/${year}`;
+            }
             default:
                 return cellValue;
         }
-    }, []);
+    }, [handleEditClick, handleDeleteClick]);
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -378,15 +373,6 @@ export default function InvoiceTable() {
     const onRowsPerPageChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         setRowsPerPage(Number(e.target.value));
         setPage(1);
-    }, []);
-
-    const onSearchChange = React.useCallback((value: string) => {
-        if (value) {
-            setFilterValue(value);
-            setPage(1);
-        } else {
-            setFilterValue("");
-        }
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -459,7 +445,7 @@ export default function InvoiceTable() {
                 </div>
             </div>
         );
-    }, [filterValue, visibleColumns, onRowsPerPageChange, invoices.length, onSearchChange]);
+    }, [filterValue, visibleColumns, onRowsPerPageChange, invoices.length]);
 
     const bottomContent = React.useMemo(() => {
         return (
@@ -498,7 +484,7 @@ export default function InvoiceTable() {
                 </div>
             </div>
         );
-    }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+    }, [page, pages, onPreviousPage, onNextPage]);
 
     const { watch, setValue } = form;
     const amount = watch("amount") ?? 0;
@@ -538,7 +524,7 @@ export default function InvoiceTable() {
                     <div className="lg:col-span-12">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Reminder Record</h1>
-                            <h1 className="text-1xl mb-4 mt-4 text-center">Check your client / customer's due payment</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Check your client / customer&apos;s due payment</h1>
                             <Table
                                 isHeaderSticky
                                 aria-label="Leads table with custom cells, pagination and sorting"
@@ -548,7 +534,6 @@ export default function InvoiceTable() {
                                 topContent={topContent}
                                 topContentPlacement="outside"
                                 sortDescriptor={sortDescriptor}
-                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -838,6 +823,7 @@ export default function InvoiceTable() {
                     </Form>
                 </DialogContent>
             </Dialog>
+            {error && <div className="text-red-500 p-2">{error}</div>}
         </div>
     );
 }

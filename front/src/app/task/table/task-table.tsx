@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
@@ -36,12 +36,20 @@ const generateUniqueId = () => {
 const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');  
-    const year = date.getFullYear();  
-    return `${day}/${month}/${year}`;  
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
 };
 
-const columns = [
+interface Column {
+    name: string;
+    uid: string;
+    sortable: boolean;
+    width: string;
+    render?: (row: Task) => React.ReactNode;
+}
+
+const columns: Column[] = [
     { name: "Subject", uid: "subject", sortable: true, width: "120px" },
     { name: "Related To", uid: "relatedTo", sortable: true, width: "120px" },
     { name: "Name", uid: "name", sortable: true, width: "120px" },
@@ -52,14 +60,14 @@ const columns = [
         uid: "date",
         sortable: true,
         width: "170px",
-        render: (row: any) => formatDate(row.date),
+        render: (row: Task) => formatDate(row.date),
     },
     {
         name: "Due Date",
         uid: "endDate",
         sortable: true,
         width: "170px",
-        render: (row: any) => formatDate(row.date),
+        render: (row: Task) => formatDate(row.date),
     },
     { name: "Priority", uid: "priority", sortable: true, width: "100px" },
     { name: "Status", uid: "status", sortable: true, width: "100px" },
@@ -82,11 +90,9 @@ const taskSchema = z.object({
 
 export default function TaskTable() {
     const [tasks, setTasks] = useState<Task[]>([]);
-    const [error, setError] = useState<string | null>(null);
-    const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
 
-    const fetchTasks = async () => {
+    const fetchTasks = useCallback(async () => {
         try {
             const response = await axios.get(
                 "http://localhost:8000/api/v1/task/getAllTasks"
@@ -125,25 +131,31 @@ export default function TaskTable() {
             }));
 
             setTasks(TaskWithKeys);
-            setError(null);
         } catch (error) {
             console.error("Error fetching tasks:", error);
             if (axios.isAxiosError(error)) {
-                setError(`Failed to fetch tasks: ${error.response?.data?.message || error.message}`);
+                toast({
+                    title: "Error",
+                    description: `Failed to fetch tasks: ${error.response?.data?.message || error.message}`,
+                    variant: "destructive",
+                });
             } else {
-                setError("Failed to fetch tasks.");
+                toast({
+                    title: "Error",
+                    description: "Failed to fetch tasks.",
+                    variant: "destructive",
+                });
             }
             setTasks([]);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchTasks();
-    }, []);
+    }, [fetchTasks]);
 
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-    const [statusFilter, setStatusFilter] = useState("all");
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
         column: "createdAt",
@@ -162,7 +174,7 @@ export default function TaskTable() {
             relatedTo: "",
             date: new Date(),
             endDate: undefined,
-            status: "Pending",  
+            status: "Pending",
             priority: "Medium",
             notes: "",
         },
@@ -171,7 +183,7 @@ export default function TaskTable() {
     const hasSearchFilter = Boolean(filterValue);
 
     const headerColumns = React.useMemo(() => {
-        if (visibleColumns.size === columns.length) return columns; 
+        if (visibleColumns.size === columns.length) return columns;
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
 
@@ -197,14 +209,8 @@ export default function TaskTable() {
             });
         }
 
-        if (statusFilter !== "all") {
-            filteredTasks = filteredTasks.filter((task) =>
-                statusFilter === task.status
-            );
-        }
-
         return filteredTasks;
-    }, [tasks, filterValue, statusFilter]);
+    }, [tasks, filterValue, hasSearchFilter]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -214,7 +220,6 @@ export default function TaskTable() {
 
         return filteredItems.slice(start, end);
     }, [page, filteredItems, rowsPerPage]);
-
 
     const sortedItems = React.useMemo(() => {
         return [...items].sort((a, b) => {
@@ -229,7 +234,7 @@ export default function TaskTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-    const handleEditClick = (task: Task) => {
+    const handleEditClick = useCallback((task: Task) => {
         setSelectedTask(task);
         form.reset({
             name: task.name,
@@ -243,12 +248,13 @@ export default function TaskTable() {
             notes: task.notes,
         });
         setIsEditOpen(true);
-    };
+    }, [form]);
 
-    const handleDeleteClick = (task: Task) => {
+    const handleDeleteClick = useCallback((task: Task) => {
         setTaskToDelete(task);
         setIsDeleteConfirmationOpen(true);
-    };
+    }, []);
+    
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     async function onEdit(values: z.infer<typeof taskSchema>) {
@@ -286,7 +292,7 @@ export default function TaskTable() {
         }
     }
 
-    const renderCell = React.useCallback((tasks: Task, columnKey: string) => {
+    const renderCell = useCallback((tasks: Task, columnKey: string) => {
         const cellValue = tasks[columnKey as keyof Task];
 
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
@@ -320,33 +326,23 @@ export default function TaskTable() {
             );
         }
         return cellValue;
-    }, []);
+    }, [handleDeleteClick,handleEditClick,]);
 
-
-    const onNextPage = React.useCallback(() => {
+    const onNextPage = useCallback(() => {
         if (page < pages) {
             setPage(page + 1);
         }
     }, [page, pages]);
 
-    const onPreviousPage = React.useCallback(() => {
+    const onPreviousPage = useCallback(() => {
         if (page > 1) {
             setPage(page - 1);
         }
     }, [page]);
 
-    const onRowsPerPageChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const onRowsPerPageChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         setRowsPerPage(Number(e.target.value));
         setPage(1);
-    }, []);
-
-    const onSearchChange = React.useCallback((value: string) => {
-        if (value) {
-            setFilterValue(value);
-            setPage(1);
-        } else {
-            setFilterValue("");
-        }
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -430,7 +426,7 @@ export default function TaskTable() {
                 </div>
             </div>
         );
-    }, [filterValue, visibleColumns, onRowsPerPageChange, tasks.length, onSearchChange]);
+    }, [filterValue, visibleColumns, onRowsPerPageChange, tasks.length, router]);
 
     const bottomContent = React.useMemo(() => {
         return (
@@ -469,7 +465,7 @@ export default function TaskTable() {
                 </div>
             </div>
         );
-    }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+    }, [page, pages, onPreviousPage, onNextPage]);
 
     return (
         <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 max-w-screen-xl">
@@ -478,7 +474,7 @@ export default function TaskTable() {
                     <div className="lg:col-span-12">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Task Record</h1>
-                            <h1 className="text-1xl mb-4 mt-4 text-center">Create your company's activities or task here</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Create your company&apos;s activities or task here</h1>
                             <Table
                                 isHeaderSticky
                                 aria-label="Leads table with custom cells, pagination and sorting"
@@ -488,7 +484,6 @@ export default function TaskTable() {
                                 topContent={topContent}
                                 topContentPlacement="outside"
                                 sortDescriptor={sortDescriptor}
-                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -742,8 +737,8 @@ export default function TaskTable() {
                     <DialogHeader>
                         <DialogTitle>Confirm Delete</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to delete this task?,
-                            The data won't be retrieved again.
+                            Are you sure you want to delete this task?
+                            The data won&apos;t be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">

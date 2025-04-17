@@ -15,6 +15,7 @@ const accountRoutes = require("./account.routes")
 const globalRoutes =  require('./search.routes')
 const fileFolderRoutes = require("./fileFolder.routes");
 
+
 router.use("/invoice",invoiceRouts)
 router.use("/lead",leadRouts)
 router.use("/task",taskRouts)
@@ -29,5 +30,4 @@ router.use('/deal',dealRoutes);
 router.use('/account',accountRoutes);
 router.use('/search',globalRoutes);
 router.use("/file-folder", fileFolderRoutes);
-
 module.exports=router

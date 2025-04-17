@@ -134,7 +134,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   React.useEffect(() => {
     if (!sidebarRef.current) return;
     const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         const width = entry.contentRect.width;
         setIsCollapsed(width < 80); 
       }

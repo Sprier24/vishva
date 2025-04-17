@@ -308,6 +308,29 @@ const getPaidInvoices = async (req, res) => {
     }
 };
 
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+    },
+});
+
+const sendEmailReminder = async ({ to, subject = "(No Subject)", message = "(No Message)" }) => {
+    if (!to) {
+        throw new Error("Recipient email (to) is required.");
+    }
+
+    const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to,
+        subject,
+        html: message,
+    };
+
+    return transporter.sendMail(mailOptions);
+};
+
 module.exports = {
     invoiceAdd,
     updateInvoice,
@@ -316,4 +339,5 @@ module.exports = {
     getInvoiceById,
     getUnpaidInvoices,
     getPaidInvoices,
+    sendEmailReminder
 };

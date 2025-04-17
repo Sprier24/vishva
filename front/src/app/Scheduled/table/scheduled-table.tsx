@@ -1,7 +1,7 @@
 "use client";
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import {  Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
+import { Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -42,7 +42,15 @@ const formatDate = (dateString: string): string => {
     return `${day}/${month}/${year}`;
 };
 
-const columns = [
+interface Column {
+    name: string;
+    uid: string;
+    sortable: boolean;
+    width: string;
+    render?: (row: ScheduledEvents) => React.ReactNode;
+}
+
+const columns: Column[] = [
     { name: "Subject", uid: "subject", sortable: true, width: "120px" },
     { name: "Event or Meeting Location", uid: "location", sortable: true, width: "150px" },
     { name: "Hosted By", uid: "assignedUser", sortable: true, width: "120px" },
@@ -56,7 +64,7 @@ const columns = [
         uid: "date",
         sortable: true,
         width: "150px",
-        render: (row: any) => formatDate(row.date),
+        render: (row: ScheduledEvents) => formatDate(row.date),
     },
     { name: "Notes", uid: "description", sortable: true, width: "100px" },
     { name: "Action", uid: "actions", sortable: true, width: "100px" },
@@ -68,8 +76,8 @@ const eventSchema = z.object({
     assignedUser: z.string().optional(),
     location: z.string().optional(),
     customer: z.string().optional(),
-    eventType: z.enum(["Call", "Meeting", "Demo", "Follow-Up"], { message: "Required" }),
-    recurrence: z.enum(["one-time", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
+    eventType: z.enum(["Call", "Meeting", "Demo", "FollowUp"], { message: "Required" }),
+    recurrence: z.enum(["OneTime", "Daily", "Weekly", "Monthly", "Yearly"], { message: "Required" }),
     status: z.enum(["Scheduled", "Completed", "Cancelled", "Postpone"], { message: "Required" }),
     priority: z.enum(["Low", "Medium", "High"], { message: "Required" }),
     date: z.date().optional(),
@@ -78,12 +86,10 @@ const eventSchema = z.object({
 
 export default function ScheduledEvents() {
     const [scheduledEvents, setScheduledEvents] = useState<ScheduledEvents[]>([]);
-    const [error, setError] = useState<string | null>(null);
-    const [selectedKeys, setSelectedKeys] = useState<Iterable<string> | 'all' | undefined>(undefined);
     const router = useRouter();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const fetchScheduledEvents = async () => {
+    const fetchScheduledEvents = useCallback(async () => {
         try {
             const response = await axios.get(
                 `http://localhost:8000/api/v1/scheduledevents/getAllScheduledEvents`
@@ -113,21 +119,28 @@ export default function ScheduledEvents() {
             }));
 
             setScheduledEvents(ScheduledEventsWithKeys);
-            setError(null);
         } catch (error) {
             console.error("Error fetching ScheduledEvents:", error);
             if (axios.isAxiosError(error)) {
-                setError(`Failed to fetch ScheduledEvents: ${error.response?.data?.message || error.message}`);
+                toast({
+                    title: "Error",
+                    description: `Failed to fetch ScheduledEvents: ${error.response?.data?.message || error.message}`,
+                    variant: "destructive",
+                });
             } else {
-                setError("Failed to fetch ScheduledEvents.");
+                toast({
+                    title: "Error",
+                    description: "Failed to fetch ScheduledEvents.",
+                    variant: "destructive",
+                });
             }
             setScheduledEvents([]);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchScheduledEvents();
-    }, []);
+    }, [fetchScheduledEvents]);
 
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -150,7 +163,7 @@ export default function ScheduledEvents() {
             eventType: "Call",
             priority: "Medium",
             description: "",
-            recurrence: "one-time",
+            recurrence: "OneTime",
             date: new Date(),
         },
     })
@@ -187,7 +200,7 @@ export default function ScheduledEvents() {
         }
 
         return filteredScheduledEvents;
-    }, [scheduledEvents, filterValue]);
+    }, [scheduledEvents, filterValue, hasSearchFilter]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -211,7 +224,7 @@ export default function ScheduledEvents() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedScheduledEvents, setSelectedScheduledEvents] = useState<ScheduledEvents | null>(null);
 
-    const handleEditClick = (scheduledEvents: ScheduledEvents) => {
+    const handleEditClick = useCallback((scheduledEvents: ScheduledEvents) => {
         setSelectedScheduledEvents(scheduledEvents);
         form.reset({
             subject: scheduledEvents.subject,
@@ -219,22 +232,22 @@ export default function ScheduledEvents() {
             customer: scheduledEvents.customer,
             location: scheduledEvents.location,
             status: scheduledEvents.status as "Scheduled" | "Completed" | "Cancelled" | "Postpone",
-            eventType: scheduledEvents.eventType as "Call" | "Meeting" | "Demo" | "Follow-Up",
-            priority: scheduledEvents.priority as "Low" | "Medium" | "High" ,
+            eventType: scheduledEvents.eventType as "Call" | "Meeting" | "Demo" | "FollowUp",
+            priority: scheduledEvents.priority as "Low" | "Medium" | "High",
             description: scheduledEvents.description,
-            recurrence: scheduledEvents.recurrence as "one-time" | "Daily" | "Weekly" | "Monthly" | "Yearly",
+            recurrence: scheduledEvents.recurrence as "OneTime" | "Daily" | "Weekly" | "Monthly" | "Yearly",
             date: scheduledEvents.date ? new Date(scheduledEvents.date) : undefined,
 
         });
         setIsEditOpen(true);
-    };
+    }, [form]);
 
-    const handleDeleteClick = (scheduledEvents: ScheduledEvents) => {
+    const handleDeleteClick = useCallback((scheduledEvents: ScheduledEvents) => {
         setSelectedScheduledEvents(scheduledEvents);
         setIsDeleteDialogOpen(true);
-    };
+    }, []);
 
-    const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = useCallback(async () => {
         if (!selectedScheduledEvents?._id) return;
 
         try {
@@ -261,7 +274,7 @@ export default function ScheduledEvents() {
             setIsDeleteDialogOpen(false);
             setSelectedScheduledEvents(null);
         }
-    };
+    }, [selectedScheduledEvents, setIsDeleteDialogOpen, fetchScheduledEvents]);
 
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -299,7 +312,7 @@ export default function ScheduledEvents() {
         }
     }
 
-    const renderCell = React.useCallback((scheduledEvents: ScheduledEvents, columnKey: string) => {
+    const renderCell = useCallback((scheduledEvents: ScheduledEvents, columnKey: string) => {
         const cellValue = scheduledEvents[columnKey as keyof ScheduledEvents];
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
             return formatDate(cellValue);
@@ -336,32 +349,23 @@ export default function ScheduledEvents() {
         }
 
         return cellValue;
-    }, []);
+    }, [handleEditClick, handleDeleteClick]);
 
-    const onNextPage = React.useCallback(() => {
+    const onNextPage = useCallback(() => {
         if (page < pages) {
             setPage(page + 1);
         }
     }, [page, pages]);
 
-    const onPreviousPage = React.useCallback(() => {
+    const onPreviousPage = useCallback(() => {
         if (page > 1) {
             setPage(page - 1);
         }
     }, [page]);
 
-    const onRowsPerPageChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    const onRowsPerPageChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         setRowsPerPage(Number(e.target.value));
         setPage(1);
-    }, []);
-
-    const onSearchChange = React.useCallback((value: string) => {
-        if (value) {
-            setFilterValue(value);
-            setPage(1);
-        } else {
-            setFilterValue("");
-        }
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -445,7 +449,7 @@ export default function ScheduledEvents() {
                 </div>
             </div>
         );
-    }, [filterValue, visibleColumns, onRowsPerPageChange, scheduledEvents.length, onSearchChange]);
+    }, [filterValue, visibleColumns, onRowsPerPageChange, scheduledEvents.length, router]);
 
     const bottomContent = React.useMemo(() => {
         return (
@@ -484,7 +488,7 @@ export default function ScheduledEvents() {
                 </div>
             </div>
         );
-    }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+    }, [page, pages, onPreviousPage, onNextPage]);
 
     return (
         <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 max-w-screen-xl">
@@ -503,7 +507,6 @@ export default function ScheduledEvents() {
                                 topContent={topContent}
                                 topContentPlacement="outside"
                                 sortDescriptor={sortDescriptor}
-                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -534,11 +537,14 @@ export default function ScheduledEvents() {
                 </div>
             </div>
 
-            <Dialog open={isEditOpen} onOpenChange={(open) => {
-                if (!open) {
-                    setIsEditOpen(false);
-                }
-            }}>
+            <Dialog 
+                open={isEditOpen} 
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setIsEditOpen(false);
+                    }
+                }}
+            >
                 <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
                     onInteractOutside={(e) => {
                         e.preventDefault();
@@ -622,7 +628,7 @@ export default function ScheduledEvents() {
                                                     <option value="call">Call</option>
                                                     <option value="Meeting">Meeting</option>
                                                     <option value="Demo">Demo</option>
-                                                    <option value="Follow-Up">Follow Up</option>
+                                                    <option value="FollowUp">Follow Up</option>
                                                 </select>
                                             </FormControl>
                                             <FormMessage />
@@ -640,7 +646,7 @@ export default function ScheduledEvents() {
                                                     {...field}
                                                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-black cursor-pointer"
                                                 >
-                                                    <option value="one-time">One Time</option>
+                                                    <option value="OneTime">One Time</option>
                                                     <option value="Daily">Daily</option>
                                                     <option value="Weekly">Weekly</option>
                                                     <option value="Monthly">Monthly</option>
@@ -773,9 +779,10 @@ export default function ScheduledEvents() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                            Are you sure you want to delete this event or meeting?
+                            The data won&apos;t be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">

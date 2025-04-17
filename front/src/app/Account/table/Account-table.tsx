@@ -58,11 +58,10 @@ const accountSchema = z.object({
 export default function AccountTable() {
     const [accounts, setLeads] = useState<Account[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [selectedKeys, setSelectedKeys] = useState<Set<string> | "all">(new Set());
     const router = useRouter();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const fetchAccounts = async () => {
+    const fetchAccounts = React.useCallback(async () => {
         try {
             const response = await axios.get(
                 `http://localhost:8000/api/v1/account/getAllAccounts`
@@ -97,11 +96,11 @@ export default function AccountTable() {
             }
             setLeads([]);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchAccounts();
-    }, []);
+    }, [fetchAccounts]);
 
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -149,7 +148,7 @@ export default function AccountTable() {
             });
         }
         return filteredLeads;
-    }, [accounts, filterValue]);
+    }, [accounts, filterValue,hasSearchFilter]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -171,23 +170,23 @@ export default function AccountTable() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
 
-    const handleEditClick = (account: Account) => {
+    const handleEditClick = React.useCallback((account: Account) => {
         setSelectedAccount(account);
         form.reset({
             accountHolderName: account.accountHolderName,
             bankName: account.bankName,
-            accountNumber: account.accountNumber,    
+            accountNumber: account.accountNumber,
             accountType: account.accountType as "Current" | "Savings" | "Other",
             IFSCCode: account.IFSCCode,
             UpiId: account.UpiId
         });
         setIsEditOpen(true);
-    };
+    }, [form]);
 
-    const handleDeleteClick = (account: Account) => {
+    const handleDeleteClick = React.useCallback((account: Account) => {
         setSelectedAccount(account);
         setIsDeleteDialogOpen(true);
-    };
+    }, []);
 
     const handleDeleteConfirm = async () => {
         if (!selectedAccount?._id) return;
@@ -201,7 +200,7 @@ export default function AccountTable() {
             }
             toast({
                 title: "Account Deleted",
-                description: "The account has been successfully deleted.",
+                description: "The account has been successfully deleted",
             });
             fetchAccounts();
         } catch (error) {
@@ -233,7 +232,7 @@ export default function AccountTable() {
             }
             toast({
                 title: "Account Updated",
-                description: "The account has been successfully updated.",
+                description: "The account has been successfully updated",
             });
             setIsEditOpen(false);
             setSelectedAccount(null);
@@ -282,7 +281,7 @@ export default function AccountTable() {
         }
 
         return cellValue;
-    }, []);
+    },[handleEditClick, handleDeleteClick]);
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -299,15 +298,6 @@ export default function AccountTable() {
     const onRowsPerPageChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         setRowsPerPage(Number(e.target.value));
         setPage(1);
-    }, []);
-
-    const onSearchChange = React.useCallback((value: string) => {
-        if (value) {
-            setFilterValue(value);
-            setPage(1);
-        } else {
-            setFilterValue("");
-        }
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -390,7 +380,7 @@ export default function AccountTable() {
                 </div>
             </div>
         );
-    }, [filterValue, visibleColumns, onRowsPerPageChange, accounts.length, onSearchChange]);
+    }, [filterValue, visibleColumns, onRowsPerPageChange, accounts.length, router]);
 
     const bottomContent = React.useMemo(() => {
         return (
@@ -429,7 +419,7 @@ export default function AccountTable() {
                 </div>
             </div>
         );
-    }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+    }, [page, pages, onPreviousPage, onNextPage]);
 
     return (
         <div className="container mx-auto py-10 px-4 sm:px-6 lg:px-8 pt-15 max-w-screen-xl">
@@ -438,7 +428,7 @@ export default function AccountTable() {
                     <div className="lg:col-span-12">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Account Record</h1>
-                            <h1 className="text-1xl mb-4 mt-4 text-center">Store client / customer's bank account details</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Store client / customer&apos;s bank account details</h1>
                             <Table
                                 isHeaderSticky
                                 aria-label="Leads table with custom cells, pagination and sorting"
@@ -448,7 +438,6 @@ export default function AccountTable() {
                                 topContent={topContent}
                                 topContentPlacement="outside"
                                 sortDescriptor={sortDescriptor}
-                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -610,9 +599,10 @@ export default function AccountTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                            Are you sure you want to delete this account?
+                            The data won&apos;t be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">
@@ -633,6 +623,7 @@ export default function AccountTable() {
                     </div>
                 </DialogContent>
             </Dialog>
+            {error && <div className="text-red-500">{error}</div>}
         </div>
     );
 }

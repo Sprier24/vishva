@@ -25,12 +25,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html suppressHydrationWarning={true} lang="en"><link rel="shortcut icon" href="/logo.svg" sizes="any"/>
+    <html suppressHydrationWarning={true} lang="en"><link rel="shortcut icon" href="/logo.png" sizes="any"/>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider
             attribute="class"
-            defaultTheme="system"   
+            defaultTheme="light"   
             enableSystem
             disableTransitionOnChange>
             {children}

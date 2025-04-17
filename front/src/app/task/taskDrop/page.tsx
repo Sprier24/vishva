@@ -56,7 +56,6 @@ const getAllTasks = async (): Promise<Task[]> => {
 
 export default function TaskBoard() {
   const [groupedTasks, setGroupedTasks] = useState<Record<string, Task[]>>({});
-  const [error, setError] = useState("");
   const [draggedOver, setDraggedOver] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -72,7 +71,7 @@ export default function TaskBoard() {
         }, {} as Record<string, Task[]>);
         setGroupedTasks(grouped);
       } catch (error) {
-        setError(error instanceof Error ? error.message : "An unknown error occurred");
+        console.error("Error fetching tasks:", error);
       }
     };
     fetchTasks();
@@ -87,7 +86,7 @@ export default function TaskBoard() {
     e.preventDefault();
     const taskData = e.dataTransfer.getData("task");
     const fromStatus = e.dataTransfer.getData("fromStatus");
-    
+
     if (!taskData || !fromStatus || fromStatus === toStatus) return;
 
     const task: Task = JSON.parse(taskData);
@@ -112,9 +111,9 @@ export default function TaskBoard() {
 
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
-    const day = String(date.getDate()).padStart(2, '0'); 
-    const month = String(date.getMonth() + 1).padStart(2, '0'); 
-    const year = date.getFullYear(); 
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
     return `${day}/${month}/${year}`;
   };
 
@@ -151,17 +150,17 @@ export default function TaskBoard() {
               <SearchBar />
             </div>
             <a href="/email" className="relative group">
-                <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-                    <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        Email
-                    </div>
-                </a>
-                <a href="/calendar" className="relative group">
-                    <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-                    <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        Calendar
-                    </div>
-                </a>
+              <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                Email
+              </div>
+            </a>
+            <a href="/calendar" className="relative group">
+              <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                Calendar
+              </div>
+            </a>
             <div>
               <Notification />
             </div>
@@ -199,9 +198,8 @@ export default function TaskBoard() {
               return (
                 <div
                   key={status}
-                  className={`rounded-lg border p-4 transition-colors ${
-                    draggedOver === status ? "bg-accent/50" : "bg-background"
-                  }`}
+                  className={`rounded-lg border p-4 transition-colors ${draggedOver === status ? "bg-accent/50" : "bg-background"
+                    }`}
                   onDrop={(e) => handleDrop(e, status)}
                   onDragOver={(e) => e.preventDefault()}
                   onDragEnter={() => setDraggedOver(status)}
@@ -269,7 +267,7 @@ export default function TaskBoard() {
 
               <div className="p-6">
                 <h2 className="text-xl font-semibold mb-4">{selectedTask.subject}</h2>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <h3 className="font-medium text-sm text-muted-foreground mb-1">Name</h3>
@@ -310,6 +308,7 @@ export default function TaskBoard() {
             </div>
           </div>
         )}
+
       </SidebarInset>
     </SidebarProvider>
   );

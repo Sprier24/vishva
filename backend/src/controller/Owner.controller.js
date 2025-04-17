@@ -42,7 +42,6 @@ const addOwner = async (req, res) => {
         gstNumber,
       } = req.body;
 
-      // ✅ Check if the email in req.body matches the authenticated user's email
       if (req.user.email !== emailAddress) {
         return res.status(403).json({ message: "Unauthorized: Email mismatch" });
       }

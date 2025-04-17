@@ -1,5 +1,6 @@
 "use client";
 
+import { GroupBase, StylesConfig } from "react-select";
 import React, { useState, useEffect, useRef } from 'react';
 import { FaChevronLeft, FaChevronRight, FaPlus } from 'react-icons/fa';
 import {
@@ -26,6 +27,11 @@ interface Calendar {
   id: number;
   name: string;
   color: string;
+}
+
+interface OptionType {
+  value: number;
+  label: string;
 }
 
 export default function CalendarPage() {
@@ -204,8 +210,8 @@ export default function CalendarPage() {
   const years = Array.from({ length: 2100 - 1900 + 1 }, (_, i) => 1900 + i);
   const yearOptions = years.map((year) => ({ value: year, label: year.toString() }));
 
-  const customStyles = {
-    control: (base: any) => ({
+  const customStyles: StylesConfig<OptionType, false, GroupBase<OptionType>> = {
+    control: (base) => ({
       ...base,
       backgroundColor: "#f3f4f6",
       color: "black",
@@ -215,18 +221,18 @@ export default function CalendarPage() {
       boxShadow: "none",
       "&:hover": { borderColor: "#9ca3af" },
     }),
-    singleValue: (base: any) => ({
+    singleValue: (base) => ({
       ...base,
       color: "black",
     }),
-    menu: (base: any) => ({
+    menu: (base) => ({
       ...base,
       maxHeight: "none",
       overflow: "hidden",
       backgroundColor: "white",
       color: "black",
     }),
-    option: (base: any, state: { isSelected: any; }) => ({
+    option: (base, state) => ({
       ...base,
       backgroundColor: state.isSelected ? "#2563eb" : "white",
       color: state.isSelected ? "white" : "black",

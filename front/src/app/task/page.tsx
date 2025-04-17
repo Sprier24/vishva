@@ -66,7 +66,7 @@ export default function CertificatePage() {
                     <Card className="max-w-8xl mx-auto border-none shadow-none">
                         <CardHeader>
                             <CardTitle className="text-3xl font-bold text-center">Create Task</CardTitle>
-                            <h1 className="text-1xl mb-4 mt-4 text-center">Create your company's activities or task here</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Create your company&apos;s activities or task here</h1>
                         </CardHeader>
                         <CardContent>
                             <Task />

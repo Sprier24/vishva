@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { SortDescriptor, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
 import axios from "axios";
 import { format } from "date-fns"
-import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip} from "@heroui/react"
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip } from "@heroui/react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 
@@ -79,7 +79,7 @@ const columns = [
         name: "Invoice Date",
         uid: "date",
         sortable: true,
-        render: (row: any) => (row.date)
+        render: (row: Invoice) => (row.date)
     },
     { name: "Paid Amount", uid: "paidAmount", sortable: true },
     { name: "Remaining Amount", uid: "remainingAmount", sortable: true },
@@ -94,14 +94,12 @@ const formSchema = invoiceSchema;
 export default function InvoiceTable() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [error, setError] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const router = useRouter();
 
-    const fetchInvoices = async () => {
-        setIsLoading(true);
+    const fetchInvoices = React.useCallback(async () => {
         try {
             const response = await axios.get(
                 "http://localhost:8000/api/v1/invoice/getAllInvoices"
@@ -136,14 +134,13 @@ export default function InvoiceTable() {
             }
             setInvoices([]);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchInvoices();
-    }, []);
+    }, [fetchInvoices]);
 
     const [filterValue, setFilterValue] = useState("");
-    const [selectedKeys, setSelectedKeys] = React.useState<Set<string> | "all">(new Set());    
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
@@ -152,226 +149,267 @@ export default function InvoiceTable() {
     });
     const [page, setPage] = useState(1);
 
-    const fetchBase64Image = async (imageUrl: string): Promise<string> => {
-        try {
-            console.log("Fetching logo from:", imageUrl);
-            const response = await fetch(imageUrl);
-            if (!response.ok) throw new Error("Failed to fetch image");
-
-            const blob = await response.blob();
-            return new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.readAsDataURL(blob);
-            });
-        } catch (error) {
-            console.error("Error loading image:", error);
-            return "";
-        }
-    };
-
-    const printInvoice = async (invoiceId: string) => {
+    const printInvoice = React.useCallback(async (invoiceId: string) => {
         try {
             const ownerResponse = await fetch("http://localhost:8000/api/v1/owner/getOwnerForInvoice");
             const ownerResult = await ownerResponse.json();
             if (!ownerResponse.ok) throw new Error(ownerResult.message);
 
             const owner = ownerResult.data;
-
-            let ownerLogoBase64 = "";
-            if (owner.logo) {
-                const imageUrl = `http://localhost:8000/uploads/${owner.logo}`;
-                ownerLogoBase64 = await fetchBase64Image(imageUrl);
-                console.log("Base64 Encoded Logo:", ownerLogoBase64 ? "Logo loaded successfully" : "Failed to load logo");
-            }
+            const logoUrl = owner.logo ? `http://localhost:8000/uploads/${owner.logo}` : null;
 
             const invoiceToPrint = invoices.find((invoice) => invoice._id === invoiceId);
             if (!invoiceToPrint) {
                 console.error("Invoice not found");
+                toast({
+                    title: "Error",
+                    description: "Invoice not found",
+                    variant: "destructive",
+                });
                 return;
             }
 
-            const { companyName, customerName, contactNumber, emailAddress, address, productName, amount, discount, totalWithoutGst, totalWithGst, paidAmount, remainingAmount, } = invoiceToPrint;
+            const { companyName, customerName, contactNumber, emailAddress, productName, amount, discount, totalWithoutGst, totalWithGst, paidAmount, remainingAmount } = invoiceToPrint;
 
-            const gstAmount = totalWithGst - totalWithoutGst;
+            const gstAmount = totalWithGst - (totalWithoutGst || 0);
             const cgst = gstAmount / 2;
             const sgst = cgst;
 
             const invoiceContent = `
-                <!DOCTYPE html>
-                    <html lang="en">
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>Invoice</title>
-                        <style>
-                            @page {
-                                size: A4;
-                                margin: 0;
+            <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Invoice #${invoiceId.slice(-6)}</title>
+                    <style>
+                        @page {
+                            size: A4;
+                            margin: 0;
+                            @bottom {
+                                content: element(footer);
                             }
-                            body {
-                                font-family: 'Helvetica', sans-serif;
-                                margin: 0;
-                                padding: 20px;
-                            }
-                            .invoice-container {
-                                max-width: 800px;
-                                margin: auto;
-                                padding: 20px;
-                                border-radius: 8px; /* Removed shadow */
-                                /* Removed box-shadow to eliminate the border shadow effect */
-                            }
-                            .header {
-                                display: flex;
-                                justify-content: space-between;
-                                align-items: center;
-                                border-bottom: 4px solid #004080;
-                                padding-bottom: 15px;
-                            }
-                            .header h1 {
-                                color: #004080;
-                                font-size: 28px;
-                            }
-                            .company-info, .client-info {
-                                margin-top: 20px;
-                            }
-                            .company-info p, .client-info p {
-                                margin: 4px 0;
-                            }
-                            .table-container {
-                                margin-top: 20px;
-                            }
-                            table {
-                                width: 100%;
-                                border-collapse: collapse;
-                            }
-                            th, td {
-                                border: 1px solid #ddd;
-                                padding: 10px;
-                                text-align: center;
-                            }
-                            th {
-                                background-color: #004080;
-                                color: white;
-                            }
-                            .total-section {
-                                text-align: right;
-                                margin-top: 20px;
-                                font-size: 18px;
-                                font-weight: bold;
-                            }
-                            .footer {
-                                position: fixed;
-                                bottom: 20px; /* Ensures it's 20px from the bottom */
-                                left: 50%;
-                                transform: translateX(-50%); /* Centers the footer horizontally */
-                                text-align: center;
-                                font-size: 14px;
-                                color: #666;
-                                width: 100%;
-                            }
-                            .logo-container {
-                                text-align: right;
-                                margin-bottom: 10px;
-                            }
-                            .logo-container img {
-                                max-width: 150px;
-                                height: auto;
-                                display: block;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="invoice-container">
-                            <div class="header">
+                        }
+                        body {
+                            font-family: 'Helvetica Neue', Arial, sans-serif;
+                            margin: 0;
+                            padding: 20px;
+                            color: #333;
+                            line-height: 1.5;
+                            position: relative;
+                            height: 100%;
+                        }
+                        .invoice-container {
+                            max-width: 800px;
+                            margin: 0 auto;
+                            padding: 30px;
+                            position: relative;
+                            min-height: 100%;
+                            padding-bottom: 60px; /* Space for footer */
+                        }
+                        .header {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 30px;
+                            padding-bottom: 20px;
+                            border-bottom: 2px solid #004080;
+                        }
+                        .logo-box {
+                            width: 120px;
+                            height: 120px;
+                            overflow: hidden;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            border: 1px solid #eee;
+                        }
+                        .logo-box img {
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                        }
+                        .invoice-title {
+                            text-align: right;
+                        }
+                        .invoice-title h1 {
+                            color: #004080;
+                            font-size: 28px;
+                            margin: 0 0 5px 0;
+                        }
+                        .columns {
+                            display: flex;
+                            gap: 40px;
+                            margin-bottom: 30px;
+                        }
+                        .column {
+                            flex: 1;
+                        }
+                        .info-section {
+                            margin-bottom: 25px;
+                        }
+                        .info-section h3 {
+                            font-size: 16px;
+                            color: #004080;
+                            margin: 0 0 10px 0;
+                            padding-bottom: 5px;
+                            border-bottom: 1px solid #eee;
+                        }
+                        .info-row {
+                            margin-bottom: 5px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 30px 0;
+                        }
+                        th {
+                            background-color: #004080;
+                            color: white;
+                            text-align: left;
+                            padding: 10px 15px;
+                        }
+                        td {
+                            padding: 12px 15px;
+                            border-bottom: 1px solid #eee;
+                        }
+                        .total-section {
+                            text-align: right;
+                            margin-top: 30px;
+                        }
+                        .grand-total {
+                            font-size: 18px;
+                            font-weight: bold;
+                            color: #004080;
+                            margin-top: 15px;
+                            padding-top: 10px;
+                            border-top: 2px solid #004080;
+                        }
+                        .footer {
+                        position: fixed;
+                        bottom: 10mm; /* Match your @page margin */
+                        left: 15mm;
+                        right: 15mm;
+                        padding-top: 20px;
+                        font-size: 12px;
+                        color: #999;
+                        text-align: center;
+                    }
+                    </style>
+                </head>
+                <body>
+                    <div class="invoice-container">
+                        <div class="header">
+                            <div class="logo-box">
+                                ${logoUrl ? `<img src="${logoUrl}" alt="Company Logo" onerror="this.style.display='none'">` : ''}
+                            </div>
+                            <div class="invoice-title">
                                 <h1>INVOICE</h1>
-                                <div>
-                                    <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-                                </div>
-                            </div>
-                            
-                            <div class="company-info">
-                                <h3>Company Information</h3>
-                                <div class="logo-container">
-                                    ${ownerLogoBase64 ? `<img id="logo-img" src="${ownerLogoBase64}" style="width: 150px; height: auto;">` : ""}
-                                </div>
-                                <p><strong>Company Name : ${owner.companyName ?? "N/A"}</strong></p>
-                                <p>Contact Number : ${owner.contactNumber ?? "N/A"}</p>
-                                <p>Email Address : ${owner.emailAddress ?? "N/A"}</p>
-                                <p>GST No : ${owner.gstNumber ?? "N/A"}</p>
-                            </div>
-                            
-                            <div class="client-info">
-                                <h3>Invoice To</h3>
-                                <p><strong>Company Name : ${companyName ?? "N/A"}</strong></p>
-                                <p>Customer Name : ${customerName ?? "N/A"}</p>
-                                <p>Contact Number : ${contactNumber ?? "N/A"}</p>
-                                <p>Email : ${emailAddress ?? "N/A"}</p>
-                            </div>
-                            
-                            <div class="table-container">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Product</th>
-                                            <th>Price (₹)</th>
-                                            <th>Discount (%)</th>
-                                            <th>Total (₹)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>${productName}</td>
-                                            <td>${amount.toFixed(2)}</td>
-                                            <td>${discount}</td>
-                                            <td>${totalWithoutGst.toFixed(2)}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                            <div class="total-section">
-                                <p>GST (CGST + SGST): ₹${(cgst + sgst).toFixed(2)}</p>
-                                <p>Grand Total: ₹${totalWithGst.toFixed(2)}</p>
-                                <p>Paid: ₹${paidAmount.toFixed(2)}</p>
-                                <p>Remaining: ₹${remainingAmount.toFixed(2)}</p>
-                            </div>
-                            
-                            <div class="footer">
-                                <p>"Thank you for your business! We appreciate your trust in us and hope to continue working with you on future projects."</p>
+                                <p>Date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} 
+                                ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</p>
                             </div>
                         </div>
-                    </body>
-                    </html>
-                    `;
+                        
+                        <div class="columns">
+                            <div class="column">
+                                <div class="info-section">
+                                    <h3>Company Infomation</h3>
+                                    <div class="info-row"><strong>Name :</strong> ${owner.companyName || "N/A"}</div>
+                                    <div class="info-row"><strong>Contact :</strong> ${owner.contactNumber || "N/A"}</div>
+                                    <div class="info-row"><strong>Email :</strong> ${owner.emailAddress || "N/A"}</div>
+                                    <div class="info-row"><strong>GST No :</strong> ${owner.gstNumber || "N/A"}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="column">
+                                <div class="info-section">
+                                    <h3>Invoice To</h3>
+                                    <div class="info-row"><strong>Company :</strong> ${companyName || "N/A"}</div>
+                                    <div class="info-row"><strong>Customer :</strong> ${customerName || "N/A"}</div>
+                                    <div class="info-row"><strong>Contact :</strong> ${contactNumber || "N/A"}</div>
+                                    <div class="info-row"><strong>Email :</strong> ${emailAddress || "N/A"}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                    <th>Discount</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${productName || "Service"}</td>
+                                    <td>₹${amount?.toFixed(2) || "0.00"}</td>
+                                    <td>${discount || "0"}%</td>
+                                    <td>₹${totalWithoutGst?.toFixed(2) || "0.00"}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div class="total-section">
+                            <div>Subtotal : ₹${totalWithoutGst?.toFixed(2) || "0.00"}</div>
+                            <div>GST (${gstAmount > 0 ? `${cgst.toFixed(2)}% CGST + ${sgst.toFixed(2)}% SGST` : '0%'}) : ₹${gstAmount.toFixed(2)}</div>
+                            <div class="grand-total">Grand Total : ₹${totalWithGst?.toFixed(2) || "0.00"}</div>
+                            <div style="margin-top: 15px;">Paid Amount : ₹${paidAmount?.toFixed(2) || "0.00"}</div>
+                            <div>Remaining Amount : ₹${remainingAmount?.toFixed(2) || "0.00"}</div>
+                        </div>
+                        
+                   <div class="footer">
+                        <p>"Thank you for your business! We appreciate your trust in us and hope to continue working with you on future projects."</p>
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() {
+                        setTimeout(function() {
+                            window.print();
+                            setTimeout(function() {
+                                window.parent.postMessage('removePrintIframe', '*');
+                            }, 1000);
+                        }, 500);
+                    };
+                </script>
+            </body>
+            </html>
+        `;
 
             const iframe = document.createElement("iframe");
+            iframe.style.position = "absolute";
+            iframe.style.width = "1px";
+            iframe.style.height = "1px";
+            iframe.style.left = "-9999px";
             document.body.appendChild(iframe);
-            const doc = iframe.contentWindow?.document;
-            if (!doc) return;
+
+            const doc = iframe.contentDocument;
+            if (!doc) {
+                throw new Error("Failed to create print document");
+            }
 
             doc.open();
             doc.write(invoiceContent);
             doc.close();
 
-            const logoImg = doc.getElementById("logo-img") as HTMLImageElement;
-            if (logoImg) {
-                logoImg.onload = () => {
-                    setTimeout(() => {
-                        iframe.contentWindow?.print();
-                        document.body.removeChild(iframe);
-                    }, 1000); 
-                };
-            } else {
-                setTimeout(() => {
-                    iframe.contentWindow?.print();
+            const handlePrintComplete = (event: MessageEvent) => {
+                if (event.data === 'removePrintIframe') {
+                    window.removeEventListener('message', handlePrintComplete);
                     document.body.removeChild(iframe);
-                }, 1000);
-            }
+                }
+            };
+
+            window.addEventListener('message', handlePrintComplete);
+
         } catch (error) {
             console.error("Error generating invoice:", error);
+            toast({
+                title: "Error",
+                description: error instanceof Error ? error.message : "Failed to generate invoice",
+                variant: "destructive",
+            });
         }
-    };
+    },[invoices]);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -401,7 +439,6 @@ export default function InvoiceTable() {
         if (visibleColumns.size === columns.length) return columns;
         return columns.filter((column) => visibleColumns.has(column.uid));
     }, [visibleColumns]);
-
 
     const filteredItems = React.useMemo(() => {
         let filteredInvoices = [...invoices];
@@ -433,7 +470,7 @@ export default function InvoiceTable() {
             });
         }
         return filteredInvoices;
-    }, [invoices, filterValue,]);
+    }, [invoices, filterValue, hasSearchFilter]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -454,7 +491,7 @@ export default function InvoiceTable() {
         });
     }, [sortDescriptor, items]);
 
-    const handleEditClick = (invoice: Invoice) => {
+    const handleEditClick = React.useCallback((invoice: Invoice) => {
         setSelectedInvoice(invoice);
         form.reset({
             companyName: invoice.companyName,
@@ -475,14 +512,14 @@ export default function InvoiceTable() {
             remainingAmount: invoice.remainingAmount || 0,
         });
         setIsEditDialogOpen(true);
-    };
+    }, [form]);
 
-    const handleDeleteClick = (invoice: Invoice) => {
+    const handleDeleteClick = React.useCallback((invoice: Invoice) => {
         setSelectedInvoice(invoice);
         setIsDeleteDialogOpen(true);
-    };
+    }, []);
 
-    const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = React.useCallback(async () => {
         if (!selectedInvoice?._id) return;
 
         try {
@@ -496,7 +533,7 @@ export default function InvoiceTable() {
             }
             toast({
                 title: "Invoice Deleted",
-                description: "The invoice has been successfully deleted.",
+                description: "The invoice has been successfully deleted",
             });
             fetchInvoices();
         } catch (error) {
@@ -509,13 +546,13 @@ export default function InvoiceTable() {
             setIsDeleteDialogOpen(false);
             setSelectedInvoice(null);
         }
-    };
+    }, [selectedInvoice,fetchInvoices]);
 
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     async function onEdit(values: z.infer<typeof formSchema>) {
         if (!selectedInvoice?._id) return;
-        setIsLoading(true);
+        setIsSubmitting(true);
         try {
             const response = await fetch(`http://localhost:8000/api/v1/invoice/updateInvoice/${selectedInvoice._id}`, {
                 method: "PUT",
@@ -529,7 +566,7 @@ export default function InvoiceTable() {
             }
             toast({
                 title: "Invoice Updated",
-                description: "The invoice has been successfully updated.",
+                description: "The invoice has been successfully updated",
             });
             setIsEditDialogOpen(false);
             setSelectedInvoice(null);
@@ -542,7 +579,7 @@ export default function InvoiceTable() {
                 variant: "destructive",
             });
         } finally {
-            setIsLoading(false);
+            setIsSubmitting(false);
         }
     }
 
@@ -572,7 +609,7 @@ export default function InvoiceTable() {
                         <Tooltip color="danger">
                             <span
                                 className="text-lg text-danger cursor-pointer active:opacity-50"
-                                onClick={() => printInvoice(invoice._id)}  
+                                onClick={() => printInvoice(invoice._id)}
                             >
                                 <Printer className="h-4 w-4" />
                             </span>
@@ -586,20 +623,20 @@ export default function InvoiceTable() {
                 return cellValue ? cellValue : "N/A";
             case "date": {
                 if (!cellValue) return "N/A";
-        
+
                 const date = new Date(cellValue);
                 if (isNaN(date.getTime())) return "Invalid Date";
-        
+
                 const day = String(date.getDate()).padStart(2, "0");
                 const month = String(date.getMonth() + 1).padStart(2, "0");
                 const year = date.getFullYear();
-        
+
                 return `${day}/${month}/${year}`;
-              }
+            }
             default:
                 return cellValue;
         }
-    }, [invoices]);
+    }, [ handleEditClick, handleDeleteClick, printInvoice]);
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -616,15 +653,6 @@ export default function InvoiceTable() {
     const onRowsPerPageChange = React.useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
         setRowsPerPage(Number(e.target.value));
         setPage(1);
-    }, []);
-
-    const onSearchChange = React.useCallback((value: string) => {
-        if (value) {
-            setFilterValue(value);
-            setPage(1);
-        } else {
-            setFilterValue("");
-        }
     }, []);
 
     const topContent = React.useMemo(() => {
@@ -709,7 +737,7 @@ export default function InvoiceTable() {
                 </div>
             </div>
         );
-    }, [filterValue, visibleColumns, onRowsPerPageChange, invoices.length, onSearchChange]);
+    }, [filterValue, visibleColumns, onRowsPerPageChange, invoices.length, router]);
 
     const bottomContent = React.useMemo(() => {
         return (
@@ -748,7 +776,7 @@ export default function InvoiceTable() {
                 </div>
             </div>
         );
-    }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+    }, [page, pages, onPreviousPage, onNextPage]);
 
     const { watch, setValue } = form;
     const amount = watch("amount") ?? 0;
@@ -802,7 +830,6 @@ export default function InvoiceTable() {
                                 topContent={topContent}
                                 topContentPlacement="outside"
                                 sortDescriptor={sortDescriptor}
-                                onSelectionChange={(keys) => setSelectedKeys(keys as Set<string> | "all")}
                                 onSortChange={setSortDescriptor}
                             >
                                 <TableHeader columns={headerColumns}>
@@ -961,7 +988,15 @@ export default function InvoiceTable() {
                                         <FormItem>
                                             <FormLabel>Product Amount</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Enter product amount" type="number" {...field} />
+                                                <Input
+                                                    placeholder="Enter product amount"
+                                                    type="number"
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.valueAsNumber || "";
+                                                        field.onChange(value);
+                                                    }}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -976,7 +1011,15 @@ export default function InvoiceTable() {
                                         <FormItem>
                                             <FormLabel>Discount (%)</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Enter discount" type="number" {...field} />
+                                                <Input
+                                                    placeholder="Enter discount"
+                                                    type="number"
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.valueAsNumber || "";
+                                                        field.onChange(value);
+                                                    }}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -1016,7 +1059,15 @@ export default function InvoiceTable() {
                                         <FormItem>
                                             <FormLabel>Paid Amount</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Enter paid amount" {...field} />
+                                                <Input
+                                                    type="number"
+                                                    placeholder="Enter paid amount"
+                                                    {...field}
+                                                    onChange={(e) => {
+                                                        const value = e.target.valueAsNumber || "";
+                                                        field.onChange(value);
+                                                    }}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -1112,9 +1163,10 @@ export default function InvoiceTable() {
                     }}
                 >
                     <DialogHeader>
-                        <DialogTitle className="text-lg xs:text-base">Confirm Deletion</DialogTitle>
+                        <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
                         <DialogDescription className="text-sm xs:text-xs">
-                            Are you sure you want to delete this invoice? This action cannot be undone.
+                            Are you sure you want to delete this invoice?
+                            The data won&apos;t be retrieved again.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end gap-4 mt-4">
@@ -1135,6 +1187,7 @@ export default function InvoiceTable() {
                     </div>
                 </DialogContent>
             </Dialog>
+            {error && <div className="text-red-500 p-2">{error}</div>}
         </div>
     );
 }

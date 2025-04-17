@@ -2,7 +2,7 @@
 
 import axios from "axios";
 import Link from "next/link";
-import { Edit, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -39,7 +39,7 @@ interface Owner {
 export function NavUser() {
   const { isMobile } = useSidebar();
   const [open, setOpen] = useState(false);
-  const [owners, setOwners] = useState<Owner[]>([]);
+  const [owners, setOwners] = useState<Owner[]>([]); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [filteredOwners, setFilteredOwners] = useState<Owner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,9 +48,8 @@ export function NavUser() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [dialogKey, setDialogKey] = useState(0);
 
   const form = useForm<Owner>({
     defaultValues: {
@@ -85,6 +84,7 @@ export function NavUser() {
         }
       } catch (err) {
         setError("Failed to fetch owners.");
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -162,7 +162,7 @@ export function NavUser() {
       alert("An error occurred while deleting your account.");
     } finally {
       setIsDeleting(false);
-      setDeleteModalOpen(false);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -201,8 +201,8 @@ export function NavUser() {
       setFilteredOwners(
         response.data.data.filter((owner: { emailAddress: string | null }) => owner.emailAddress === localStorage.getItem("userEmail"))
       );
-    } catch (error) {
-      console.error("Failed to update owner:", error);
+    } catch (err) {
+      console.error("Failed to update owner:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -239,7 +239,7 @@ export function NavUser() {
                 <LogOut />
                 <Link href="/login">Log out</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setDeleteModalOpen(true)} className="text-red-500">
+              <DropdownMenuItem onClick={() => setIsDeleteModalOpen(true)} className="text-red-500">
                 <Trash2 className="size-4 mr-2" />
                 <span>Delete Account</span>
               </DropdownMenuItem>
@@ -253,7 +253,7 @@ export function NavUser() {
                   className="w-full text-left"
 
                 >
-                  <Dialog key={dialogKey} open={open} onOpenChange={setOpen}>
+                  <Dialog open={open} onOpenChange={setOpen}>
                     <DropdownMenuLabel className="p-0 font-normal">
                       <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                         <Avatar className="h-8 w-8 rounded-lg">
@@ -281,7 +281,7 @@ export function NavUser() {
 
       <Dialog open={isDeleteModalOpen} onOpenChange={(open) => {
         if (!open) {
-          setDeleteModalOpen(false);
+          setIsDeleteModalOpen(false);
         }
       }}>
         <DialogContent
@@ -290,11 +290,13 @@ export function NavUser() {
           }}
         >
           <DialogHeader>
-            <DialogTitle>Confirm Account Deletion</DialogTitle>
-            <DialogDescription>Are you sure you want to delete your account? This action cannot be undone.</DialogDescription>
+            <DialogTitle className="text-lg xs:text-base">Confirm Delete</DialogTitle>
+            <DialogDescription className="text-sm xs:text-xs">
+            &quot;Are you sure you want to delete this account? Once deleted, your account cannot be recreated&quot;
+            </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsDeleteModalOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDeleteAccount} disabled={isDeleting}>
               {isDeleting ? "Deleting..." : "Delete"}
             </Button>
@@ -302,19 +304,17 @@ export function NavUser() {
         </DialogContent>
       </Dialog>
 
-
-         <Dialog open={open} onOpenChange={(open) => {
-                        if (!open) {
-                          setOpen(false);
-                        }
-                    }}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto hide-scrollbar"
-       onInteractOutside={(e) => {
-                               e.preventDefault();
-                           }
-                           } >
+      <Dialog open={open} onOpenChange={(open) => {
+        if (!open) {
+          setOpen(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}>
           <DialogHeader>
-            <DialogTitle className="text-center">Company Profile</DialogTitle>
+            <DialogTitle className="text-center">Profile Details</DialogTitle>
           </DialogHeader>
           {error ? (
             <div className="text-center text-red-500 py-4">{error}</div>
@@ -332,6 +332,10 @@ export function NavUser() {
                     </AvatarFallback>
                   </Avatar>
                 </div>
+                <div className="text-center">
+                  <h2 className="text-xl font-bold">{currentOwner.companyName}</h2>
+                  <p className="text-sm text-gray-500">{currentOwner.emailAddress}</p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -340,24 +344,20 @@ export function NavUser() {
                     <h3 className="text-sm font-medium text-gray-500">Contact Information</h3>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                  <div>
-                      <p className="text-xs text-gray-400">Name</p>
+                    <div>
+                      <p className="text-xs text-gray-400">Owner Name</p>
                       <p>{currentOwner.ownerName}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Email</p>
-                      <p>{currentOwner.emailAddress}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-400">Phone</p>
+                      <p className="text-xs text-gray-400">Contact Number</p>
                       <p>{currentOwner.contactNumber}</p>
                     </div>
                     {currentOwner.website && (
                       <div>
                         <p className="text-xs text-gray-400">Website</p>
-                        <a 
-                          href={currentOwner.website} 
-                          target="_blank" 
+                        <a
+                          href={currentOwner.website}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
                         >
@@ -370,23 +370,19 @@ export function NavUser() {
 
                 <Card>
                   <CardHeader className="pb-2">
-                    <h3 className="text-sm font-medium text-gray-500">Business Details</h3>
+                    <h3 className="text-sm font-medium text-gray-500">Business Information</h3>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div>
-                      <p className="text-xs text-gray-400">Company Name</p>
-                      <p>{currentOwner.companyName}</p>
-                    </div>
                     <div>
                       <p className="text-xs text-gray-400">Company Type</p>
                       <p>{currentOwner.companyType}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Registration</p>
+                      <p className="text-xs text-gray-400">Business Registration</p>
                       <p>{currentOwner.businessRegistration}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400">Employees</p>
+                      <p className="text-xs text-gray-400">Employees Size</p>
                       <p>{currentOwner.employeeSize}</p>
                     </div>
                   </CardContent>
@@ -420,12 +416,8 @@ export function NavUser() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setOpen(false)}>
-                  Close
-                </Button>
                 <Button onClick={() => handleEditClick(currentOwner)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Profile
+                  Update
                 </Button>
               </div>
             </div>
@@ -436,18 +428,18 @@ export function NavUser() {
           )}
         </DialogContent>
       </Dialog>
-        
-        <Dialog open={isEditing} onOpenChange={(open) => {
-                        if (!open) {
-                          setIsEditing(false);
-                        }
-                    }}>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto hide-scrollbar"
-            onInteractOutside={(e) => {
-              e.preventDefault();
+
+      <Dialog open={isEditing} onOpenChange={(open) => {
+        if (!open) {
+          setIsEditing(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] sm:max-h-[700px] overflow-auto hide-scrollbar p-4"
+          onInteractOutside={(e) => {
+            e.preventDefault();
           }}>
           <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
+            <DialogTitle>Update Profile</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -480,7 +472,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Company Name</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter company name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -493,7 +485,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Owner Name</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter owner name" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -506,7 +498,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Contact Number</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter contact number" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -519,7 +511,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Company Type</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Enter company type" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -534,10 +526,10 @@ export function NavUser() {
                       <FormControl>
                         <select className="w-full p-2 border rounded-md" {...field}>
                           <option value="">Select Registration</option>
-                          <option value="Sole proprietorship">Sole proprietorship</option>
+                          <option value="Private Limited">Private Limited</option>
                           <option value="One person Company">One person Company</option>
                           <option value="Partnership">Partnership</option>
-                          <option value="Private Limited">Private Limited</option>
+                          <option value="Sole proprietorship">Sole proprietorship</option>
                         </select>
                       </FormControl>
                       <FormMessage />
@@ -583,7 +575,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>GST Number</FormLabel>
                       <FormControl>
-                      <Input disabled {...field} className="bg-gray-100" />
+                        <Input disabled {...field} className="bg-gray-100" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -596,7 +588,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Document Type</FormLabel>
                       <FormControl>
-                      <Input disabled {...field} className="bg-gray-100" />
+                        <Input disabled {...field} className="bg-gray-100" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -609,7 +601,7 @@ export function NavUser() {
                     <FormItem>
                       <FormLabel>Document Number</FormLabel>
                       <FormControl>
-                      <Input disabled {...field} className="bg-gray-100" />
+                        <Input disabled {...field} className="bg-gray-100" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -622,7 +614,7 @@ export function NavUser() {
                     <FormItem className="md:col-span-2">
                       <FormLabel>Website</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="https://example.com" />
+                        <Input placeholder="https://www.spriertechnology.com/" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -631,9 +623,6 @@ export function NavUser() {
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={() => setIsEditing(false)}>
-                  Cancel
-                </Button>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
@@ -641,7 +630,7 @@ export function NavUser() {
                       Saving...
                     </>
                   ) : (
-                    "Save Changes"
+                    "Update"
                   )}
                 </Button>
               </div>

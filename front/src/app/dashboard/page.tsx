@@ -275,11 +275,6 @@ const columnsSchedule = [
 ];
 
 const INITIAL_VISIBLE_COLUMNS = ["companyName", "productName", "amount", "status"];
-const INITIAL_VISIBLE_COLUMNS_INVOICE = ["companyName", "productName", "amount", "status"];
-const INITIAL_VISIBLE_COLUMNS_DEAL = ["companyName", "productName", "amount", "status"];
-const INITIAL_VISIBLE_COLUMNS_TASK = ["subject", "name", "date", "endDate"];
-const INITIAL_VISIBLE_COLUMNS_REMINDER = ["companyName", "productName", "paidAmount", "remainingAmount"];
-const INITIAL_VISIBLE_COLUMNS_SCHEDULE = ["subject", "location", "customer", "date"];
 
 const chartData = {
   Proposal: "#2a9d90",
@@ -335,7 +330,6 @@ export default function Page() {
   const [filterValueReminder, setFilterValueReminder] = useState("");
   const [filterValueSchedule, setFilterValueSchedule] = useState("");
 
-  const [statusFilter, setStatusFilter] = useState("all");
   const [categorizedLeads, setCategorizedLeads] = useState<CategorizedLeads>({});
   const [categorizedInvoices, setCategorizedInvoices] = useState<CategorizedInvoices>({});
   const [categorizedDeals, setCategorizedDeals] = useState<CategorizedDeals>({});
@@ -358,7 +352,8 @@ export default function Page() {
   const [reminder, setReminder] = useState<Reminder[]>([]);
   const [schedule, setSchedule] = useState<Schedule[]>([]);
 
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const rowsPerPage = 5;
+
   const hasSearchFilter = Boolean(filterValue);
   const hasSearchFilterInvoice = Boolean(filterValueInvoice);
   const hasSearchFilterDeal = Boolean(filterValueDeal);
@@ -372,10 +367,10 @@ export default function Page() {
   const [selectedKeysTask, setSelectedKeysTask] = React.useState<Selection>(new Set());
   const [selectedKeysReminder, setSelectedKeysReminder] = React.useState<Selection>(new Set());
   const [selectedKeysSchedule, setSelectedKeysSchedule] = React.useState<Selection>(new Set());
-
-  const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
-
-    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
+  
+  const visibleColumns = React.useMemo(() => new Set(INITIAL_VISIBLE_COLUMNS), []);
+  
+  const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
     column: "createdAt",
     direction: "descending",
   });
@@ -424,14 +419,8 @@ export default function Page() {
       });
     }
 
-    if (statusFilter !== "all") {
-      filteredLeads = filteredLeads.filter((lead) =>
-        statusFilter === lead.status
-      );
-    }
-
     return filteredLeads;
-  }, [leads, filterValue, statusFilter]);
+  }, [leads, filterValue, hasSearchFilter]);
 
   const filteredItemsInvoice = React.useMemo(() => {
     let filteredInvoices = [...invoices];
@@ -452,14 +441,8 @@ export default function Page() {
       });
     }
 
-    if (statusFilter !== "all") {
-      filteredInvoices = filteredInvoices.filter((invoice) =>
-        statusFilter === invoice.status
-      );
-    }
-
     return filteredInvoices;
-  }, [invoices, filterValueInvoice, statusFilter]);
+  }, [invoices, filterValueInvoice, hasSearchFilterInvoice]);
 
   const filteredItemsDeal = React.useMemo(() => {
     let filteredDeals = [...deals];
@@ -479,14 +462,8 @@ export default function Page() {
       });
     }
 
-    if (statusFilter !== "all") {
-      filteredDeals = filteredDeals.filter((deal) =>
-        statusFilter === deal.status
-      );
-    }
-
     return filteredDeals;
-  }, [deals, filterValueDeal, statusFilter]);
+  }, [deals, filterValueDeal, hasSearchFilterDeal]);
 
   const filteredItemsTask = React.useMemo(() => {
     let filteredTasks = [...tasks];
@@ -506,14 +483,8 @@ export default function Page() {
       });
     }
 
-    if (statusFilter !== "all") {
-      filteredTasks = filteredTasks.filter((task) =>
-        statusFilter === task.status
-      );
-    }
-
     return filteredTasks;
-  }, [tasks, filterValueTask, statusFilter]);
+  }, [tasks, filterValueTask, hasSearchFilterTask]);
 
   const filteredItemsReminder = React.useMemo(() => {
     let filteredReminder = [...reminder];
@@ -535,14 +506,8 @@ export default function Page() {
       });
     }
 
-    if (statusFilter !== "all") {
-      filteredReminder = filteredReminder.filter((reminder) =>
-        statusFilter === reminder.status
-      );
-    }
-
     return filteredReminder;
-  }, [leads, filterValueReminder, statusFilter]);
+  }, [filterValueReminder, hasSearchFilterReminder, reminder]);
 
   const filteredItemsSchedule = React.useMemo(() => {
     let filteredSchedule = [...schedule];
@@ -562,14 +527,8 @@ export default function Page() {
       });
     }
 
-    if (statusFilter !== "all") {
-      filteredSchedule = filteredSchedule.filter((schedule) =>
-        statusFilter === schedule.status
-      );
-    }
-
     return filteredSchedule;
-  }, [schedule, filterValueSchedule, statusFilter]);
+  }, [schedule, filterValueSchedule, hasSearchFilterSchedule]);
 
   const headerColumns = React.useMemo(() => {
     if (visibleColumns.size === columns.length) return columns;
@@ -726,11 +685,6 @@ export default function Page() {
         const response = await fetch('http://localhost:8000/api/v1/invoice/getAllInvoices');
         const result = await response.json();
 
-        if (!result || !Array.isArray(result.data)) {
-          console.error('Invalid data format received:', result);
-          return;
-        }
-
         const sortedInvoices = [...result.data].sort((a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
@@ -755,7 +709,7 @@ export default function Page() {
     };
 
     fetchInvoices();
-  }, []);
+  }, [categorizedInvoices]);
 
   //Deal
   useEffect(() => {
@@ -763,11 +717,6 @@ export default function Page() {
       try {
         const response = await fetch('http://localhost:8000/api/v1/deal/getAllDeals');
         const result = await response.json();
-
-        if (!result || !Array.isArray(result.data)) {
-          console.error('Invalid data format received:', result);
-          return;
-        }
 
         const sortedDeals = [...result.data].sort((a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -792,7 +741,7 @@ export default function Page() {
     };
 
     fetchDeals();
-  }, []);
+  }, [categorizedDeals]);
 
   //Task
   useEffect(() => {
@@ -800,11 +749,6 @@ export default function Page() {
       try {
         const response = await fetch('http://localhost:8000/api/v1/task/getAllTasks');
         const result = await response.json();
-
-        if (!result || !Array.isArray(result.data)) {
-          console.error('Invalid data format received:', result);
-          return;
-        }
 
         const sortedTasks = [...result.data].sort((a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -827,7 +771,7 @@ export default function Page() {
     };
 
     fetchTasks();
-  }, []);
+  }, [categorizedTasks]);
 
   //Reminder
   useEffect(() => {
@@ -835,11 +779,6 @@ export default function Page() {
       try {
         const response = await fetch('http://localhost:8000/api/v1/invoice/getUnpaidInvoices');
         const result = await response.json();
-
-        if (!result || !Array.isArray(result.data)) {
-          console.error('Invalid data format received:', result);
-          return;
-        }
 
         const sortedReminders = [...result.data].sort((a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -862,7 +801,7 @@ export default function Page() {
     };
 
     fetchReminder();
-  }, []);
+  }, [categorizedReminder]);
 
   //Schedule
   useEffect(() => {
@@ -870,11 +809,6 @@ export default function Page() {
       try {
         const response = await fetch('http://localhost:8000/api/v1/scheduledEvents/getAllScheduledEvents');
         const result = await response.json();
-
-        if (!result || !Array.isArray(result.data)) {
-          console.error('Invalid data format received:', result);
-          return;
-        }
 
         const sortedSchedules = [...result.data].sort((a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -897,7 +831,7 @@ export default function Page() {
     };
 
     fetchSchedule();
-  }, []);
+  }, [CategorizedScheduled]);
 
   const onNextPage = React.useCallback(() => {
     if (page < pages) {
@@ -982,7 +916,7 @@ export default function Page() {
       browser: status,
       visitors: leads.length,
       fill: chartData[status as keyof typeof chartData] || "#ccc",
-      }));
+    }));
   }, [categorizedLeads]);
 
   //Invoice Chart
@@ -1100,7 +1034,7 @@ export default function Page() {
           <CardContent className="flex-1 pb-0">
             <ChartContainer
               config={chartConfig}
-              className="mx-auto aspect-square max-h-[300px] md:h-[400px] lg:h-[500px]"
+              className="mx-auto aspect-square max-h-[300px] md:h-[400px] lg:h-[500px] [&_.recharts-text]:fill-background"
             >
               <RadialBarChart
                 width={width}
@@ -1126,10 +1060,6 @@ export default function Page() {
                   />
                 </RadialBar>
               </RadialBarChart>
-              <ChartLegend
-                content={<ChartLegendContent nameKey="browser" />}
-                className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-              />
             </ChartContainer>
           </CardContent>
         </Card>
@@ -1283,7 +1213,7 @@ export default function Page() {
               config={chartConfigInvoice}
               className="mx-auto aspect-square max-h-[300px] md:h-[400px] lg:h-[500px]"
             >
-              
+
               <RadialBarChart
                 width={width}
                 height={height}
@@ -1308,10 +1238,6 @@ export default function Page() {
                   />
                 </RadialBar>
               </RadialBarChart>
-              <ChartLegend
-                content={<ChartLegendContent nameKey="browser" />}
-                className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-              />
             </ChartContainer>
           </CardContent>
         </Card>
@@ -1489,10 +1415,6 @@ export default function Page() {
                   />
                 </RadialBar>
               </RadialBarChart>
-              <ChartLegend
-                content={<ChartLegendContent nameKey="browser" />}
-                className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-              />
             </ChartContainer>
           </CardContent>
         </Card>
@@ -1553,7 +1475,6 @@ export default function Page() {
         </Card>
       );
     }
-
   };
 
   //lead
@@ -1588,14 +1509,14 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeys, items.length, page, pages, hasSearchFilter]);
+  }, [selectedKeys,filteredItems.length, page, pages, onPreviousPage, onNextPage]);
 
   //Invoice
   const bottomContentInvoice = React.useMemo(() => {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
         <span className="w-[30%] text-small text-default-400">
-        {selectedKeysInvoice === "all"
+          {selectedKeysInvoice === "all"
             ? "All items selected"
             : `${selectedKeysInvoice.size} of ${filteredItemsInvoice.length} selected`}
         </span>
@@ -1622,14 +1543,14 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeysInvoice, itemsInvoice.length, pageInvoice, pagesInvoice, hasSearchFilterInvoice]);
+  }, [selectedKeysInvoice,filteredItemsInvoice.length, pageInvoice, pagesInvoice, onPreviousPageInvoice, onNextPageInvoice]);
 
   //Deal
   const bottomContentDeal = React.useMemo(() => {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
         <span className="w-[30%] text-small text-default-400">
-        {selectedKeysDeal === "all"
+          {selectedKeysDeal === "all"
             ? "All items selected"
             : `${selectedKeysDeal.size} of ${filteredItemsDeal.length} selected`}
         </span>
@@ -1656,14 +1577,14 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeysDeal, deals.length, pageDeal, pagesDeal, hasSearchFilterDeal]);
+  }, [selectedKeysDeal,filteredItemsDeal.length, pageDeal, pagesDeal, onPreviousPageDeal, onNextPageDeal]);
 
   //Task
   const bottomContentTask = React.useMemo(() => {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
         <span className="w-[30%] text-small text-default-400">
-        {selectedKeysTask === "all"
+          {selectedKeysTask === "all"
             ? "All items selected"
             : `${selectedKeysTask.size} of ${filteredItemsTask.length} selected`}
         </span>
@@ -1690,14 +1611,14 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeysTask, tasks.length, pageTask, pagesTask, hasSearchFilterTask]);
+  }, [selectedKeysTask,filteredItemsTask.length, pageTask, pagesTask, onPreviousPageTask, onNextPageTask]);
 
   //Reminder
   const bottomContentReminder = React.useMemo(() => {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
         <span className="w-[30%] text-small text-default-400">
-        {selectedKeysReminder === "all"
+          {selectedKeysReminder === "all"
             ? "All items selected"
             : `${selectedKeysReminder.size} of ${filteredItemsReminder.length} selected`}
         </span>
@@ -1724,14 +1645,14 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeysReminder, reminder.length, pageReminder, pagesReminder, hasSearchFilterReminder]);
+  }, [selectedKeysReminder,filteredItemsReminder.length, pageReminder, pagesReminder, onPreviousPageReminder, onNextPageReminder]);
 
   //Schedule
   const bottomContentSchedule = React.useMemo(() => {
     return (
       <div className="py-2 px-2 flex justify-between items-center">
         <span className="w-[30%] text-small text-default-400">
-        {selectedKeysSchedule === "all"
+          {selectedKeysSchedule === "all"
             ? "All items selected"
             : `${selectedKeysSchedule.size} of ${filteredItemsSchedule.length} selected`}
         </span>
@@ -1758,7 +1679,7 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeysSchedule, schedule.length, pageSchedule, pagesSchedule, hasSearchFilterSchedule]);
+  }, [selectedKeysSchedule,filteredItemsSchedule.length, pageSchedule, pagesSchedule, onPreviousPageSchedule, onNextPageSchedule]);
 
   const renderCell = React.useCallback((lead: Lead, columnKey: React.Key) => {
     const cellValue = lead[columnKey as keyof Lead];
@@ -1824,7 +1745,7 @@ export default function Page() {
             size="sm"
             variant="flat"
           >
-          {cellValue}
+            {cellValue}
           </Chip>
         );
       case "actions":
@@ -1921,9 +1842,9 @@ export default function Page() {
 
         if (typeof cellValue !== 'string' && typeof cellValue !== 'number') {
           return "Invalid Date";
-        }   
+        }
 
-        const date = new Date(cellValue); 
+        const date = new Date(cellValue);
         if (isNaN(date.getTime())) return "Invalid Date";
 
         const day = String(date.getDate()).padStart(2, "0");
@@ -1972,14 +1893,15 @@ export default function Page() {
 
     switch (columnKey) {
       case "subject":
-      case "customer":
       case "assignedUser":
-      case "location":
       case "eventType":
       case "priority":
       case "recurrence":
       case "description":
         return cellValue;
+      case "customer":
+      case "location":
+        return cellValue ? cellValue : "N/A";
       case "status":
         return (
           <Chip
@@ -2038,12 +1960,18 @@ export default function Page() {
           </div>
           <div className="flex items-center space-x-4 ml-auto mr-4">
             <div><SearchBar /></div>
-            <a href="/email">
-              <div>
-                <Mail />
+            <a href="/email" className="relative group">
+              <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                Email
               </div>
             </a>
-            <a href="/calendar"><div><Calendar1 /></div></a>
+            <a href="/calendar" className="relative group">
+              <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                Calendar
+              </div>
+            </a>
             <div><Notification /></div>
           </div>
         </header>
@@ -2307,8 +2235,8 @@ export default function Page() {
                       selectedKeys={selectedKeysInvoice}
                       selectionMode="none"
                       sortDescriptor={sortDescriptorInvoice}
+                      onSelectionChange={setSelectedKeysInvoice}
                       onSortChange={setSortDescriptorInvoice}
-                      topContentPlacement="outside"
                     >
                       <TableHeader columns={columnsInvoice}>
                         {(column) => (
@@ -2326,8 +2254,8 @@ export default function Page() {
                         {(item) => (
                           <TableRow key={item._id} className="hover:bg-gray-50 transition duration-200">
                             {(columnKey) => (<TableCell className="px-4 py-3 text-gray-700">
-                              {renderCellInvoice(item, columnKey)}                            
-                              </TableCell>)}
+                              {renderCellInvoice(item, columnKey)}
+                            </TableCell>)}
                           </TableRow>
                         )}
                       </TableBody>
@@ -2382,7 +2310,7 @@ export default function Page() {
                           <TableRow key={item._id} className="hover:bg-gray-50 transition duration-200">
                             {(columnKey) => (<TableCell className="px-4 py-3 text-gray-700">
                               {renderCellReminder(item, columnKey).toLocaleString()}
-                              </TableCell>)}
+                            </TableCell>)}
                           </TableRow>
                         )}
                       </TableBody>
@@ -2499,8 +2427,6 @@ export default function Page() {
                   </div>
                 </Item>
               </Grid>
-
-
             </Grid>
           </Box>
         </div>

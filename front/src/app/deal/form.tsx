@@ -23,7 +23,7 @@ const formSchema = z.object({
     address: z.string().nonempty({ message: "Required" }),
     productName: z.string().nonempty({ message: "Required" }),
     amount: z.number().positive({ message: "Required" }),
-    gstNumber: z.string().nonempty({ message: "Required" }),
+    gstNumber: z.string().optional(),
     status: z.enum(["Proposal", "New", "Discussion", "Demo", "Decided"]),
     date: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
     endDate: z.date().refine((val) => !isNaN(val.getTime()), { message: "Required" }),
@@ -43,7 +43,7 @@ export default function DealForm() {
             emailAddress: "",
             address: "",
             productName: "",
-            amount: undefined,
+            amount: 0,
             gstNumber: "",
             status: "New",
             date: new Date(),
@@ -203,7 +203,7 @@ export default function DealForm() {
                         name="gstNumber"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>GST Number</FormLabel>
+                                <FormLabel>GST Number (Optional)</FormLabel>
                                 <FormControl>
                                     <Input placeholder="Enter GST number" {...field} />
                                 </FormControl>

@@ -7,7 +7,7 @@ import axios from "axios";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useRouter, useParams } from "next/navigation";
-import {  IoEye, IoEyeOff  } from "react-icons/io5";
+import { IoEye, IoEyeOff  } from "react-icons/io5";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState<string>("");
@@ -54,7 +54,7 @@ export default function ResetPassword() {
             description: "Passwords do not match.",
             variant: "destructive",
         });       }
-    } catch (error: any) {
+    } catch {
         toast({
             title: "Error",
             description: "Passwords do not match.",
@@ -93,8 +93,8 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900 p-4">
-      <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-8 md:p-8 shadow-input bg-white dark:bg-black shadow-lg shadow-gray-500">
-        {passwordReset ? (
+      <div className="max-w-md w-full mx-auto rounded-none md:rounded-2xl p-8 md:p-8 shadow-input bg-white dark:bg-black border border-gray-300 dark:border-gray-700 shadow-lg shadow-gray-500">
+      {passwordReset ? (
           <div className="text-center">
             <h2 className="font-bold text-xl text-neutral-800 dark:text-neutral-200">
               Password successfully reset!

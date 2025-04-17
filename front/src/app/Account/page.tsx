@@ -1,5 +1,5 @@
 'use client'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import AccountForm from "../Account/form"
 import {
     SidebarInset,
@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
 import { Calendar1, Mail } from "lucide-react"
@@ -63,7 +63,7 @@ export default function CertificatePage() {
                     <Card className="max-w-8xl mx-auto border-none shadow-none">
                         <CardHeader>
                             <CardTitle className="text-3xl font-bold text-center">Create Account</CardTitle>
-                            <h1 className="text-1xl mb-4 mt-4 text-center">Store client / customer's bank account details</h1>
+                            <h1 className="text-1xl mb-4 mt-4 text-center">Store client / customer&apos;s bank account details</h1>
                         </CardHeader>
                         <CardContent>
                             <AccountForm />

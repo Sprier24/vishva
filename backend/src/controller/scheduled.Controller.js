@@ -1,5 +1,5 @@
 const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });  
+const upload = multer({ storage: multer.memoryStorage() });
 const Scheduled = require("../model/scheduledSchema.model");
 
 const createScheduledEvent = async (req, res) => {
@@ -7,10 +7,10 @@ const createScheduledEvent = async (req, res) => {
         const eventData = req.body;
 
         if (req.files && req.files.length > 0) {
-            eventData.attachments = req.files.map(file => file.buffer);  
+            eventData.attachments = req.files.map(file => file.buffer);
         }
 
-        const validRecurrences = ['one-time', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
+        const validRecurrences = ['OneTime', 'Daily', 'Weekly', 'Monthly', 'Yearly'];
         if (eventData.recurrence && !validRecurrences.includes(eventData.recurrence)) {
             return res.status(400).json({
                 success: false,
@@ -57,7 +57,7 @@ const updateScheduledEvent = async (req, res) => {
     try {
         const updatedEvent = await Scheduled.findByIdAndUpdate(id, updates, {
             new: true,
-            runValidators: true, 
+            runValidators: true,
         });
 
         if (!updatedEvent) {
