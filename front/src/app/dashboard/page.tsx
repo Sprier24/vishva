@@ -367,9 +367,9 @@ export default function Page() {
   const [selectedKeysTask, setSelectedKeysTask] = React.useState<Selection>(new Set());
   const [selectedKeysReminder, setSelectedKeysReminder] = React.useState<Selection>(new Set());
   const [selectedKeysSchedule, setSelectedKeysSchedule] = React.useState<Selection>(new Set());
-  
+
   const visibleColumns = React.useMemo(() => new Set(INITIAL_VISIBLE_COLUMNS), []);
-  
+
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
     column: "createdAt",
     direction: "descending",
@@ -541,6 +541,36 @@ export default function Page() {
   const pagesTask = Math.ceil(tasks.length / rowsPerPage);
   const pagesReminder = Math.ceil(reminder.length / rowsPerPage);
   const pagesSchedule = Math.ceil(schedule.length / rowsPerPage);
+
+  const [walkthroughStep, setWalkthroughStep] = useState<number>(0);
+  const [showWelcome, setShowWelcome] = useState<boolean>(true);
+
+
+  // Only show welcome on first-ever load
+  useEffect(() => {
+    const seen = localStorage.getItem("welcomeSeen");
+    if (!seen) {
+      setShowWelcome(true);
+    }
+  }, []);
+
+  // After closing welcome, kick off the tour
+  useEffect(() => {
+    if (!showWelcome) {
+      // small delay so header has mounted
+      setTimeout(() => setWalkthroughStep(1), 300);
+    }
+  }, [showWelcome]);
+
+  const handleCloseWelcome = () => {
+    setShowWelcome(false);
+    localStorage.setItem("welcomeSeen", "true");
+  };
+
+  const finishTour = () => {
+    setWalkthroughStep(0);
+    localStorage.setItem("walkthroughDone", "true");
+  };
 
   const items = React.useMemo(() => {
     const start = (page - 1) * rowsPerPage;
@@ -909,6 +939,12 @@ export default function Page() {
       setPageSchedule(pageSchedule - 1);
     }
   }, [pageSchedule]);
+
+  useEffect(() => {
+    if (!showWelcome) {
+      setTimeout(() => setWalkthroughStep(0), 500); // slight delay
+    }
+  }, [showWelcome]);
 
   //Lead Chart
   const dynamicChartData = useMemo(() => {
@@ -1509,7 +1545,7 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeys,filteredItems.length, page, pages, onPreviousPage, onNextPage]);
+  }, [selectedKeys, filteredItems.length, page, pages, onPreviousPage, onNextPage]);
 
   //Invoice
   const bottomContentInvoice = React.useMemo(() => {
@@ -1543,7 +1579,7 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeysInvoice,filteredItemsInvoice.length, pageInvoice, pagesInvoice, onPreviousPageInvoice, onNextPageInvoice]);
+  }, [selectedKeysInvoice, filteredItemsInvoice.length, pageInvoice, pagesInvoice, onPreviousPageInvoice, onNextPageInvoice]);
 
   //Deal
   const bottomContentDeal = React.useMemo(() => {
@@ -1577,7 +1613,7 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeysDeal,filteredItemsDeal.length, pageDeal, pagesDeal, onPreviousPageDeal, onNextPageDeal]);
+  }, [selectedKeysDeal, filteredItemsDeal.length, pageDeal, pagesDeal, onPreviousPageDeal, onNextPageDeal]);
 
   //Task
   const bottomContentTask = React.useMemo(() => {
@@ -1611,7 +1647,7 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeysTask,filteredItemsTask.length, pageTask, pagesTask, onPreviousPageTask, onNextPageTask]);
+  }, [selectedKeysTask, filteredItemsTask.length, pageTask, pagesTask, onPreviousPageTask, onNextPageTask]);
 
   //Reminder
   const bottomContentReminder = React.useMemo(() => {
@@ -1645,7 +1681,7 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeysReminder,filteredItemsReminder.length, pageReminder, pagesReminder, onPreviousPageReminder, onNextPageReminder]);
+  }, [selectedKeysReminder, filteredItemsReminder.length, pageReminder, pagesReminder, onPreviousPageReminder, onNextPageReminder]);
 
   //Schedule
   const bottomContentSchedule = React.useMemo(() => {
@@ -1679,7 +1715,7 @@ export default function Page() {
         </div>
       </div>
     );
-  }, [selectedKeysSchedule,filteredItemsSchedule.length, pageSchedule, pagesSchedule, onPreviousPageSchedule, onNextPageSchedule]);
+  }, [selectedKeysSchedule, filteredItemsSchedule.length, pageSchedule, pagesSchedule, onPreviousPageSchedule, onNextPageSchedule]);
 
   const renderCell = React.useCallback((lead: Lead, columnKey: React.Key) => {
     const cellValue = lead[columnKey as keyof Lead];
@@ -1943,12 +1979,50 @@ export default function Page() {
   }, []);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
+        {showWelcome && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-lg text-center max-w-sm w-full">
+              <h2 className="text-xl font-bold mb-2">
+                Welcome to your Dashboard 🎉
+              </h2>
+              <p className="mb-4 text-sm">
+                Let’s take a quick tour of the main features.
+              </p>
+              <button
+                onClick={handleCloseWelcome}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Start Tour
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Main Header */}
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b">
           <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
+            <div className="relative group">
+              <SidebarTrigger className="-ml-1" />
+              {!showWelcome && walkthroughStep === 0 && (
+                <div className="absolute left-1/2 top-10 z-50 -translate-x-1/2 w-56 bg-white dark:bg-gray-900 p-3 shadow-lg rounded-xl text-center">
+                  {/* Arrow */}
+                  <div className="absolute left-1/2 -top-2 -translate-x-1/2 w-3 h-3 rotate-45 bg-gray-500 dark:bg-gray-900 shadow-md" />
+                  <p className="text-sm mb-2">
+                    This is the sidebar menu. Use it to navigate between sections.
+                  </p>
+                  <button
+                    onClick={() => setWalkthroughStep(1)}
+                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+
+            </div>
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
@@ -1958,21 +2032,73 @@ export default function Page() {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
+
           <div className="flex items-center space-x-4 ml-auto mr-4">
-            <div><SearchBar /></div>
-            <a href="/email" className="relative group">
-              <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Email
+            <SearchBar />
+
+            {/* Mail Step */}
+            {walkthroughStep === 1 ? (
+              <div className="relative group cursor-default">
+                <Mail className="text-gray-600 dark:text-gray-300" />
+                {/* Tooltip for Mail */}
+                <div className="absolute left-1/2 top-10 z-50 -translate-x-1/2 w-48 bg-white dark:bg-gray-900 p-3 shadow-lg rounded-xl text-center">
+                  <div className="absolute left-1/2 -top-2 -translate-x-1/2 w-3 h-3 rotate-45 bg-gray-500 dark:bg-gray-900 shadow-md" />
+                  <p className="text-sm mb-2">
+                    This is your Mailbox. Check your messages here.
+                  </p>
+                  <button
+                    onClick={() => setWalkthroughStep(2)}
+                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            </a>
-            <a href="/calendar" className="relative group">
-              <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
-              <div className="absolute left-1/2 top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Calendar
+            ) : (
+              <a href="/email" className="relative group">
+                <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+              </a>
+            )}
+            {walkthroughStep === 2 ? (
+              <div className="relative group cursor-default">
+                <Calendar1 className="text-gray-600 dark:text-gray-300" />
+                <div className="absolute left-1/2 top-10 z-50 -translate-x-1/2 w-48 bg-white dark:bg-gray-900 p-3 shadow-lg rounded-xl text-center">
+                  <div className="absolute left-1/2 -top-2 -translate-x-1/2 w-3 h-3 rotate-45 bg-gray-500 dark:bg-gray-900 shadow-md" />
+                  <p className="text-sm mb-2">
+                    This is your Caledar. Check your events here.
+                  </p>
+                  <button
+                    onClick={() => setWalkthroughStep(3)}
+                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            </a>
-            <div><Notification /></div>
+            ) : (
+              <a href="/calendar" className="relative group">
+                <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
+              </a>
+            )}
+
+            {/* Notification Step */}
+            <div className="relative group">
+              <Notification/>
+              {walkthroughStep === 3 && (
+                <div className="absolute left-1/2 top-10 z-50 -translate-x-1/2 w-48 bg-white dark:bg-gray-900 p-3 shadow-lg rounded-xl text-center">
+                  <div className="absolute left-1/2 -top-2 -translate-x-1/2 w-3 h-3 rotate-45 bg-gray-500 dark:bg-gray-900 shadow-md" />
+                  <p className="text-sm mb-2">
+                    These are your Notifications. Stay updated here.
+                  </p>
+                  <button
+                    onClick={finishTour}
+                    className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                  >
+                    Finish
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
