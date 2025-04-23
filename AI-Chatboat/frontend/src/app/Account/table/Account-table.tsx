@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
+import { Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon, Menu, ArrowUp, ArrowDown, Ellipsis } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -35,16 +35,18 @@ const formatDate = (dateString: string): string => {
 };
 
 const columns = [
+    { name: "", uid: "selection", sortable: false, width: "120px" }, // Increased width
+    { name: "#", uid: "index", sortable: false, width: "50px" },
     { name: "Bank Name", uid: "bankName", sortable: true, width: "120px" },
     { name: "Bank IFSC Code", uid: "IFSCCode", sortable: true, width: "120px" },
     { name: "Bank Account Holder Name", uid: "accountHolderName", sortable: true, width: "120px" },
     { name: "Bank Account Number", uid: "accountNumber", sortable: true, width: "120px" },
     { name: "Account Type", uid: "accountType", sortable: true, width: "120px" },
     { name: "UPI ID", uid: "UpiId", sortable: true, width: "100px" },
-    { name: "Action", uid: "actions", sortable: true, width: "100px" },
+   
 ];
 
-const INITIAL_VISIBLE_COLUMNS = ["accountHolderName", "accountNumber", "bankName", "accountType", "IFSCCode", "UpiId", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["selection", "index", "bankName", "accountHolderName", "accountNumber", "accountType", "IFSCCode", "UpiId"];
 
 const accountSchema = z.object({
     bankName: z.string().nonempty({ message: "Required" }),
@@ -56,6 +58,7 @@ const accountSchema = z.object({
 });
 
 export default function AccountTable() {
+    const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
     const [accounts, setLeads] = useState<Account[]>([]);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
@@ -148,7 +151,7 @@ export default function AccountTable() {
             });
         }
         return filteredLeads;
-    }, [accounts, filterValue,hasSearchFilter]);
+    }, [accounts, filterValue, hasSearchFilter]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -249,39 +252,140 @@ export default function AccountTable() {
         }
     }
 
-    const renderCell = React.useCallback((account: Account, columnKey: string) => {
+    const renderCell = React.useCallback((account: Account, columnKey: string, index: number) => {
         const cellValue = account[columnKey as keyof Account];
-        if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
-            return formatDate(cellValue);
-        }
-        if (columnKey === "UpiId") {
-            return cellValue || "N/A";
-        }
-        if (columnKey === "actions") {
+    
+        if (columnKey === "selection") {
             return (
-                <div className="relative flex items-center gap-2">
-                    <Tooltip>
-                        <span
-                            className="text-lg text-default-400 cursor-pointer active:opacity-50"
-                            onClick={() => handleEditClick(account)}
-                        >
-                            <Edit className="h-4 w-4" />
-                        </span>
-                    </Tooltip>
-                    <Tooltip>
-                        <span
-                            className="text-lg text-danger cursor-pointer active:opacity-50"
-                            onClick={() => handleDeleteClick(account)}
-                        >
-                            <Trash2 className="h-4 w-4" />
-                        </span>
-                    </Tooltip>
+                <div className="flex items-center gap-2">
+                    {/* Ellipsis dropdown menu */}
+                    <Dropdown>
+                        <DropdownTrigger>
+                            <Button variant="ghost" size="sm" className="p-1">
+                                <Ellipsis className="h-4 w-4 text-gray-500" />
+                            </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu>
+                            <DropdownItem 
+                                onClick={() => handleEditClick(account)}
+                                className="flex items-center gap-2"
+                            >
+                                <Edit className="h-4 w-4" />
+                                <span>Edit</span>
+                            </DropdownItem>
+                            <DropdownItem 
+                                onClick={() => handleDeleteClick(account)}
+                                className="flex items-center gap-2 text-red-600"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                <span>Delete</span>
+                            </DropdownItem>
+                        </DropdownMenu>
+                    </Dropdown>
+    
+                    {/* Checkbox */}
+                    <input
+                        type="checkbox"
+                        checked={selectedRows.has(account._id)}
+                        onChange={(e) => {
+                            const newSelection = new Set(selectedRows);
+                            if (e.target.checked) {
+                                newSelection.add(account._id);
+                            } else {
+                                newSelection.delete(account._id);
+                            }
+                            setSelectedRows(newSelection);
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        onClick={(e) => e.stopPropagation()}
+                    />
                 </div>
             );
         }
+        if (columnKey === "index") {
+            return index + 1;
+        }
+
+        if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
+            return formatDate(cellValue);
+        }
+
+        if (columnKey === "UpiId") {
+            return cellValue || "N/A";
+        }
+
+       
 
         return cellValue;
-    },[handleEditClick, handleDeleteClick]);
+    }, [handleEditClick, handleDeleteClick, selectedRows]);
+
+    const renderHeaderCell = (column: any) => {
+        if (column.uid === "selection") {
+               return (
+                   <input
+                       type="checkbox"
+                       checked={selectedRows.size === sortedItems.length && sortedItems.length > 0}
+                       onChange={(e) => {
+                           const newSelection = new Set<string>();
+                           if (e.target.checked) {
+                               sortedItems.forEach(item => newSelection.add(item._id));
+                           }
+                           setSelectedRows(newSelection);
+                       }}
+                       className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                   />
+               );
+           }
+          
+
+        if (!column.sortable) {
+            return column.name;
+        }
+
+
+        return (
+            <Dropdown>
+                <DropdownTrigger>
+                    <div className="flex items-center gap-1 cursor-pointer">
+                        <span>{column.name}</span>
+                        <Menu className="h-4 w-4 ml-2" />
+                    </div>
+                </DropdownTrigger>
+                <DropdownMenu
+                    aria-label="Sort Options"
+                    className="bg-white shadow-lg border border-gray-200 rounded-xl w-44 p-2 z-[999]"
+                >
+                    <DropdownItem
+                        key="asc"
+                        onClick={() => handleSort(column.uid, "ascending")}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
+                    >
+                        <ArrowUp className="h-4 w-4 text-gray-500" />
+                        <span className="text-gray-700">Ascending</span>
+                    </DropdownItem>
+
+                    <DropdownItem
+                        key="desc"
+                        onClick={() => handleSort(column.uid, "descending")}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
+                    >
+                        <ArrowDown className="h-4 w-4 text-gray-500" />
+                        <span className="text-gray-700">Descending</span>
+                    </DropdownItem>
+                </DropdownMenu>
+            </Dropdown>
+        );
+
+
+    };
+
+    // Add this sort handler
+    const handleSort = (column: string, direction: 'ascending' | 'descending') => {
+        setSortDescriptor({
+            column,
+            direction
+        });
+    };
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -431,14 +535,21 @@ export default function AccountTable() {
                             <h1 className="text-1xl mb-4 mt-4 text-center">Store client / customer&apos;s bank account details</h1>
                             <Table
                                 isHeaderSticky
-                                aria-label="Leads table with custom cells, pagination and sorting"
+                                aria-label="Accounts table with custom cells, pagination and sorting"
                                 bottomContent={bottomContent}
                                 bottomContentPlacement="outside"
-                                classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
+                                classNames={{
+                                    wrapper: "max-h-[382px] overflow-y-auto",
+                                    th: "border-r border-gray-200 last:border-r-0 bg-gray-100",
+                                    td: "border-r border-gray-200 last:border-r-0",
+                                }}
                                 topContent={topContent}
                                 topContentPlacement="outside"
                                 sortDescriptor={sortDescriptor}
                                 onSortChange={setSortDescriptor}
+                                onRowAction={(key) => {
+                                        console.log("Row clicked:", key);
+                                    }}
                             >
                                 <TableHeader columns={headerColumns}>
                                     {(column) => (
@@ -446,17 +557,21 @@ export default function AccountTable() {
                                             key={column.uid}
                                             align={column.uid === "actions" ? "center" : "start"}
                                             allowsSorting={column.sortable}
+                                            className="py-2 px-3"
                                         >
-                                            {column.name}
+                                            {renderHeaderCell(column)}
                                         </TableColumn>
                                     )}
                                 </TableHeader>
-                                <TableBody emptyContent={"Create account and add data"} items={sortedItems}>
-                                    {(item) => (
+                                <TableBody emptyContent={"No accounts found"} items={sortedItems}>
+                                    {(item: Account, index: number) => (
                                         <TableRow key={item._id}>
                                             {(columnKey) => (
-                                                <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                                                    {renderCell(item, columnKey.toString())}
+                                                <TableCell
+                                                    style={{ fontSize: "12px", padding: "8px" }}
+                                                    className="border-r border-gray-200 last:border-r-0"
+                                                >
+                                                    {renderCell(item, columnKey.toString(), index)}
                                                 </TableCell>
                                             )}
                                         </TableRow>
