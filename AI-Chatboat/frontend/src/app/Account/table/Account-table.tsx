@@ -486,28 +486,6 @@ export default function AccountTable() {
                         <span className="text-gray-700">Descending</span>
                     </DropdownItem>
 
-                    {column.uid === "bankName" && (
-            <>
-                <DropdownItem
-                    key="alpha-asc"
-                    onClick={() => handleSort(column.uid, "alphabetical-asc")}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
-                >
-                    <ArrowUp className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-700">A → Z</span>
-                </DropdownItem>
-
-                <DropdownItem
-                    key="alpha-desc"
-                    onClick={() => handleSort(column.uid, "alphabetical-desc")}
-                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
-                >
-                    <ArrowDown className="h-4 w-4 text-gray-500" />
-                    <span className="text-gray-700">Z → A</span>
-                </DropdownItem>
-            </>
-        )}
-
                     <DropdownItem
                         key="none"
                         onClick={() => setSortDescriptor({ column: null, direction: null })}
@@ -536,15 +514,10 @@ export default function AccountTable() {
         );
     };
 
-    const handleSort = (column, direction) => {
-        if (direction === "alphabetical-asc") {
-            // Implement A-Z sorting logic
-            setSortDescriptor({ column, direction: "alphabetical-asc" });
-        } else if (direction === "alphabetical-desc") {
-            // Implement Z-A sorting logic
-            setSortDescriptor({ column, direction: "alphabetical-desc" });
+    const handleSort = (column: string, direction: 'ascending' | 'descending') => {
+        if (sortDescriptor.column === column && sortDescriptor.direction === direction) {
+            setSortDescriptor({ column: null, direction: null });
         } else {
-            // Existing numeric sorting logic
             setSortDescriptor({ column, direction });
         }
     };
