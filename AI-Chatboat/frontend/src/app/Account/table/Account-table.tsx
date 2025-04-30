@@ -111,7 +111,7 @@ export default function AccountTable() {
     useEffect(() => {
         fetchAccounts();
     }, [fetchAccounts]);
-
+    const [alphabetFilter, setAlphabetFilter] = React.useState<string | null>(null);
     const [filterValue, setFilterValue] = useState("");
     const allColumnUIDs = columns.map((col) => col.uid); // Add this line
     const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(allColumnUIDs));
@@ -221,17 +221,24 @@ export default function AccountTable() {
     }, [page, filteredItems, rowsPerPage]);
 
     const sortedItems = React.useMemo(() => {
-        if (!sortDescriptor.column || !sortDescriptor.direction) {
-            return items; // No sorting applied
+        let filtered = items;
+    
+        if (alphabetFilter) {
+            filtered = filtered.filter((item) =>
+                item.bankName?.toLowerCase().startsWith(alphabetFilter.toLowerCase())
+            );
         }
-
+    
+        if (!sortDescriptor.column || !sortDescriptor.direction) {
+            return filtered;
+        }
         return [...items].sort((a, b) => {
             const first = a[sortDescriptor.column as keyof Account];
             const second = b[sortDescriptor.column as keyof Account];
             const cmp = first < second ? -1 : first > second ? 1 : 0;
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
-    }, [sortDescriptor, items]);
+    }, [sortDescriptor, items, alphabetFilter]);
 
 
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -422,98 +429,112 @@ export default function AccountTable() {
         return cellValue;
     }, [handleEditClick, handleDeleteClick, selectedRows]);
 
-    const renderHeaderCell = (column: any) => {
-        if (column.uid === "selection") {
-            const someSelected = sortedItems.some(item => selectedRows.has(item._id));
-            const allSelected = sortedItems.length > 0 && sortedItems.every(item => selectedRows.has(item._id));
-
-            return (
-                <input
-                    type="checkbox"
-                    checked={allSelected}
-                    ref={input => {
-                        if (input) {
-                            input.indeterminate = someSelected && !allSelected;
-                        }
-                    }}
-                    onChange={(e) => {
-                        const newSelection = new Set(selectedRows);
-
-                        if (e.target.checked) {
-                            sortedItems.forEach(item => newSelection.add(item._id));
-                        } else {
-                            sortedItems.forEach(item => newSelection.delete(item._id));
-                        }
-
-                        setSelectedRows(newSelection);
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-            );
-        }
-
-        if (!column.sortable) {
-            return column.name;
-        }
+   const renderHeaderCell = (column: any) => {
+    if (column.uid === "selection") {
+        const someSelected = sortedItems.some(item => selectedRows.has(item._id));
+        const allSelected = sortedItems.length > 0 && sortedItems.every(item => selectedRows.has(item._id));
 
         return (
-            <Dropdown>
-                <DropdownTrigger>
-                    <div className="flex items-center gap-1 cursor-pointer">
-                        <span>{column.name}</span>
-                        <Menu className="h-4 w-4 ml-2" />
-                    </div>
-                </DropdownTrigger>
-                <DropdownMenu
-                    aria-label="Sort Options"
-                    className="bg-white shadow-lg border border-gray-200 rounded-xl w-44 p-2 z-[999]"
-                >
-                    <DropdownItem
-                        key="asc"
-                        onClick={() => handleSort(column.uid, "ascending")}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
-                    >
-                        <ArrowUp className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-700">Ascending</span>
-                    </DropdownItem>
-
-                    <DropdownItem
-                        key="desc"
-                        onClick={() => handleSort(column.uid, "descending")}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
-                    >
-                        <ArrowDown className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-700">Descending</span>
-                    </DropdownItem>
-
-                    <DropdownItem
-                        key="none"
-                        onClick={() => setSortDescriptor({ column: null, direction: null })}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
-                    >
-                        <X className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-700">Unsort</span>
-                    </DropdownItem>
-
-                    <DropdownItem
-                        key="hide"
-                        onClick={() => {
-                            setVisibleColumns((prev) => {
-                                const updated = new Set(prev);
-                                updated.delete(column.uid); 
-                                return updated;
-                            });
-                        }}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-red-100 text-sm text-red-600"
-                    >
-                        <EyeOff className="h-4 w-4" />
-                        <span>Hide Column</span>
-                    </DropdownItem>
-                </DropdownMenu>
-            </Dropdown>
+            <input
+                type="checkbox"
+                checked={allSelected}
+                ref={input => {
+                    if (input) {
+                        input.indeterminate = someSelected && !allSelected;
+                    }
+                }}
+                onChange={(e) => {
+                    const newSelection = new Set(selectedRows);
+                    if (e.target.checked) {
+                        sortedItems.forEach(item => newSelection.add(item._id));
+                    } else {
+                        sortedItems.forEach(item => newSelection.delete(item._id));
+                    }
+                    setSelectedRows(newSelection);
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
         );
-    };
+    }
 
+    return (
+        <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{column.name}</span>
+                    {/* Alphabet filter dropdown - only for bankName column */}
+                    {column.uid === "bankName" && (
+                        <select
+                            value={alphabetFilter || ""}
+                            onChange={(e) => setAlphabetFilter(e.target.value === "" ? null : e.target.value)}
+                            className="text-xs border border-gray-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        >
+                            <option value="">All</option>
+                            {[..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"].map((char) => (
+                                <option key={char} value={char}>
+                                    {char}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+                </div>
+                {column.sortable && (
+                    <Dropdown>
+                        <DropdownTrigger>
+                            <div className="flex items-center gap-1 cursor-pointer">
+                                <Menu className="h-4 w-4 text-gray-600" />
+                            </div>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                            aria-label="Sort Options"
+                            className="bg-white shadow-lg border border-gray-200 rounded-xl w-44 p-2 z-[999]"
+                        >
+                            <DropdownItem
+                                key="asc"
+                                onClick={() => handleSort(column.uid, "ascending")}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
+                            >
+                                <ArrowUp className="h-4 w-4 text-gray-500" />
+                                <span className="text-gray-700">Ascending</span>
+                            </DropdownItem>
+                            <DropdownItem
+                                key="desc"
+                                onClick={() => handleSort(column.uid, "descending")}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
+                            >
+                                <ArrowDown className="h-4 w-4 text-gray-500" />
+                                <span className="text-gray-700">Descending</span>
+                            </DropdownItem>
+                            <DropdownItem
+                                key="none"
+                                onClick={() => setSortDescriptor({ column: null, direction: null })}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
+                            >
+                                <X className="h-4 w-4 text-gray-500" />
+                                <span className="text-gray-700">Unsort</span>
+                            </DropdownItem>
+
+                            <DropdownItem
+                                key="hide"
+                                onClick={() => {
+                                    setVisibleColumns((prev) => {
+                                        const updated = new Set(prev);
+                                        updated.delete(column.uid);
+                                        return updated;
+                                    });
+                                }}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-red-100 text-sm text-red-600"
+                            >
+                                <EyeOff className="h-4 w-4" />
+                                <span>Hide Column</span>
+                            </DropdownItem>
+                        </DropdownMenu>
+                    </Dropdown>
+                )}
+            </div>
+        </div>
+    );
+};
     const handleSort = (column: string, direction: 'ascending' | 'descending') => {
         if (sortDescriptor.column === column && sortDescriptor.direction === direction) {
             setSortDescriptor({ column: null, direction: null });

@@ -2038,8 +2038,9 @@ export default function Page() {
               <Mail className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
               {isFirstLogin && walkthroughStep === 1 && (
                 <>
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-blue-500 group-hover:bg-blue-600 transition" />
-                  <div className="absolute left-1/2 top-[-60px] z-50 -translate-x-1/2 w-52 bg-white dark:bg-gray-900 p-3 shadow-lg rounded-xl text-center">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 bg-blue-500 group-hover:bg-blue-600 transition-all transform rotate-45 rounded-sm animate-pulse"
+                    style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)' }} />
+                  <div className="absolute left-1/2 top-[-60px] z-50 -translate-x-1/2 w-52 bg-white dark:bg-gray-900 p-3 shadow-lg rounded-xl text-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <p className="text-sm mb-2">This is your Mailbox. Check your messages here.</p>
                     <button
                       onClick={() => setWalkthroughStep(2)}
@@ -2056,8 +2057,9 @@ export default function Page() {
               <Calendar1 className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" />
               {isFirstLogin && walkthroughStep === 2 && (
                 <>
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-blue-500 group-hover:bg-blue-600 transition" />
-                  <div className="absolute left-1/2 top-[-60px] z-50 -translate-x-1/2 w-52 bg-white dark:bg-gray-900 p-3 shadow-lg rounded-xl text-center">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 bg-blue-500 group-hover:bg-blue-600 transition-all transform rotate-45 rounded-sm animate-pulse"
+                    style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)' }} />
+                  <div className="absolute left-1/2 top-[-60px] z-50 -translate-x-1/2 w-52 bg-white dark:bg-gray-900 p-3 shadow-lg rounded-xl text-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <p className="text-sm mb-2">This is your Calendar. Manage your schedule here.</p>
                     <button
                       onClick={() => setWalkthroughStep(3)}
@@ -2074,8 +2076,9 @@ export default function Page() {
               <Notification />
               {isFirstLogin && walkthroughStep === 3 && (
                 <>
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 bg-blue-500 group-hover:bg-blue-600 transition" />
-                  <div className="absolute left-1/2 top-[-60px] z-50 -translate-x-1/2 w-52 bg-white dark:bg-gray-900 p-3 shadow-lg rounded-xl text-center">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-4 h-4 bg-blue-500 group-hover:bg-blue-600 transition-all transform rotate-45 rounded-sm animate-pulse"
+                    style={{ clipPath: 'polygon(0% 0%, 100% 0%, 50% 100%)' }} />
+                  <div className="absolute left-1/2 top-[-60px] z-50 -translate-x-1/2 w-52 bg-white dark:bg-gray-900 p-3 shadow-lg rounded-xl text-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <p className="text-sm mb-2">These are your Notifications. Stay updated here.</p>
                     <button
                       onClick={() => {

@@ -149,8 +149,7 @@ export default function DealTable() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [filters, setFilters] = useState<{ field: string; operator: string; value: string }[]>([]);
-    const [appliedFilters, setAppliedFilters] = useState<Record<string, string>>({});
+    const [filters, setFilters] = useState<{ field: string; operator: string; value: string }[]>([]);    const [appliedFilters, setAppliedFilters] = useState<Record<string, string>>({});
     const [filteredLeads, setFilteredLeads] = useState([]);
 
     const fetchdeal = React.useCallback(async () => {
@@ -206,10 +205,7 @@ export default function DealTable() {
        });
     const [page, setPage] = useState(1);
     const [alphabetFilter, setAlphabetFilter] = React.useState<string | null>(null);
- const [conditions, setConditions] = useState<Record<
-        string,
-        { operator: string; value?: string }
-    >>({});
+    const [conditions, setConditions] = useState<Record<string, { operator: string; value?: string }>>({});
 
     const filterFields = [
         { name: " companyName", label: "Company Name" },
@@ -413,15 +409,15 @@ export default function DealTable() {
         }
     };
 
- const filterForm = useForm<z.infer<typeof filterSchema>>({
-         resolver: zodResolver(filterSchema),
-         defaultValues: {
-             bankName: "",
-             accountType: "",
-             IFSCCode: ""
-         },
-     });
- 
+    const filterForm = useForm<z.infer<typeof filterSchema>>({
+        resolver: zodResolver(filterSchema),
+        defaultValues: {
+            companyName: "",
+            customerName: "",
+            productName: "",
+            status: ""
+        },
+    });
      const hasSearchFilter = Boolean(filterValue);
      const hasAppliedFilters = Object.keys(appliedFilters).length > 0;
  
@@ -431,50 +427,50 @@ export default function DealTable() {
      }, [visibleColumns]);
  
      const filteredItems = React.useMemo(() => {
-         let filteredLeads = [...Deals];
- 
-         // Apply search filter
-         if (filterValue) {
-             filteredLeads = filteredLeads.filter(Deals =>
-                 Object.values(Deals).some(value =>
-                     String(value).toLowerCase().includes(filterValue.toLowerCase())
-                 )
-             );
-         }
- 
-         // Apply advanced filters
-         if (Object.keys(conditions).length > 0) {
-             filteredLeads = filteredLeads.filter(Deals => {
-                 return Object.entries(conditions).every(([field, condition]) => {
-                     const value = String(Deals[field as keyof Deal] ?? "").toLowerCase();
-                     const filterValue = condition.value ? condition.value.toLowerCase() : "";
- 
-                     switch (condition.operator) {
-                         case "is":
-                             return value === filterValue;
-                         case "isn't":
-                             return value !== filterValue;
-                         case "contains":
-                             return value.includes(filterValue);
-                         case "doesn't contain":
-                             return !value.includes(filterValue);
-                         case "starts with":
-                             return value.startsWith(filterValue);
-                         case "ends with":
-                             return value.endsWith(filterValue);
-                         case "is empty":
-                             return value === "";
-                         case "is not empty":
-                             return value !== "";
-                         default:
-                             return true;
-                     }
-                 });
-             });
-         }
- 
-         return filteredLeads;
-     }, [Deals, filterValue, conditions]);
+        let filteredDeals = [...Deals];
+    
+        // Apply search filter
+        if (filterValue) {
+            filteredDeals = filteredDeals.filter(deal =>
+                Object.values(deal).some(value =>
+                    String(value).toLowerCase().includes(filterValue.toLowerCase())
+                )
+            );
+        }
+    
+        // Apply advanced filters
+        if (Object.keys(conditions).length > 0) {
+            filteredDeals = filteredDeals.filter(deal => {
+                return Object.entries(conditions).every(([field, condition]) => {
+                    const dealValue = String(deal[field as keyof Deal] ?? "").toLowerCase();
+                    const filterValue = condition.value ? condition.value.toLowerCase() : "";
+    
+                    switch (condition.operator) {
+                        case "is":
+                            return dealValue === filterValue;
+                        case "isn't":
+                            return dealValue !== filterValue;
+                        case "contains":
+                            return dealValue.includes(filterValue);
+                        case "doesn't contain":
+                            return !dealValue.includes(filterValue);
+                        case "starts with":
+                            return dealValue.startsWith(filterValue);
+                        case "ends with":
+                            return dealValue.endsWith(filterValue);
+                        case "is empty":
+                            return dealValue === "";
+                        case "is not empty":
+                            return dealValue !== "";
+                        default:
+                            return true;
+                    }
+                });
+            });
+        }
+    
+        return filteredDeals;
+    }, [Deals, filterValue, conditions]);
  
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -594,22 +590,23 @@ export default function DealTable() {
     };
 
     const applyFilters = () => {
-        const newFilters: Record<string, { operator: string; value?: string }> = {};
-
+        const newConditions: Record<string, { operator: string; value?: string }> = {};
+        
         filters.forEach(filter => {
             if (filter.field && filter.operator) {
-                newFilters[filter.field] = {
+                // Remove any whitespace from field name
+                const fieldName = filter.field.trim();
+                
+                newConditions[fieldName] = {
                     operator: filter.operator,
                     value: ["is empty", "is not empty"].includes(filter.operator) ? undefined : filter.value
                 };
             }
         });
-
-        setConditions(newFilters);
+    
+        setConditions(newConditions);
         setIsFilterOpen(false);
     };
-
-
 
     const clearFilters = () => {
         setFilters([]);

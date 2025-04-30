@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
+import { Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon, ReceiptText, SquareUser, Menu, ArrowUp, ArrowDown, Ellipsis, Filter, X, EyeOff } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -88,9 +88,19 @@ const taskSchema = z.object({
     notes: z.string().optional(),
 });
 
+const filterSchema = z.object({
+    companyName: z.string().optional(),
+    customerName: z.string().optional(),
+    subject: z.string().optional(),
+    status: z.string().optional(),
+});
 export default function TaskTable() {
     const [tasks, setTasks] = useState<Task[]>([]);
     const router = useRouter();
+    const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [filters, setFilters] = useState<{ field: string; operator: string; value: string }[]>([]); const [appliedFilters, setAppliedFilters] = useState<Record<string, string>>({});
+    const [filteredLeads, setFilteredLeads] = useState([]);
 
     const fetchTasks = useCallback(async () => {
         try {
@@ -157,14 +167,24 @@ export default function TaskTable() {
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
     const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
-        column: "createdAt",
-        direction: "descending",
+    const [sortDescriptor, setSortDescriptor] = React.useState<{
+        column: string | null;
+        direction: 'ascending' | 'descending' | null;
+    }>({
+        column: null,
+        direction: null
     });
     const [page, setPage] = useState(1);
     const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+    const [conditions, setConditions] = useState<Record<string, { operator: string; value?: string }>>({});
 
+    const filterFields = [
+        { name: " companyName", label: "Company Name" },
+        { name: " customerName", label: "Customer Name" },
+        { name: "subject", label: "Subject" },
+        { name: " status", label: "Status" },
+    ];
     const form = useForm<z.infer<typeof taskSchema>>({
         resolver: zodResolver(taskSchema),
         defaultValues: {
@@ -180,7 +200,17 @@ export default function TaskTable() {
         },
     });
 
+    const filterForm = useForm<z.infer<typeof filterSchema>>({
+        resolver: zodResolver(filterSchema),
+        defaultValues: {
+            companyName: "",
+            customerName: "",
+            subject: "",
+            status: ""
+        },
+    });
     const hasSearchFilter = Boolean(filterValue);
+    const hasAppliedFilters = Object.keys(appliedFilters).length > 0;
 
     const headerColumns = React.useMemo(() => {
         if (visibleColumns.size === columns.length) return columns;
@@ -188,29 +218,51 @@ export default function TaskTable() {
     }, [visibleColumns]);
 
     const filteredItems = React.useMemo(() => {
-        let filteredTasks = [...tasks];
+        let filteredDeals = [...tasks];
 
-        if (hasSearchFilter) {
-            filteredTasks = filteredTasks.filter((task) => {
-                const searchableFields = {
-                    subject: task.subject,
-                    relatedTo: task.relatedTo,
-                    name: task.name,
-                    assigned: task.assigned,
-                    notes: task.notes,
-                    date: task.date,
-                    endDate: task.endDate,
-                    priority: task.priority,
-                    status: task.status,
-                };
-                return Object.values(searchableFields).some(value =>
-                    String(value || '').toLowerCase().includes(filterValue.toLowerCase())
-                );
+        // Apply search filter
+        if (filterValue) {
+            filteredDeals = filteredDeals.filter(task =>
+                Object.values(task).some(value =>
+                    String(value).toLowerCase().includes(filterValue.toLowerCase())
+                )
+            );
+        }
+
+        // Apply advanced filters
+        if (Object.keys(conditions).length > 0) {
+            filteredDeals = filteredDeals.filter(tasks => {
+                return Object.entries(conditions).every(([field, condition]) => {
+                    const dealValue = String(tasks[field as keyof Task] ?? "").toLowerCase();
+                    const filterValue = condition.value ? condition.value.toLowerCase() : "";
+
+                    switch (condition.operator) {
+                        case "is":
+                            return dealValue === filterValue;
+                        case "isn't":
+                            return dealValue !== filterValue;
+                        case "contains":
+                            return dealValue.includes(filterValue);
+                        case "doesn't contain":
+                            return !dealValue.includes(filterValue);
+                        case "starts with":
+                            return dealValue.startsWith(filterValue);
+                        case "ends with":
+                            return dealValue.endsWith(filterValue);
+                        case "is empty":
+                            return dealValue === "";
+                        case "is not empty":
+                            return dealValue !== "";
+                        default:
+                            return true;
+                    }
+                });
             });
         }
 
-        return filteredTasks;
-    }, [tasks, filterValue, hasSearchFilter]);
+        return filteredDeals;
+    }, [tasks, filterValue, conditions]);
+
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -254,7 +306,7 @@ export default function TaskTable() {
         setTaskToDelete(task);
         setIsDeleteConfirmationOpen(true);
     }, []);
-    
+
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     async function onEdit(values: z.infer<typeof taskSchema>) {
@@ -292,6 +344,48 @@ export default function TaskTable() {
         }
     }
 
+    const updateFilter = (index: number, updatedFilter: typeof filters[number]) => {
+        const newFilters = [...filters];
+        newFilters[index] = updatedFilter;
+        setFilters(newFilters);
+    };
+
+    const addNewFilter = () => {
+        setFilters([...filters, { field: "", operator: "", value: "" }]);
+    };
+
+    const applyFilters = () => {
+        const newConditions: Record<string, { operator: string; value?: string }> = {};
+
+        filters.forEach(filter => {
+            if (filter.field && filter.operator) {
+                // Remove any whitespace from field name
+                const fieldName = filter.field.trim();
+
+                newConditions[fieldName] = {
+                    operator: filter.operator,
+                    value: ["is empty", "is not empty"].includes(filter.operator) ? undefined : filter.value
+                };
+            }
+        });
+
+        setConditions(newConditions);
+        setIsFilterOpen(false);
+    };
+
+    const clearFilters = () => {
+        setFilters([]);
+        setConditions({});
+        setFilterValue("");
+        setPage(1);
+    };
+
+    const removeFilter = (key: string) => {
+        const newFilters = { ...appliedFilters };
+        delete newFilters[key];
+        setAppliedFilters(newFilters);
+        filterForm.setValue(key as any, "");
+    };
     const renderCell = useCallback((tasks: Task, columnKey: string) => {
         const cellValue = tasks[columnKey as keyof Task];
 
@@ -326,8 +420,107 @@ export default function TaskTable() {
             );
         }
         return cellValue;
-    }, [handleDeleteClick,handleEditClick,]);
+    }, [handleDeleteClick, handleEditClick,]);
 
+    const renderHeaderCell = (column: any) => {
+        if (column.uid === "selection") {
+            const someSelected = sortedItems.some(item => selectedRows.has(item._id));
+            const allSelected = sortedItems.length > 0 && sortedItems.every(item => selectedRows.has(item._id));
+
+            return (
+                <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={input => {
+                        if (input) {
+                            input.indeterminate = someSelected && !allSelected;
+                        }
+                    }}
+                    onChange={(e) => {
+                        const newSelection = new Set(selectedRows);
+                        if (e.target.checked) {
+                            sortedItems.forEach(item => newSelection.add(item._id));
+                        } else {
+                            sortedItems.forEach(item => newSelection.delete(item._id));
+                        }
+                        setSelectedRows(newSelection);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+            );
+        }
+
+        return (
+            <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{column.name}</span>
+                    </div>
+                    {column.sortable && (
+                        <Dropdown>
+                            <DropdownTrigger>
+                                <div className="flex items-center gap-1 cursor-pointer">
+                                    <Menu className="h-4 w-4 text-gray-600" />
+                                </div>
+                            </DropdownTrigger>
+                            <DropdownMenu
+                                aria-label="Sort Options"
+                                className="bg-white shadow-lg border border-gray-200 rounded-xl w-44 p-2 z-[999]"
+                            >
+                                <DropdownItem
+                                    key="asc"
+                                    onClick={() => handleSort(column.uid, "ascending")}
+                                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
+                                >
+                                    <ArrowUp className="h-4 w-4 text-gray-500" />
+                                    <span className="text-gray-700">Ascending</span>
+                                </DropdownItem>
+                                <DropdownItem
+                                    key="desc"
+                                    onClick={() => handleSort(column.uid, "descending")}
+                                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
+                                >
+                                    <ArrowDown className="h-4 w-4 text-gray-500" />
+                                    <span className="text-gray-700">Descending</span>
+                                </DropdownItem>
+                                <DropdownItem
+                                    key="none"
+                                    onClick={() => setSortDescriptor({ column: null, direction: null })}
+                                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-100 text-sm"
+                                >
+                                    <X className="h-4 w-4 text-gray-500" />
+                                    <span className="text-gray-700">Unsort</span>
+                                </DropdownItem>
+
+                                <DropdownItem
+                                    key="hide"
+                                    onClick={() => {
+                                        setVisibleColumns((prev) => {
+                                            const updated = new Set(prev);
+                                            updated.delete(column.uid);
+                                            return updated;
+                                        });
+                                    }}
+                                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-red-100 text-sm text-red-600"
+                                >
+                                    <EyeOff className="h-4 w-4" />
+                                    <span>Hide Column</span>
+                                </DropdownItem>
+                            </DropdownMenu>
+                        </Dropdown>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const handleSort = (column: string, direction: 'ascending' | 'descending') => {
+        if (sortDescriptor.column === column && sortDescriptor.direction === direction) {
+            setSortDescriptor({ column: null, direction: null });
+        } else {
+            setSortDescriptor({ column, direction });
+        }
+    };
     const onNextPage = useCallback(() => {
         if (page < pages) {
             setPage(page + 1);
@@ -363,6 +556,18 @@ export default function TaskTable() {
                         />
                     </div>
                     <div className="flex flex-col sm:flex-row sm:justify-end gap-3 w-full">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsFilterOpen(true)}
+                            className="flex items-center gap-2"
+                        >
+                            <Filter className="h-4 w-4" />
+                            {hasAppliedFilters && (
+                                <span className="h-5 w-5 bg-[hsl(339.92deg_91.04%_52.35%)] text-white rounded-full flex items-center justify-center text-xs">
+                                    {Object.keys(appliedFilters).length}
+                                </span>
+                            )}
+                        </Button>
                         <Dropdown>
                             <DropdownTrigger className="w-full sm:w-auto">
                                 <Button
@@ -408,6 +613,37 @@ export default function TaskTable() {
                         </Button>
                     </div>
                 </div>
+                  {hasAppliedFilters && (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {Object.keys(conditions).length > 0 && (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {Object.entries(conditions).map(([field, condition]) => (
+                                                                    <div key={field} className="flex items-center bg-gray-100 rounded-full px-3 py-1 text-sm">
+                                                                        <span className="capitalize">
+                                                                            {field}: {condition.operator} {condition.value || ""}
+                                                                        </span>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const newConditions = { ...conditions };
+                                                                                delete newConditions[field];
+                                                                                setConditions(newConditions);
+                                                                            }}
+                                                                            className="ml-2 text-gray-500 hover:text-gray-700"
+                                                                        >
+                                                                            <X className="h-3 w-3" />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                                <button
+                                                                    onClick={clearFilters}
+                                                                    className="text-sm text-[hsl(339.92deg_91.04%_52.35%)] hover:underline flex items-center"
+                                                                >
+                                                                    Clear all
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                 <div className="flex justify-between items-center">
                     <span className="text-default-400 text-small">Total {tasks.length} task</span>
                     <label className="flex items-center text-default-400 text-small gap-2">
@@ -475,40 +711,64 @@ export default function TaskTable() {
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
                             <h1 className="text-3xl font-bold mb-4 mt-4 text-center">Task Record</h1>
                             <h1 className="text-1xl mb-4 mt-4 text-center">Create your company&apos;s activities or task here</h1>
-                            <Table
-                                isHeaderSticky
-                                aria-label="Leads table with custom cells, pagination and sorting"
-                                bottomContent={bottomContent}
-                                bottomContentPlacement="outside"
-                                classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
-                                topContent={topContent}
-                                topContentPlacement="outside"
-                                sortDescriptor={sortDescriptor}
-                                onSortChange={setSortDescriptor}
-                            >
-                                <TableHeader columns={headerColumns}>
-                                    {(column) => (
-                                        <TableColumn
-                                            key={column.uid}
-                                            align={column.uid === "actions" ? "center" : "start"}
-                                            allowsSorting={column.sortable}
-                                        >
-                                            {column.name}
-                                        </TableColumn>
-                                    )}
-                                </TableHeader>
-                                <TableBody emptyContent={"Create task and add data"} items={sortedItems}>
-                                    {(item) => (
-                                        <TableRow key={item._id}>
-                                            {(columnKey) => (
-                                                <TableCell style={{ fontSize: "12px", padding: "8px" }}>
-                                                    {renderCell(item, columnKey.toString())}
-                                                </TableCell>
-                                            )}
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
+                          <Table
+                                                                                    isHeaderSticky
+                                                                                    aria-label="Accounts table with custom cells, pagination and sorting"
+                                                                                    bottomContent={bottomContent}
+                                                                                    bottomContentPlacement="outside"
+                                                                                    classNames={{
+                                                                                        wrapper: "max-h-[382px] overflow-y-auto",
+                                                                                        th: "border-r border-gray-200 last:border-r-0 bg-gray-100",
+                                                                                        td: "border-r border-gray-200 last:border-r-0",
+                                                                                    }}
+                                                                                    topContent={topContent}
+                                                                                    topContentPlacement="outside"
+                                                                                    sortDescriptor={sortDescriptor}
+                                                                                    onSortChange={setSortDescriptor}
+                                                                                    onRowAction={(key) => {
+                                                                                        console.log("Row clicked:", key);
+                                                                                    }}
+                                                                                >
+                                                                                    <TableHeader columns={headerColumns}>
+                                                                                        {(column) => (
+                                                                                            <TableColumn
+                                                                                                key={column.uid}
+                                                                                                align={column.uid === "actions" ? "center" : "start"}
+                                                                                                allowsSorting={column.sortable}
+                                                                                                className="py-2 px-3"
+                                                                                            >
+                                                                                                {renderHeaderCell(column)}
+                                                                                            </TableColumn>
+                                                                                        )}
+                                                                                    </TableHeader>
+                                                                                    <TableBody emptyContent={"No accounts found"} items={sortedItems}>
+                                                                                        {(item: Account, index: number) => (
+                                                                                            <TableRow
+                                                                                                key={item._id}
+                                                                                                onClick={() => {
+                                                                                                    const newSelection = new Set(selectedRows);
+                                                                                                    if (newSelection.has(item._id)) {
+                                                                                                        newSelection.delete(item._id);
+                                                                                                    } else {
+                                                                                                        newSelection.add(item._id);
+                                                                                                    }
+                                                                                                    setSelectedRows(newSelection);
+                                                                                                }}
+                                                                                                className="cursor-pointer"
+                                                                                            >
+                                                                                                {(columnKey) => (
+                                                                                                    <TableCell
+                                                                                                        style={{ fontSize: "12px", padding: "8px" }}
+                                                                                                        className="border-r border-gray-200 last:border-r-0"
+                                                                                                    >
+                                                                                                        {renderCell(item, columnKey.toString(), index)}
+                                                                                                    </TableCell>
+                                                                                                )}
+                                                                                            </TableRow>
+                                                                                        )}
+                                                                                    </TableBody>
+                                                                                </Table>
+                                              
                         </div>
                     </div>
                 </div>
@@ -788,6 +1048,109 @@ export default function TaskTable() {
                 </DialogContent>
             </Dialog>
 
+              <Dialog open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                            <DialogContent className="sm:max-w-[500px]">
+                                <DialogHeader>
+                                    <DialogTitle>Filter Accounts</DialogTitle>
+                                    <DialogDescription>
+                                        Apply filters to narrow down your search results
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                    {filters.map((filter, index) => (
+                                        <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                                            <div className="col-span-4">
+                                                <select
+                                                    value={filter.field}
+                                                    onChange={(e) => {
+                                                        const newFilters = [...filters];
+                                                        newFilters[index].field = e.target.value;
+                                                        setFilters(newFilters);
+                                                    }}
+                                                    className="w-full p-2 border rounded"
+                                                >
+                                                    <option value="">Select Field</option>
+                                                    {filterFields.map((field) => (
+                                                        <option key={field.name} value={field.name}>
+                                                            {field.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="col-span-3">
+                                                <select
+                                                    value={filter.operator}
+                                                    onChange={(e) => {
+                                                        const newFilters = [...filters];
+                                                        newFilters[index].operator = e.target.value;
+                                                        setFilters(newFilters);
+                                                    }}
+                                                    className="w-full p-2 border rounded"
+                                                >
+                                                    <option value="">Operator</option>
+                                                    <option value="is">is</option>
+                                                    <option value="isn't">isn't</option>
+                                                    <option value="contains">contains</option>
+                                                    <option value="doesn't contain">doesn't contain</option>
+                                                    <option value="starts with">starts with</option>
+                                                    <option value="ends with">ends with</option>
+                                                    <option value="is empty">is empty</option>
+                                                    <option value="is not empty">is not empty</option>
+                                                </select>
+                                            </div>
+                                            <div className="col-span-4">
+                                                {!["is empty", "is not empty"].includes(filter.operator) && (
+                                                    <Input
+                                                        value={filter.value}
+                                                        onChange={(e) => {
+                                                            const newFilters = [...filters];
+                                                            newFilters[index].value = e.target.value;
+                                                            setFilters(newFilters);
+                                                        }}
+                                                        placeholder="Value"
+                                                    />
+                                                )}
+                                            </div>
+                                            <div className="col-span-1">
+                                                <button
+                                                    onClick={() => {
+                                                        const newFilters = [...filters];
+                                                        newFilters.splice(index, 1);
+                                                        setFilters(newFilters);
+                                                    }}
+                                                    className="text-red-500"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setFilters([...filters, { field: "", operator: "", value: "" }])}
+                                    >
+                                        + Add Filter
+                                    </Button>
+                                    <div className="flex justify-end gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={clearFilters}
+                                        >
+                                            Clear All
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            onClick={applyFilters}
+                                            className="bg-[hsl(339.92deg_91.04%_52.35%)]"
+                                        >
+                                            Apply Filters
+                                        </Button>
+                                    </div>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
         </div>
     );
 }
