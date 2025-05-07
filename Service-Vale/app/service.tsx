@@ -1,6 +1,8 @@
 import React, {useState} from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Modal } from 'react-native';
+import { useRouter } from 'expo-router';
+
 // Mock data - in a real app, this would come from your backend
 const serviceApplicants = {
   'ac': ['John Doe', 'Jane Smith'],
@@ -13,21 +15,36 @@ const ServicePage = () => {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [currentApplicants, setCurrentApplicants] = useState([]);
+  const [selectedServiceType, setSelectedServiceType] = useState('');
+  const router = useRouter();
+
+
   const handleLearnMore = () => {
     Alert.alert('Learn More', 'Here you can navigate to detailed service info.');
   };
 
   const handleImagePress = (serviceKey) => {
+    setSelectedServiceType(serviceKey); // 👈 Store selected type
     const applicants = serviceApplicants[serviceKey];
     setCurrentApplicants(applicants || []);
     setModalVisible(true);
   };
+  
+
+  const handleApplicantPress = (applicantName: string) => {
+    setModalVisible(false);
+    router.push({
+      pathname: '/order',
+      params: {
+        applicantName,
+        serviceType: selectedServiceType, // 👈 Use actual service type
+      },
+    });
+  };
+  
 
   return (
-
-    
     <ScrollView contentContainerStyle={styles.container}>
-
 <Modal
   animationType="slide"
   transparent={true}
@@ -37,18 +54,19 @@ const ServicePage = () => {
   <View style={styles.modalContainer}>
     <View style={styles.modalContent}>
       <Text style={styles.modalTitle}>Applicants for this service</Text>
-      
       {currentApplicants.length > 0 ? (
         currentApplicants.map((name, index) => (
-          <View key={index} style={styles.applicantItem}>
+          <TouchableOpacity key={index} onPress={() => handleApplicantPress(name)}>
+          <View style={styles.applicantItem}>
             <Text style={styles.applicantName}>{name}</Text>
           </View>
+        </TouchableOpacity>
         ))
       ) : (
         <Text style={styles.noApplicantsText}>No applicants yet</Text>
       )}
       
-      <TouchableOpacity 
+      <TouchableOpacity   
         style={styles.modalCloseButton}
         onPress={() => setModalVisible(false)}
       >

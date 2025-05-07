@@ -50,11 +50,21 @@ const LoginScreen = () => {
         } else if (!passwordRegex.test(password)) {
             Alert.alert('Error', 'Password must contain an uppercase letter, number, and special character');
         } else {
-            Alert.alert('Success', `Logged in as ${email}`);
+            // ✅ Check for "admin" in email to determine role
+            const isAdmin = email.toLowerCase().includes('admin');
+    
+            if (isAdmin) {
+                Alert.alert('Success', `Logged in as Admin (${email})`);
+                router.replace('/home'); // 👈 navigate to admin dashboard
+            } else {
+                Alert.alert('Success', `Logged in as User (${email})`);
+                router.replace('/userapp/home'); // 👈 navigate to user home
+            }
+    
             resetFields();
-            router.replace('/home');
         }
     };
+    
 
     const handleRegister = () => {
         if (!username || !email || !password || !confirmPassword) {

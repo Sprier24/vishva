@@ -12,24 +12,26 @@ const HomeScreen = () => {
     { id: '2', title: 'Tire Replacement - Car D', status: 'Completed' },
     { id: '3', title: 'Tire Replacement - Car H', status: 'Completed' }
   ];
-  
-  const renderRow = ({ item }) => (
-    <View style={styles.tableRow}>
-      <View style={styles.tableCell}>
-        <Text style={[styles.tableData, styles.idColumn]}>{item.id}</Text>
+
+  const renderServiceCard = ({ item }) => (
+    <TouchableOpacity
+      style={styles.serviceCard}
+      onPress={() => router.push(`/service-details/${item.id}`)}
+    >
+      <View style={styles.serviceHeader}>
+        <Text style={styles.serviceType}>{item.title}</Text>
+        <View style={[styles.statusBadge, styles.completedBadge]}>
+          <Text style={styles.statusText}>Completed</Text>
+        </View>
       </View>
-      <View style={styles.tableCell}>
-        <Text style={[styles.tableData, styles.serviceColumn]} numberOfLines={1} ellipsizeMode="tail">{item.title}</Text>
-      </View>
-      <View style={styles.tableCell}>
-        <TouchableOpacity 
-          style={styles.viewButton}
-          onPress={() => router.push(`/service-details/${item.id}`)}
-        >
-          <AntDesign name="eye" size={20} color="#3498db" />
+
+      <View style={styles.serviceFooter}>
+        <TouchableOpacity style={styles.viewButton}>
+          <AntDesign name="eye" size={20} color="#2563EB" />
+          <Text style={styles.viewText}>View</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderHeader = () => (
@@ -56,7 +58,7 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
 
-    
+
         <View style={styles.tableContainer}>
           <View style={styles.tableTitleContainer}>
             <Text style={styles.tableTitle}>Completed Services</Text>
@@ -67,10 +69,9 @@ const HomeScreen = () => {
           <View style={styles.tableWrapper}>
             <FlatList
               data={completedServices}
+              renderItem={renderServiceCard}
               keyExtractor={(item) => item.id}
-              ListHeaderComponent={renderHeader}
-              renderItem={renderRow}
-              scrollEnabled={false}
+              contentContainerStyle={styles.listContainer}
             />
           </View>
         </View>
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   tableWrapper: {
-    width: width - 32, // Subtract padding from screen width
+    width: width - 32,
   },
   tableTitleContainer: {
     flexDirection: 'row',
@@ -209,10 +210,6 @@ const styles = StyleSheet.create({
   actionColumn: {
     width: 60,
   },
-  viewButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   bottomBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -235,6 +232,71 @@ const styles = StyleSheet.create({
     color: '#3498db',
     marginTop: 4,
   },
+  listContainer: {
+    padding: 16,
+  },
+  
+  serviceCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  
+  serviceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  
+  serviceType: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  
+  completedBadge: {
+    backgroundColor: '#D1FAE5',
+  },
+  
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#065F46',
+  },
+  
+  serviceFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 12,
+  },
+  
+  viewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  
+  viewText: {
+    marginLeft: 6,
+    color: '#2563EB',
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  
 });
 
 export default HomeScreen;

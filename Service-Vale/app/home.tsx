@@ -13,8 +13,6 @@ const HomeScreen = () => {
     { id: '1', title: 'Oil Change - Car A', status: 'Pending' },
     { id: '2', title: 'Brake Inspection - Car B', status: 'Pending' },
     { id: '3', title: 'Engine Repair - Car G', status: 'Pending' },
-    { id: '4', title: 'Engine Repair - Car F', status: 'Pending' },
-    { id: '5', title: 'Engine Repair - Car E', status: 'Pending' }
   ];
 
   const completedServices = [
@@ -22,6 +20,9 @@ const HomeScreen = () => {
     { id: '7', title: 'Tire Replacement - Car D', status: 'Completed' },
     { id: '8', title: 'Tire Replacement - Car H', status: 'Completed' }
   ];
+
+  const pendingServicesCount = pendingServices.length;
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -31,6 +32,13 @@ const HomeScreen = () => {
           <TouchableOpacity style={styles.notificationIcon}>
             <MaterialIcons name="notifications" size={24} color="#fff" />
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.replace('/login')}
+            style={[styles.notificationIcon, { marginLeft: 10, backgroundColor: '#e74c3c' }]}
+          >
+            <MaterialIcons name="logout" size={24} color="#fff" />
+          </TouchableOpacity>
+
         </View>
 
         <View style={styles.revenueContainer}>
@@ -58,12 +66,12 @@ const HomeScreen = () => {
           <View style={[styles.card, styles.pendingCard]}>
             <View style={styles.cardHeader}>
               <MaterialIcons name="pending-actions" size={24} color="#e67e22" />
-              <Text style={styles.cardTitle}>Pending Services</Text>
+              <Text style={styles.cardTitle}>Pending          Services</Text>
             </View>
-            <Text style={styles.cardCount}>{pendingServices.length}</Text>
-            <TouchableOpacity 
+            <Text style={styles.cardCount}>{pendingServicesCount}</Text>
+            <TouchableOpacity
               style={styles.viewButton}
-              onPress={() => router.push('/pending-services')}
+              onPress={() => router.push('/pending')}
             >
               <Text style={styles.viewButtonText}>View All</Text>
               <AntDesign name="right" size={16} color="#3498db" />
@@ -76,9 +84,9 @@ const HomeScreen = () => {
               <Text style={styles.cardTitle}>Completed Services</Text>
             </View>
             <Text style={styles.cardCount}>{completedServices.length}</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.viewButton}
-              onPress={() => router.push('/completed-services')}
+              onPress={() => router.push('/completed')}
             >
               <Text style={styles.viewButtonText}>View All</Text>
               <AntDesign name="right" size={16} color="#3498db" />
