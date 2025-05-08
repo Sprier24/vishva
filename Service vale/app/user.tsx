@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal } from 'react-native';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import { Databases, ID } from 'appwrite';
+import { account, databases } from '../lib/appwrite';
+import { router } from 'expo-router';
+
+const DATABASE_ID = '681c428b00159abb5e8b';
+const COLLECTION_ID = '681c429800281e8a99bd';
 
 const cities = [
   "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad",
@@ -9,6 +15,22 @@ const cities = [
   "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane",
   "Bhopal", "Visakhapatnam", "Pimpri-Chinchwad", "Patna", "Vadodara"
 ];
+
+type User = {
+  $id: string;
+  name: string;
+  address: string;
+  contactNo: string;
+  aadharNo: string;
+  panNo: string;
+  city: string;
+  category: string;
+  $collectionId?: string;
+  $databaseId?: string;
+  $createdAt?: string;
+  $updatedAt?: string;
+  $permissions?: string[];
+};
 
 const UserDetailsForm = () => {
   const [formData, setFormData] = useState({
@@ -23,15 +45,41 @@ const UserDetailsForm = () => {
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [filteredCities, setFilteredCities] = useState(cities);
   const [searchQuery, setSearchQuery] = useState('');
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [submittedUsers, setSubmittedUsers] = useState([]);
-  const [expandedItem, setExpandedItem] = useState(null);
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [submittedUsers, setSubmittedUsers] = useState<User[]>([]);
+  const [expandedItem, setExpandedItem] = useState<number | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const user = await account.get();
+        console.log('Authenticated as:', user.email);
+        
+        const response = await databases.listDocuments(
+          DATABASE_ID, 
+          COLLECTION_ID
+        );
+        setSubmittedUsers(response.documents);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+        if (error.code === 401) {
+          Alert.alert(
+            'Session Expired', 
+            'Please log in again',
+            [{ text: 'OK', onPress: () => router.replace('/') }]
+          );
+        }
+      }
+    };
+    
+    fetchUsers();
+  }, []);
 
   const validateForm = () => {
     let valid = true;
-    const newErrors = {};
+    const newErrors: { [key: string]: string } = {};
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
@@ -81,40 +129,77 @@ const UserDetailsForm = () => {
     return valid;
   };
 
-  const handleCitySearch = (text) => {
+  const handleCitySearch = (text:any) => {
     setSearchQuery(text);
     const filtered = cities.filter(city =>
       city.toLowerCase().includes(text.toLowerCase())
     );
     setFilteredCities(filtered);
   };
-  const handleSubmit = () => {
+
+  const cleanDocumentData = (doc: any) => {
+    const { $collectionId, $databaseId, $createdAt, $updatedAt, $permissions, ...cleanData } = doc;
+    return cleanData;
+  };
+
+  const handleSubmit = async () => {
     if (validateForm()) {
-      if (editingIndex !== null) {
-        // Update existing user
-        const updatedUsers = [...submittedUsers];
-        updatedUsers[editingIndex] = { ...formData };
-        setSubmittedUsers(updatedUsers);
-        setEditingIndex(null);
-      } else {
-        // Add new user
-        const newUser = { ...formData };
-        setSubmittedUsers([...submittedUsers, newUser]);
+      try {
+        if (editingIndex !== null) {
+          // Create a clean data object without system fields
+          const updateData = {
+            name: formData.name,
+            address: formData.address,
+            contactNo: formData.contactNo,
+            aadharNo: formData.aadharNo,
+            panNo: formData.panNo,
+            city: formData.city,
+            category: formData.category
+          };
+  
+          await databases.updateDocument(
+            DATABASE_ID,
+            COLLECTION_ID,
+            submittedUsers[editingIndex].$id,
+            updateData // Pass only the fields you want to update
+          );
+          
+          const updatedUsers = [...submittedUsers];
+          updatedUsers[editingIndex] = { 
+            ...updatedUsers[editingIndex], // Keep existing system fields
+            ...updateData // Update with new data
+          };
+          setSubmittedUsers(updatedUsers);
+          setEditingIndex(null);
+        } else {
+          // Create new user (existing code is fine)
+          const response = await databases.createDocument(
+            DATABASE_ID,
+            COLLECTION_ID,
+            ID.unique(),
+            formData
+          );
+          setSubmittedUsers([...submittedUsers, response]);
+        }
+        
+        Alert.alert('Success', 'User details saved successfully!');
+        resetForm();
+        setIsFormVisible(false);
+      } catch (error) {
+        console.error('Error saving user:', error);
+        Alert.alert('Error', error.message || 'Failed to save user details');
       }
-      Alert.alert('Success', 'User details saved successfully!');
-      resetForm();
-      setIsFormVisible(false);
     }
   };
 
-  const handleChange = (name, value) => {
+  const handleChange = (name: string, value: string) => {
     setFormData({
       ...formData,
       [name]: value
     });
   };
 
-  const handleDeleteUser = (index) => {
+  const handleDeleteUser = async (index: number) => {
     Alert.alert(
       "Confirm Delete",
       "Are you sure you want to delete this user?",
@@ -125,16 +210,43 @@ const UserDetailsForm = () => {
         },
         {
           text: "Delete",
-          onPress: () => {
-            const updatedUsers = [...submittedUsers];
-            updatedUsers.splice(index, 1);
-            setSubmittedUsers(updatedUsers);
+          onPress: async () => {
+            try {
+              const userId = submittedUsers[index].$id;
+              
+              // Delete from database first
+              await databases.deleteDocument(
+                DATABASE_ID,
+                COLLECTION_ID,
+                userId
+              );
+              
+              // Then update local state
+              setSubmittedUsers(prevUsers => 
+                prevUsers.filter(user => user.$id !== userId)
+              );
+              
+              // Reset form if editing the deleted user
+              if (editingIndex === index) {
+                setEditingIndex(null);
+                resetForm();
+              }
+              
+              // Close expanded view if open
+              if (expandedItem === index) {
+                setExpandedItem(null);
+              }
+              
+              Alert.alert('Success', 'User deleted successfully');
+            } catch (error) {
+              console.error('Error deleting user:', error);
+              Alert.alert('Error', error.message || 'Failed to delete user');
+            }
           }
         }
       ]
     );
   };
-
 
   const resetForm = () => {
     setFormData({
@@ -167,7 +279,7 @@ const UserDetailsForm = () => {
       {/* Display Submitted Data */}
       <ScrollView style={styles.usersList}>
         {submittedUsers.map((user, index) => (
-          <View key={index} style={styles.collapsibleContainer}>
+          <View key={user.$id} style={styles.collapsibleContainer}>
             <TouchableOpacity
               style={styles.nameItem}
               onPress={() => setExpandedItem(expandedItem === index ? null : index)}
@@ -207,24 +319,25 @@ const UserDetailsForm = () => {
                   <Text style={styles.detailValue}>{user.category}</Text>
                 </View>
 
-                <TouchableOpacity
-                  style={styles.actioneditButton}
-                  onPress={() => {
-                    setFormData({ ...user });
-                    setEditingIndex(index);
-                    setIsFormVisible(true);
-                  }}
-                >
-                  <Text style={styles.actionButtonText}>Edit</Text>
-                </TouchableOpacity>
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity
+                    style={styles.actioneditButton}
+                    onPress={() => {
+                      setFormData(cleanDocumentData(user));
+                      setEditingIndex(index);
+                      setIsFormVisible(true);
+                    }}
+                  >
+                    <Text style={styles.actionButtonText}>Edit</Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleDeleteUser(index)}
-                >
-                  <Text style={styles.actionButtonText}>Delete</Text>
-                </TouchableOpacity>
-
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => handleDeleteUser(index)}
+                  >
+                    <Text style={styles.actionButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </View>
@@ -635,30 +748,30 @@ const styles = StyleSheet.create({
   },
 // In your styles, replace the button-related styles with:
 buttonRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginTop: 20,
-  gap: 10, // Add some space between buttons
-},
-actioneditButton: {
-  flex: 1,
-  padding: 12,
-  borderRadius: 8,
-  alignItems: 'center',
-  backgroundColor: '#3498db', // Same blue color as edit button
-},
-actionButton: {
-  flex: 1,
-  padding: 12,
-  borderRadius: 8,
-  alignItems: 'center',
-  backgroundColor: 'red', // Same blue color as edit button
-},
-actionButtonText: {
-  color: 'white',
-  fontSize: 16,
-  fontWeight: 'bold',
-},
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+    gap: 10,
+  },
+  actioneditButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: '#3498db',
+  },
+  actionButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: 'red',
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
 
 export default UserDetailsForm;

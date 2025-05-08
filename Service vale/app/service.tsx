@@ -1,8 +1,11 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Modal } from 'react-native';
 import { useRouter } from 'expo-router';
+import { databases } from '../lib/appwrite';
 
+const DATABASE_ID = '681c428b00159abb5e8b';
+const COLLECTION_ID = '681c429800281e8a99bd';
 // Mock data - in a real app, this would come from your backend
 const serviceApplicants = {
   'ac': ['John Doe', 'Jane Smith'],
@@ -16,6 +19,29 @@ const ServicePage = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [currentApplicants, setCurrentApplicants] = useState([]);
   const [selectedServiceType, setSelectedServiceType] = useState('');
+  const [applicantsByService, setApplicantsByService] = useState<{ [key: string]: string[] }>({});
+
+  useEffect(() => {
+    const fetchApplicants = async () => {
+      try {
+        const response = await databases.listDocuments(DATABASE_ID, COLLECTION_ID);
+        const grouped: { [key: string]: string[] } = {};
+  
+        response.documents.forEach(doc => {
+          const category = doc.category.toLowerCase(); // e.g., 'ac', 'fridgerepair'
+          if (!grouped[category]) grouped[category] = [];
+          grouped[category].push(doc.name);
+        });
+  
+        setApplicantsByService(grouped);
+      } catch (error) {
+        console.error('Error fetching applicants:', error);
+      }
+    };
+  
+    fetchApplicants();
+  }, []);
+
   const router = useRouter();
 
 
@@ -24,11 +50,12 @@ const ServicePage = () => {
   };
 
   const handleImagePress = (serviceKey) => {
-    setSelectedServiceType(serviceKey); // 👈 Store selected type
-    const applicants = serviceApplicants[serviceKey];
-    setCurrentApplicants(applicants || []);
+    setSelectedServiceType(serviceKey);
+    const applicants = applicantsByService[serviceKey] || [];
+    setCurrentApplicants(applicants);
     setModalVisible(true);
   };
+  
   
 
   const handleApplicantPress = (applicantName: string) => {

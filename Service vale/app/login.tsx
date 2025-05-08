@@ -1,19 +1,20 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, {  useState } from 'react';
 import {
-    View,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    StyleSheet,
-    Alert,
-    Modal,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
+    View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { account } from '../lib/appwrite';
 
 const LoginScreen = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -42,7 +43,7 @@ const LoginScreen = () => {
         setResetConfirmPassword('');
     };
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         if (email === '' || password === '') {
             Alert.alert('Error', 'Please fill in all fields');
         } else if (!emailRegex.test(email)) {
@@ -50,23 +51,23 @@ const LoginScreen = () => {
         } else if (!passwordRegex.test(password)) {
             Alert.alert('Error', 'Password must contain an uppercase letter, number, and special character');
         } else {
-            // ✅ Check for "admin" in email to determine role
-            const isAdmin = email.toLowerCase().includes('admin');
-    
-            if (isAdmin) {
-                Alert.alert('Success', `Logged in as Admin (${email})`);
-                router.replace('/home'); // 👈 navigate to admin dashboard
-            } else {
-                Alert.alert('Success', `Logged in as User (${email})`);
-                router.replace('/userapp/home'); // 👈 navigate to user home
+            try {
+                const session = await account.createEmailPasswordSession(email, password);
+                console.log('Login Success:', session);
+                const user = await account.get();
+                console.log('Current user:', user);
+                Alert.alert('Success', `Logged in as ${email}`);
+                resetFields();
+                router.replace('/home');
+            } catch (error: any) {
+                console.error('Login Error:', error);
+                Alert.alert('Login Error', error?.message || 'An unknown error occurred');
             }
-    
-            resetFields();
         }
     };
     
 
-    const handleRegister = () => {
+    const handleRegister = async () => {
         if (!username || !email || !password || !confirmPassword) {
             Alert.alert('Error', 'Please fill in all fields');
         } else if (!emailRegex.test(email)) {
@@ -76,25 +77,34 @@ const LoginScreen = () => {
         } else if (password !== confirmPassword) {
             Alert.alert('Error', 'Passwords do not match');
         } else {
-            Alert.alert('Success', `Account created for ${username}`);
-            resetFields();
-            setIsLogin(true);
+            try {
+                await account.create('unique()', email, password, username);
+                Alert.alert('Success', 'Account created successfully. Please log in.');
+                resetFields();
+                setIsLogin(true);
+            } catch (error) {
+                Alert.alert('Registration Error', error instanceof Error ? error.message : 'An unknown error occurred');
+            }
         }
-    };
-
+    };  
+    
     const handleForgotPassword = () => {
         setForgotModalVisible(true);
     };
 
-    const handleSendOTP = () => {
+    const handleSendOTP = async () => {
         if (forgotEmail === '') {
             Alert.alert('Error', 'Please enter your email');
         } else if (!emailRegex.test(forgotEmail)) {
             Alert.alert('Error', 'Invalid email address');
         } else {
-            Alert.alert('OTP Sent', `An OTP has been sent to ${forgotEmail}`);
-            setForgotModalVisible(false);
-            setResetModalVisible(true);
+            try {
+                await account.createRecovery(forgotEmail, 'https://your-app.com/reset-password');
+                Alert.alert('OTP Sent', `A recovery email has been sent to ${forgotEmail}`);
+                setForgotModalVisible(false);
+            } catch (error) {
+                Alert.alert('Error', error instanceof Error ? error.message : 'Failed to send recovery email');
+            }
         }
     };
 
@@ -387,7 +397,10 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         borderWidth: 1,
         borderColor: '#e0e0e0',
-        boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
         width: '100%',
     },
     forgotPasswordContainer: {
