@@ -4,7 +4,18 @@
   import { AntDesign, MaterialIcons } from '@expo/vector-icons';
 
   const { width } = Dimensions.get('window');
-
+  type Service = {
+    id: string;
+    serviceType: string;
+    clientName: string;
+    address: string;
+    phone: string;
+    amount: string;
+    status: string;
+    date: string;
+    serviceBoy: string;
+  };
+  
   const PendingServicesScreen = () => {
     const params = useLocalSearchParams();
     const router = useRouter();
@@ -77,11 +88,11 @@
       );
     };
 
-    const renderServiceItem = ({ item }) => (
+    const renderServiceItem = ({ item }: { item: Service }) => (
       <TouchableOpacity 
         style={styles.serviceCard}
         onPress={() => router.push({
-          pathname: '/service-details',
+          pathname: '/service',
           params: { serviceId: item.id }
         })}
       >

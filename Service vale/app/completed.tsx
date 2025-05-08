@@ -13,10 +13,10 @@ const HomeScreen = () => {
     { id: '3', title: 'Tire Replacement - Car H', status: 'Completed' }
   ];
 
-  const renderServiceCard = ({ item }) => (
+  const renderServiceCard = ({ item }: { item: { id: string; title: string; status: string } }) => (
     <TouchableOpacity
       style={styles.serviceCard}
-      onPress={() => router.push(`/service-details/${item.id}`)}
+      onPress={() => router.push(`/service`)}
     >
       <View style={styles.serviceHeader}>
         <Text style={styles.serviceType}>{item.title}</Text>

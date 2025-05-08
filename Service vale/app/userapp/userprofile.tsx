@@ -24,7 +24,7 @@ const ProfileScreen = () => {
             router.replace('/');
         } catch (error) {
             console.error('Logout Error:', error);
-            Alert.alert('Logout Error', error.message || 'Something went wrong');
+            Alert.alert('Error', (error as Error).message || 'Something went wrong');
         }
     };
 

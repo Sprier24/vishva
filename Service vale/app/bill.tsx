@@ -17,7 +17,7 @@ const BillPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [cashGiven, setCashGiven] = useState('');
 
-  const handleChange = (field, value) => {
+  const handleChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 

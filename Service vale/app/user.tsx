@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal } from 'react-native';
 import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
-import { Databases, ID } from 'appwrite';
+import { Databases, ID, Query } from 'appwrite';
 import { account, databases } from '../lib/appwrite';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 
 const DATABASE_ID = '681c428b00159abb5e8b';
 const COLLECTION_ID = '681c429800281e8a99bd';
@@ -33,6 +33,7 @@ type User = {
 };
 
 const UserDetailsForm = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -61,10 +62,10 @@ const UserDetailsForm = () => {
           DATABASE_ID, 
           COLLECTION_ID
         );
-        setSubmittedUsers(response.documents);
-      } catch (error) {
+        setSubmittedUsers(response.documents as unknown as User[]);
+      } catch (error: unknown) {
         console.error('Error fetching users:', error);
-        if (error.code === 401) {
+        if (error instanceof Error && 'code' in error && error.code === 401) {
           Alert.alert(
             'Session Expired', 
             'Please log in again',
@@ -142,56 +143,57 @@ const UserDetailsForm = () => {
     return cleanData;
   };
 
-  const handleSubmit = async () => {
-    if (validateForm()) {
-      try {
-        if (editingIndex !== null) {
-          // Create a clean data object without system fields
-          const updateData = {
-            name: formData.name,
-            address: formData.address,
-            contactNo: formData.contactNo,
-            aadharNo: formData.aadharNo,
-            panNo: formData.panNo,
-            city: formData.city,
-            category: formData.category
-          };
-  
-          await databases.updateDocument(
-            DATABASE_ID,
-            COLLECTION_ID,
-            submittedUsers[editingIndex].$id,
-            updateData // Pass only the fields you want to update
-          );
-          
-          const updatedUsers = [...submittedUsers];
-          updatedUsers[editingIndex] = { 
-            ...updatedUsers[editingIndex], // Keep existing system fields
-            ...updateData // Update with new data
-          };
-          setSubmittedUsers(updatedUsers);
-          setEditingIndex(null);
-        } else {
-          // Create new user (existing code is fine)
-          const response = await databases.createDocument(
-            DATABASE_ID,
-            COLLECTION_ID,
-            ID.unique(),
-            formData
-          );
-          setSubmittedUsers([...submittedUsers, response]);
-        }
-        
-        Alert.alert('Success', 'User details saved successfully!');
-        resetForm();
-        setIsFormVisible(false);
-      } catch (error) {
-        console.error('Error saving user:', error);
-        Alert.alert('Error', error.message || 'Failed to save user details');
-      }
-    }
-  };
+ // Update your handleSubmit function
+const handleSubmit = async () => {
+  if (validateForm()) {
+    try {
+      if (editingIndex !== null) {
+        const updateData = {
+          name: formData.name,
+          address: formData.address,
+          contactNo: formData.contactNo,
+          aadharNo: formData.aadharNo,
+          panNo: formData.panNo,
+          city: formData.city,
+          category: formData.category
+        };
 
+        await databases.updateDocument(
+          DATABASE_ID,
+          COLLECTION_ID,
+          submittedUsers[editingIndex].$id,
+          updateData
+        );
+        
+        const updatedUsers = [...submittedUsers];
+        updatedUsers[editingIndex] = { 
+          ...updatedUsers[editingIndex],
+          ...updateData
+        };
+        setSubmittedUsers(updatedUsers);
+        setEditingIndex(null);
+      } else {
+        const response = await databases.createDocument(
+          DATABASE_ID,
+          COLLECTION_ID,
+          ID.unique(),
+          formData
+        );
+        setSubmittedUsers([...submittedUsers, response as unknown as User]);
+      }
+      
+      Alert.alert('Success', 'User details saved successfully!');
+      resetForm();
+      setIsFormVisible(false);
+    } catch (error: unknown) {
+      console.error('Error saving user:', error);
+      Alert.alert(
+        'Error', 
+        error instanceof Error ? error.message : 'Failed to save user details'
+      );
+    }
+  }
+};
   const handleChange = (name: string, value: string) => {
     setFormData({
       ...formData,
@@ -240,7 +242,7 @@ const UserDetailsForm = () => {
               Alert.alert('Success', 'User deleted successfully');
             } catch (error) {
               console.error('Error deleting user:', error);
-              Alert.alert('Error', error.message || 'Failed to delete user');
+            Alert.alert('Error', (error as Error).message || 'Failed to delete user');
             }
           }
         }
@@ -644,15 +646,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: '#444',
     fontWeight: '500',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
   },
   picker: {
     flex: 1,
