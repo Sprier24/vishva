@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, {  useState } from 'react';
+import React, { useState } from 'react';
 import {
     Alert,
     Image,
@@ -65,7 +65,6 @@ const LoginScreen = () => {
             }
         }
     };
-    
 
     const handleRegister = async () => {
         if (!username || !email || !password || !confirmPassword) {
@@ -127,292 +126,408 @@ const LoginScreen = () => {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={{ flex: 1 }}
         >
-            <ScrollView contentContainerStyle={styles.container}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <Text style={styles.serviceText}>SERVICE</Text>
-                    <Text style={styles.valeText}>VALE</Text>
-                </View>
-
-                {/* Image */}
-                <View style={styles.imageContainer}>
+            <ScrollView 
+                contentContainerStyle={styles.container}
+                keyboardShouldPersistTaps="handled"
+            >
+                {/* Branding Header */}
+                <View style={styles.brandContainer}>
                     <Image
-                        source={require('../assets/images/react-logo.png')}
-                        style={styles.image}
+                        source={require('../assets/images/logo.jpg')}
+                        style={styles.logo}
                         resizeMode="contain"
                     />
+                   
                 </View>
 
                 {/* Forgot Password Modal */}
-                <Modal transparent animationType="slide" visible={forgotModalVisible}>
+                <Modal transparent animationType="fade" visible={forgotModalVisible}>
                     <View style={styles.modalOverlay}>
-                        <View style={styles.frameContainer}>
-                            <Text style={styles.title}>Reset Password</Text>
+                        <View style={styles.modalCard}>
+                            <Text style={styles.modalTitle}>Reset Password</Text>
+                            <Text style={styles.modalSubtitle}>Enter your email to receive a recovery link</Text>
+                            
                             <TextInput
-                                style={styles.input}
-                                placeholder="Enter your email"
-                                placeholderTextColor="#aaa"
+                                style={styles.modalInput}
+                                placeholder="Email address"
+                                placeholderTextColor="#999"
                                 value={forgotEmail}
                                 onChangeText={setForgotEmail}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                             />
-                            <TouchableOpacity style={styles.button} onPress={handleSendOTP}>
-                                <Text style={styles.buttonText}>Send OTP</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setForgotModalVisible(false)}>
-                                <Text style={styles.linkText}>Cancel</Text>
-                            </TouchableOpacity>
+                            
+                            <View style={styles.modalButtonGroup}>
+                                <TouchableOpacity 
+                                    style={[styles.modalButton, styles.secondaryButton]}
+                                    onPress={() => setForgotModalVisible(false)}
+                                >
+                                    <Text style={styles.secondaryButtonText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={[styles.modalButton, styles.primaryButton]}
+                                    onPress={handleSendOTP}
+                                >
+                                    <Text style={styles.primaryButtonText}>Send OTP</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
                 </Modal>
 
                 {/* Reset Password Modal */}
-                <Modal transparent animationType="slide" visible={resetModalVisible}>
+                <Modal transparent animationType="fade" visible={resetModalVisible}>
                     <View style={styles.modalOverlay}>
-                        <View style={styles.frameContainer}>
-                            <Text style={styles.title}>Set New Password</Text>
-                            <View style={styles.passwordContainer}>
+                        <View style={styles.modalCard}>
+                            <Text style={styles.modalTitle}>Set New Password</Text>
+                            
+                            <View style={styles.passwordInputContainer}>
                                 <TextInput
-                                    style={styles.passwordInput}
+                                    style={styles.modalInput}
                                     placeholder="New Password"
-                                    placeholderTextColor="#aaa"
+                                    placeholderTextColor="#999"
                                     value={newPassword}
                                     onChangeText={setNewPassword}
                                     secureTextEntry={!showNewPassword}
                                 />
-                                <TouchableOpacity onPress={() => setShowNewPassword(!showNewPassword)}>
+                                <TouchableOpacity 
+                                    style={styles.eyeIcon}
+                                    onPress={() => setShowNewPassword(!showNewPassword)}
+                                >
                                     <Ionicons
                                         name={showNewPassword ? 'eye' : 'eye-off'}
-                                        size={24}
+                                        size={20}
                                         color="#888"
                                     />
                                 </TouchableOpacity>
                             </View>
+                            
                             <TextInput
-                                style={styles.input}
+                                style={styles.modalInput}
                                 placeholder="Confirm Password"
-                                placeholderTextColor="#aaa"
+                                placeholderTextColor="#999"
                                 value={resetConfirmPassword}
                                 onChangeText={setResetConfirmPassword}
                                 secureTextEntry={true}
                             />
-                            <TouchableOpacity style={styles.button} onPress={handleResetPassword}>
-                                <Text style={styles.buttonText}>Submit</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setResetModalVisible(false)}>
-                                <Text style={styles.linkText}>Cancel</Text>
-                            </TouchableOpacity>
+                            
+                            <View style={styles.modalButtonGroup}>
+                                <TouchableOpacity 
+                                    style={[styles.modalButton, styles.secondaryButton]}
+                                    onPress={() => setResetModalVisible(false)}
+                                >
+                                    <Text style={styles.secondaryButtonText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity 
+                                    style={[styles.modalButton, styles.primaryButton]}
+                                    onPress={handleResetPassword}
+                                >
+                                    <Text style={styles.primaryButtonText}>Update Password</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
                 </Modal>
 
-                {/* Login/Register Form */}
-                <View style={styles.formContainer}>
-                    <Text style={styles.title}>{isLogin ? 'Login' : 'Register'}</Text>
-
+                {/* Auth Form */}
+                <View style={styles.authCard}>
+                    <Text style={styles.authTitle}>
+                        {isLogin ? 'Welcome Back' : 'Create Account'}
+                    </Text>
+                    
                     {!isLogin && (
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Username</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Enter your username"
+                                placeholderTextColor="#999"
+                                value={username}
+                                onChangeText={setUsername}
+                            />
+                        </View>
+                    )}
+                    
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.inputLabel}>Email Address</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Username"
-                            placeholderTextColor="#000000"
-                            value={username}
-                            onChangeText={setUsername}
+                            placeholder="Enter your email"
+                            placeholderTextColor="#999"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
                         />
-                    )}
+                    </View>
 
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Email"
-                        placeholderTextColor="#000000"
-                        value={email}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                    />
-
-                    <View style={styles.passwordContainer}>
+                {/* Improved Password Input Section */}
+                <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Password</Text>
+                    <View style={styles.passwordInputContainer}>
                         <TextInput
                             style={styles.passwordInput}
-                            placeholder="Password"
-                            placeholderTextColor="#000000"
+                            placeholder="Enter your password"
+                            placeholderTextColor="#999"
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry={!showPassword}
                         />
-                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                        <TouchableOpacity 
+                            style={styles.eyeIcon}
+                            onPress={() => setShowPassword(!showPassword)}
+                        >
                             <Ionicons
                                 name={showPassword ? 'eye' : 'eye-off'}
-                                size={24}
+                                size={20}
                                 color="#888"
                             />
                         </TouchableOpacity>
                     </View>
-
-                    {/* Confirm password for Register */}
+                </View>
+                    
                     {!isLogin && (
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Confirm Password"
-                            placeholderTextColor="#000000"
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            secureTextEntry={true}
-                        />
-                    )}
-
-                    {isLogin && (
-                        <View style={styles.forgotPasswordContainer}>
-                            <TouchableOpacity onPress={handleForgotPassword}>
-                                <Text style={styles.linkText}>Forgot Password?</Text>
-                            </TouchableOpacity>
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Confirm Password</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Confirm your password"
+                                placeholderTextColor="#999"
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                                secureTextEntry={true}
+                            />
                         </View>
                     )}
-
+                    
+                    {isLogin && (
+                        <TouchableOpacity 
+                            style={styles.forgotPasswordButton}
+                            onPress={handleForgotPassword}
+                        >
+                            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                        </TouchableOpacity>
+                    )}
+                    
                     <TouchableOpacity
-                        style={styles.button}
+                        style={styles.authButton}
                         onPress={isLogin ? handleLogin : handleRegister}
                     >
-                        <Text style={styles.buttonText}>
-                            {isLogin ? 'Log In' : 'Register'}
+                        <Text style={styles.authButtonText}>
+                            {isLogin ? 'Sign In' : 'Sign Up'}
                         </Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={styles.registerButton}
-                        onPress={() => {
-                            setIsLogin(!isLogin);
-                            resetFields();
-                        }}
-                    >
-                        <Text style={styles.registerButtonText}>
-                            {isLogin ? 'Create an Account' : 'Back to Login'}
+                    
+                    <View style={styles.authFooter}>
+                        <Text style={styles.authFooterText}>
+                            {isLogin ? "Don't have an account?" : "Already have an account?"}
                         </Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => {
+                                setIsLogin(!isLogin);
+                                resetFields();
+                            }}
+                        >
+                            <Text style={styles.authFooterLink}>
+                                {isLogin ? 'Sign Up' : 'Sign In'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>
     );
 };
 
-export default LoginScreen;
-
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,
-        padding: 24,
-        backgroundColor: '#FFA500',
+        backgroundColor:'#FBFBFB',
+        paddingHorizontal: 24,
+        paddingBottom: 40,
     },
-    header: {
+    brandContainer: {
         alignItems: 'center',
-        marginTop: 50,
-    },
-    serviceText: {
-        fontSize: 80,
-        fontWeight: 'bold',
-        color: '#00008B',
-    },
-    valeText: {
-        fontSize: 40,
-        fontWeight: 'bold',
-        color: '#00008B',
-        marginTop: -8,
-    },
-    formContainer: {
-        marginTop: 20,
-        marginBottom: 40,
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#000000',
-        alignSelf: 'center',
+        marginTop: 40,
         marginBottom: 32,
     },
-    input: {
-        height: 50,
-        borderColor: '#ccc',
-        borderWidth: 1,
-        borderRadius: 50,
-        paddingHorizontal: 16,
-        marginBottom: 16,
-        fontSize: 16,
-        backgroundColor: '#f9f9f9',
+    logo: {
+        width: 150,
+        height: 150,
+        marginBottom: 20,
     },
-    passwordContainer: {
+    brandName: {
+        fontSize: 28,
+        fontWeight: '700',
+        color: '#1E293B',
+        marginBottom: 4,
+    },
+    brandTagline: {
+        fontSize: 14,
+        color: '#64748B',
+    },
+    authCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    authTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#1E293B',
+        marginBottom: 24,
+        textAlign: 'center',
+    },
+    inputContainer: {
+        marginBottom: 16,
+    },
+    inputLabel: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#1E293B',
+        marginBottom: 8,
+    },
+    input: {
+        height: 48,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        backgroundColor: '#F8FAFC',
+        fontSize: 15,
+        color: '#1E293B',
+    },
+    passwordInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderColor: '#ccc',
         borderWidth: 1,
-        borderRadius: 50,
-        paddingHorizontal: 16,
-        backgroundColor: '#f9f9f9',
-        marginBottom: 16,
+        borderColor: '#E2E8F0',
+        borderRadius: 8,
+        backgroundColor: '#F8FAFC',
+        overflow: 'hidden', // Ensures child components respect border radius
     },
-    passwordInput: {
-        flex: 1,
-        height: 50,
+    eyeIcon: {
+        padding: 12,
+         justifyContent: 'center',
+        alignItems: 'center'
+    },
+    forgotPasswordButton: {
+        alignSelf: 'flex-end',
+        marginBottom: 24,
+    },
+    forgotPasswordText: {
+        fontSize: 13,
+        color: '#3B82F6',
+        fontWeight: '500',
+    },
+    authButton: {
+        height: 48,
+        backgroundColor: '#3B82F6',
+        borderRadius: 8,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    authButtonText: {
         fontSize: 16,
+        fontWeight: '600',
+        color: '#FFFFFF',
     },
-    button: {
-        height: 50,
-        backgroundColor: '#1e90ff',
+    authFooter: {
+        flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: 50,
-        marginBottom: 16,
     },
-    buttonText: {
-        color: '#fff',
-        fontSize: 18,
+    authFooterText: {
+        fontSize: 14,
+        color: '#64748B',
+        marginRight: 4,
     },
-    linkText: {
-        color: '#000000',
-        textAlign: 'center',
-        marginTop: 15,
-        fontSize: 18,
-    },
-    registerButton: {
-        height: 50,
-        backgroundColor: '#32CD32',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 50,
-        marginTop: 16,
-    },
-    registerButtonText: {
-        color: '#fff',
-        fontSize: 18,
+    authFooterLink: {
+        fontSize: 14,
+        color: '#3B82F6',
+        fontWeight: '600',
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0,0,0,0.4)',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
     },
-    frameContainer: {
-        backgroundColor: '#fff',
+    modalCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
         padding: 24,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 10,
         width: '100%',
+        maxWidth: 400,
     },
-    forgotPasswordContainer: {
-        marginBottom: 25,
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1E293B',
+        marginBottom: 8,
+        textAlign: 'center',
     },
-    imageContainer: {
-        marginTop: 30,
-        marginBottom: 20,
+    modalSubtitle: {
+        fontSize: 14,
+        color: '#64748B',
+        marginBottom: 24,
+        textAlign: 'center',
+    },
+    modalInput: {
+        height: 48,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        backgroundColor: '#F8FAFC',
+        fontSize: 15,
+        color: '#1E293B',
+        marginBottom: 16,
+    },
+    modalButtonGroup: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 8,
+    },
+    modalButton: {
+        flex: 1,
+        height: 48,
+        borderRadius: 8,
+        justifyContent: 'center',
         alignItems: 'center',
     },
-    image: {
-        width: 300,
-        height: 200,
+    primaryButton: {
+        backgroundColor: '#3B82F6',
+        marginLeft: 8,
+    },
+    primaryButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#FFFFFF',
+    },
+    secondaryButton: {
+        backgroundColor: '#F1F5F9',
+    },
+    secondaryButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#64748B',
+    },
+ 
+    passwordInput: {
+        flex: 1,
+        height: 48,
+        paddingHorizontal: 16,
+        fontSize: 15,
+        color: '#1E293B',
     },
 });
+
+export default LoginScreen;

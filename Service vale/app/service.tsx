@@ -1,50 +1,63 @@
-import React, {useState} from 'react';
+import React, {useState,useEffect} from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { Modal } from 'react-native';
 import { useRouter } from 'expo-router';
+import { databases } from '../lib/appwrite';
+import { Query } from 'appwrite';
+
+const DATABASE_ID = '681c428b00159abb5e8b';
+const COLLECTION_ID = '681c429800281e8a99bd';
 
 type ServiceKey = 'ac' | 'washingmachine' | 'fridgerepair' | 'microwave';
 
-const serviceApplicants: Record<ServiceKey, string[]> = {
-  ac: ['John Doe', 'Jane Smith'],
-  washingmachine: ['Mike Johnson'],
-  fridgerepair: ['Sarah Williams', 'Robert Brown'],
-  microwave: ['Emily Davis']
-};
-
-
 const ServicePage = () => {
-
   const [modalVisible, setModalVisible] = useState(false);
-  const [currentApplicants, setCurrentApplicants] = useState<string[]>([]);
-  const [selectedServiceType, setSelectedServiceType] = useState('');
+  const [allUsers, setAllUsers] = useState<{id: string, name: string}[]>([]);
+  const [selectedServiceType, setSelectedServiceType] = useState<ServiceKey>('ac');
   const router = useRouter();
 
+  useEffect(() => {
+    const fetchAllUsers = async () => {
+      try {
+        const response = await databases.listDocuments(
+          DATABASE_ID,
+          COLLECTION_ID
+        );
+        
+        const users = response.documents.map(doc => ({
+          id: doc.$id,
+          name: doc.name
+        }));
+        
+        setAllUsers(users);
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
 
-  const handleLearnMore = () => {
-    Alert.alert('Learn More', 'Here you can navigate to detailed service info.');
-  };
+    fetchAllUsers();
+  }, []);
 
   const handleImagePress = (serviceKey: ServiceKey) => {
     setSelectedServiceType(serviceKey);
-    const applicants = serviceApplicants[serviceKey];
-    setCurrentApplicants(applicants || []);
     setModalVisible(true);
   };
-  
-  
 
-  const handleApplicantPress = (applicantName: string) => {
+  const handleApplicantPress = (applicantId: string, applicantName: string) => {
     setModalVisible(false);
     router.push({
       pathname: '/order',
       params: {
+        applicantId,
         applicantName,
-        serviceType: selectedServiceType, // 👈 Use actual service type
+        serviceType: selectedServiceType,
       },
     });
   };
-  
+
+  const handleLearnMore = () => {
+    Alert.alert('Learn More', 'Here you can navigate to detailed service info.');
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -57,11 +70,11 @@ const ServicePage = () => {
   <View style={styles.modalContainer}>
     <View style={styles.modalContent}>
       <Text style={styles.modalTitle}>Applicants for this service</Text>
-      {currentApplicants.length > 0 ? (
-        currentApplicants.map((name, index) => (
-          <TouchableOpacity key={index} onPress={() => handleApplicantPress(name)}>
+      {allUsers.length > 0 ? (
+        allUsers.map((user, index) => (
+          <TouchableOpacity key={index} onPress={() => handleApplicantPress(user.id, user.name)}>
           <View style={styles.applicantItem}>
-            <Text style={styles.applicantName}>{name}</Text>
+            <Text style={styles.applicantName}>{user.name}</Text>
           </View>
         </TouchableOpacity>
         ))

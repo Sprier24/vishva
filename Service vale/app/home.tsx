@@ -1,44 +1,95 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Dimensions, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { AntDesign, MaterialIcons } from '@expo/vector-icons';
+import { account, databases } from '../lib/appwrite';
+import { RefreshControl } from 'react-native';
+
+const DATABASE_ID = '681c428b00159abb5e8b';
+const COLLECTION_ID = '681d92600018a87c1478';
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
   const dailyRevenue = 5000;
   const monthlyRevenue = 150000;
+  const [pendingCount, setPendingCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const pendingServices = [
-    { id: '1', title: 'Oil Change - Car A', status: 'Pending' },
-    { id: '2', title: 'Brake Inspection - Car B', status: 'Pending' },
-    { id: '3', title: 'Engine Repair - Car G', status: 'Pending' },
-  ];
+  
+  const handleLogout = async () => {
+    try {
+      await account.deleteSession('current'); // Delete the current session
+      Alert.alert('Logged Out', 'You have been successfully logged out');
+      router.replace('/'); // Navigate back to login screen
+    } catch (error) {
+      console.error('Logout Error:', error);
+      Alert.alert('Error', 'Failed to logout. Please try again.');  
+    }
+  };
 
-  const completedServices = [
-    { id: '6', title: 'Engine Repair - Car C', status: 'Completed' },
-    { id: '7', title: 'Tire Replacement - Car D', status: 'Completed' },
-    { id: '8', title: 'Tire Replacement - Car H', status: 'Completed' }
-  ];
+    const fetchOrders = async () => {
+      try {
+        setRefreshing(true);
+        const orders = await databases.listDocuments(DATABASE_ID, COLLECTION_ID);
+        
+        const pending = orders.documents.filter(o => o.status === 'pending').length;
+        const completed = orders.documents.filter(o => o.status !== 'pending').length;
+        
+        setPendingCount(pending);
+        setCompletedCount(completed);
+      } catch (error) {
+        console.error('Appwrite error:', error);
+      } finally {
+        setRefreshing(false);
+        setIsLoading(false);
+      }
+    };
+    
+    useEffect(() => {
+    fetchOrders();
+  }, []);
 
-  const pendingServicesCount = pendingServices.length;
+  
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3498db" />
+      </View>
+    );
+  }
 
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={fetchOrders}
+          colors={['#3498db']}
+          tintColor={'#3498db'}
+        />
+      }
+      >
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Service Dashboard</Text>
-          <TouchableOpacity style={styles.notificationIcon}>
-            <MaterialIcons name="notifications" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.replace('/login')}
-            style={[styles.notificationIcon, { marginLeft: 10, backgroundColor: '#e74c3c' }]}
-          >
-            <MaterialIcons name="logout" size={24} color="#fff" />
-          </TouchableOpacity>
-
+          <View style={styles.headerIcons}>
+            <TouchableOpacity 
+              style={[styles.notificationIcon, { marginRight: 10 }]}
+              onPress={() => console.log('Notifications pressed')}
+            >
+              <MaterialIcons name="notifications" size={24} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.logoutIcon}
+              onPress={handleLogout}
+            >
+              <MaterialIcons name="logout" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.revenueContainer}>
@@ -66,10 +117,10 @@ const HomeScreen = () => {
           <View style={[styles.card, styles.pendingCard]}>
             <View style={styles.cardHeader}>
               <MaterialIcons name="pending-actions" size={24} color="#e67e22" />
-              <Text style={styles.cardTitle}>Pending          Services</Text>
+              <Text style={styles.cardTitle}>Pending Services</Text>
             </View>
-            <Text style={styles.cardCount}>{pendingServicesCount}</Text>
-            <TouchableOpacity
+            <Text style={styles.cardCount}>{pendingCount}</Text>
+            <TouchableOpacity 
               style={styles.viewButton}
               onPress={() => router.push('/pending')}
             >
@@ -83,8 +134,8 @@ const HomeScreen = () => {
               <MaterialIcons name="check-circle" size={24} color="#27ae60" />
               <Text style={styles.cardTitle}>Completed Services</Text>
             </View>
-            <Text style={styles.cardCount}>{completedServices.length}</Text>
-            <TouchableOpacity
+            <Text style={styles.cardCount}>{completedCount}</Text>
+            <TouchableOpacity 
               style={styles.viewButton}
               onPress={() => router.push('/completed')}
             >
@@ -148,6 +199,27 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
+
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  headerIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notificationIcon: {
+    backgroundColor: '#3498db',
+    borderRadius: 20,
+    padding: 8,
+  },
+  logoutIcon: {
+    backgroundColor: '#e74c3c',
+    borderRadius: 20,
+    padding: 8,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
@@ -156,21 +228,10 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 80,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
     color: '#2c3e50',
-  },
-  notificationIcon: {
-    backgroundColor: '#3498db',
-    borderRadius: 20,
-    padding: 8,
   },
   revenueContainer: {
     flexDirection: 'row',
@@ -306,6 +367,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#3498db',
     marginTop: 4,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
