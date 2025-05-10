@@ -84,46 +84,57 @@ const HomeScreen = () => {
     }
   }, [params.completedService]);
 
-  const renderServiceCard = ({ item }: { item: Service }) => (
-    <>
-      <View style={styles.serviceHeader}>
-        <Text style={styles.serviceType}>{item.title}</Text>
-        <View style={[styles.statusBadge, styles.completedBadge]}>
-          <Text style={styles.statusText}>Completed</Text>
-        </View>
+ const renderServiceCard = ({ item }: { item: Service }) => (
+  <TouchableOpacity
+    style={styles.serviceCard}
+    onPress={() => {
+      router.push({
+        pathname: '/bill',
+        params: {
+          serviceData: JSON.stringify({
+            serviceType: item.serviceType,
+            serviceBoyName: item.serviceBoy,
+            customerName: item.clientName,
+            address: item.address,
+            contactNumber: item.phone,
+            serviceCharge: item.amount
+          }),
+        },
+      });
+    }}
+  >
+    <View style={styles.serviceHeader}>
+      <Text style={styles.serviceType}>{item.title}</Text>
+      <View style={[styles.statusBadge, styles.completedBadge]}>
+        <Text style={styles.statusText}>Completed</Text>
       </View>
-      <View style={styles.serviceDetails}>
-        <View style={styles.detailRow}>
-          <MaterialIcons name="person" size={16} color="#6B7280" />
-          <Text style={styles.detailText}>{item.clientName}</Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <MaterialIcons name="location-on" size={16} color="#6B7280" />
-          <Text style={styles.detailText} numberOfLines={1} ellipsizeMode="tail">
-            {item.address}
-          </Text>
-        </View>
-
-        <View style={styles.detailRow}>
-          <MaterialIcons name="phone" size={16} color="#6B7280" />
-          <Text style={styles.detailText}>{item.phone}</Text>
-        </View>
-
-
-        <View style={styles.detailRow}>
-          <MaterialCommunityIcons name="currency-inr" size={16} color="#6B7280" />
-          <Text style={styles.detailText}>{Number(item.amount).toLocaleString('en-IN')}</Text>
-        </View>
-
+    </View>
+    <View style={styles.serviceDetails}>
+      <View style={styles.detailRow}>
+        <MaterialIcons name="person" size={16} color="#6B7280" />
+        <Text style={styles.detailText}>{item.clientName}</Text>
       </View>
-
-      <View style={styles.serviceFooter}>
-        <Text style={styles.dateText}>{item.date}</Text>
-        <Text style={styles.serviceBoyText}>Assigned to: {item.serviceBoy}</Text>
+      <View style={styles.detailRow}>
+        <MaterialIcons name="location-on" size={16} color="#6B7280" />
+        <Text style={styles.detailText} numberOfLines={1} ellipsizeMode="tail">
+          {item.address}
+        </Text>
       </View>
-    </>
-  );
+      <View style={styles.detailRow}>
+        <MaterialIcons name="phone" size={16} color="#6B7280" />
+        <Text style={styles.detailText}>{item.phone}</Text>
+      </View>
+      <View style={styles.detailRow}>
+        <MaterialCommunityIcons name="currency-inr" size={16} color="#6B7280" />
+        <Text style={styles.detailText}>{Number(item.amount).toLocaleString('en-IN')}</Text>
+      </View>
+    </View>
+    <View style={styles.serviceFooter}>
+      <Text style={styles.dateText}>{item.date}</Text>
+      <Text style={styles.serviceBoyText}>Assigned to: {item.serviceBoy}</Text>
+    </View>
+  </TouchableOpacity>
+);
 
   const renderHeader = () => (
     <View style={styles.tableHeader}>

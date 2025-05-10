@@ -29,7 +29,6 @@ const LoginScreen = () => {
     const [forgotEmail, setForgotEmail] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [resetConfirmPassword, setResetConfirmPassword] = useState('');
-
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
@@ -137,7 +136,6 @@ const LoginScreen = () => {
                         style={styles.logo}
                         resizeMode="contain"
                     />
-                   
                 </View>
 
                 {/* Forgot Password Modal */}
@@ -146,7 +144,6 @@ const LoginScreen = () => {
                         <View style={styles.modalCard}>
                             <Text style={styles.modalTitle}>Reset Password</Text>
                             <Text style={styles.modalSubtitle}>Enter your email to receive a recovery link</Text>
-                            
                             <TextInput
                                 style={styles.modalInput}
                                 placeholder="Email address"
@@ -156,7 +153,6 @@ const LoginScreen = () => {
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                             />
-                            
                             <View style={styles.modalButtonGroup}>
                                 <TouchableOpacity 
                                     style={[styles.modalButton, styles.secondaryButton]}
@@ -234,7 +230,6 @@ const LoginScreen = () => {
                     <Text style={styles.authTitle}>
                         {isLogin ? 'Welcome Back' : 'Create Account'}
                     </Text>
-                    
                     {!isLogin && (
                         <View style={styles.inputContainer}>
                             <Text style={styles.inputLabel}>Username</Text>

@@ -18,7 +18,6 @@ const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  
   const handleLogout = async () => {
     try {
       await account.deleteSession('current'); // Delete the current session
@@ -26,7 +25,7 @@ const HomeScreen = () => {
       router.replace('/'); // Navigate back to login screen
     } catch (error) {
       console.error('Logout Error:', error);
-      Alert.alert('Error', 'Failed to logout. Please try again.');  
+      Alert.alert('Error', 'Failed to logout. Please try again.');
     }
   };
 

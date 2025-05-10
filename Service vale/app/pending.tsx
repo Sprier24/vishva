@@ -98,29 +98,13 @@ const PendingServicesScreen = () => {
                 id,
                 { status: 'completed' }
               );
-
+              
               // Remove from pending list
               setServices(prev => prev.filter(service => service.id !== id));
-
-              // Find the completed service
+              
+              // Navigate to completed services with the completed service data
               const completedService = services.find(service => service.id === id);
               if (completedService) {
-                // Navigate to BillPage with the completed service data
-                router.push({
-                  pathname: '/bill',
-                  params: {
-                    serviceData: JSON.stringify({
-                      serviceType: completedService.serviceType,
-                      serviceBoyName: completedService.serviceBoy,
-                      customerName: completedService.clientName,
-                      address: completedService.address,
-                      contactNumber: completedService.phone,
-                      serviceCharge: completedService.amount.replace('₹', '')
-                    })
-                  }
-                });
-
-                // Also push to completed page
                 router.push({
                   pathname: '/completed',
                   params: {
