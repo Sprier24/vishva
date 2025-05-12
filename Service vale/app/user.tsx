@@ -38,6 +38,7 @@ const UserDetailsForm = () => {
     name: '',
     address: '',
     contactNo: '',
+    email: '',
     aadharNo: '',
     panNo: '',
     city: '',
@@ -57,9 +58,9 @@ const UserDetailsForm = () => {
       try {
         const user = await account.get();
         console.log('Authenticated as:', user.email);
-        
+
         const response = await databases.listDocuments(
-          DATABASE_ID, 
+          DATABASE_ID,
           COLLECTION_ID
         );
         setSubmittedUsers(response.documents as unknown as User[]);
@@ -67,14 +68,14 @@ const UserDetailsForm = () => {
         console.error('Error fetching users:', error);
         if (error instanceof Error && 'code' in error && error.code === 401) {
           Alert.alert(
-            'Session Expired', 
+            'Session Expired',
             'Please log in again',
             [{ text: 'OK', onPress: () => router.replace('/') }]
           );
         }
       }
     };
-    
+
     fetchUsers();
   }, []);
 
@@ -97,6 +98,14 @@ const UserDetailsForm = () => {
       valid = false;
     } else if (!/^[0-9]{10}$/.test(formData.contactNo)) {
       newErrors.contactNo = 'Invalid contact number (10 digits required)';
+      valid = false;
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+      valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email address';
       valid = false;
     }
 
@@ -130,7 +139,7 @@ const UserDetailsForm = () => {
     return valid;
   };
 
-  const handleCitySearch = (text:any) => {
+  const handleCitySearch = (text: any) => {
     setSearchQuery(text);
     const filtered = cities.filter(city =>
       city.toLowerCase().includes(text.toLowerCase())
@@ -143,57 +152,61 @@ const UserDetailsForm = () => {
     return cleanData;
   };
 
- // Update your handleSubmit function
-const handleSubmit = async () => {
-  if (validateForm()) {
-    try {
-      if (editingIndex !== null) {
-        const updateData = {
-          name: formData.name,
-          address: formData.address,
-          contactNo: formData.contactNo,
-          aadharNo: formData.aadharNo,
-          panNo: formData.panNo,
-          city: formData.city,
-          category: formData.category
-        };
+  // Update your handleSubmit function
+  const handleSubmit = async () => {
+    if (validateForm()) {
+      try {
+        if (editingIndex !== null) {
+          // Update existing document
+          const updateData = {
+            name: formData.name,
+            address: formData.address,
+            contactNo: formData.contactNo,
+            email: formData.email, // Make sure to include email in updates
+            aadharNo: formData.aadharNo,
+            panNo: formData.panNo,
+            city: formData.city,
+            category: formData.category
+          };
 
-        await databases.updateDocument(
-          DATABASE_ID,
-          COLLECTION_ID,
-          submittedUsers[editingIndex].$id,
-          updateData
+          await databases.updateDocument(
+            DATABASE_ID,
+            COLLECTION_ID,
+            submittedUsers[editingIndex].$id,
+            updateData
+          );
+
+          const updatedUsers = [...submittedUsers];
+          updatedUsers[editingIndex] = {
+            ...updatedUsers[editingIndex],
+            ...updateData
+          };
+          setSubmittedUsers(updatedUsers);
+          setEditingIndex(null);
+        } else {
+          // Create new document with unique ID
+          const response = await databases.createDocument(
+            DATABASE_ID,
+            COLLECTION_ID,
+            ID.unique(), // This ensures a unique ID is generated
+            formData
+          );
+          setSubmittedUsers([...submittedUsers, response as unknown as User]);
+        }
+
+        Alert.alert('Success', 'User details saved successfully!');
+        resetForm();
+        setIsFormVisible(false);
+      } catch (error: unknown) {
+        console.error('Error saving user:', error);
+        Alert.alert(
+          'Error',
+          error instanceof Error ? error.message : 'Failed to save user details'
         );
-        
-        const updatedUsers = [...submittedUsers];
-        updatedUsers[editingIndex] = { 
-          ...updatedUsers[editingIndex],
-          ...updateData
-        };
-        setSubmittedUsers(updatedUsers);
-        setEditingIndex(null);
-      } else {
-        const response = await databases.createDocument(
-          DATABASE_ID,
-          COLLECTION_ID,
-          ID.unique(),
-          formData
-        );
-        setSubmittedUsers([...submittedUsers, response as unknown as User]);
       }
-      
-      Alert.alert('Success', 'User details saved successfully!');
-      resetForm();
-      setIsFormVisible(false);
-    } catch (error: unknown) {
-      console.error('Error saving user:', error);
-      Alert.alert(
-        'Error', 
-        error instanceof Error ? error.message : 'Failed to save user details'
-      );
     }
-  }
-};
+  };
+
   const handleChange = (name: string, value: string) => {
     setFormData({
       ...formData,
@@ -215,34 +228,34 @@ const handleSubmit = async () => {
           onPress: async () => {
             try {
               const userId = submittedUsers[index].$id;
-              
+
               // Delete from database first
               await databases.deleteDocument(
                 DATABASE_ID,
                 COLLECTION_ID,
                 userId
               );
-              
+
               // Then update local state
-              setSubmittedUsers(prevUsers => 
+              setSubmittedUsers(prevUsers =>
                 prevUsers.filter(user => user.$id !== userId)
               );
-              
+
               // Reset form if editing the deleted user
               if (editingIndex === index) {
                 setEditingIndex(null);
                 resetForm();
               }
-              
+
               // Close expanded view if open
               if (expandedItem === index) {
                 setExpandedItem(null);
               }
-              
+
               Alert.alert('Success', 'User deleted successfully');
             } catch (error) {
               console.error('Error deleting user:', error);
-            Alert.alert('Error', (error as Error).message || 'Failed to delete user');
+              Alert.alert('Error', (error as Error).message || 'Failed to delete user');
             }
           }
         }
@@ -255,6 +268,7 @@ const handleSubmit = async () => {
       name: '',
       address: '',
       contactNo: '',
+      email: '',
       aadharNo: '',
       panNo: '',
       city: '',
@@ -279,7 +293,7 @@ const handleSubmit = async () => {
       </TouchableOpacity>
 
       {/* Display Submitted Data */}
-      <ScrollView style={styles.usersList}>
+        <ScrollView contentContainerStyle={styles.usersList}>
         {submittedUsers.map((user, index) => (
           <View key={user.$id} style={styles.collapsibleContainer}>
             <TouchableOpacity
@@ -303,6 +317,10 @@ const handleSubmit = async () => {
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Contact:</Text>
                   <Text style={styles.detailValue}>{user.contactNo}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Email:</Text>
+                  <Text style={styles.detailValue}>{user.email}</Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Aadhar:</Text>
@@ -409,6 +427,22 @@ const handleSubmit = async () => {
               />
             </View>
             {errors.contactNo && <Text style={styles.errorText}>{errors.contactNo}</Text>}
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email Address</Text>
+            <View style={styles.inputWrapper}>
+              <MaterialIcons name="email" size={20} color="#666" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Enter email address"
+                value={formData.email}
+                onChangeText={(text) => handleChange('email', text)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
           </View>
 
           {/* Aadhar Card Field */}
@@ -739,8 +773,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#888',
   },
-// In your styles, replace the button-related styles with:
-buttonRow: {
+  // In your styles, replace the button-related styles with:
+  buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,

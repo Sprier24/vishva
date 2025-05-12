@@ -6,11 +6,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
-import { Databases, ID } from 'appwrite';
+import { Databases, ID, Query } from 'appwrite';
 import { databases } from '../lib/appwrite';
 
 const DATABASE_ID = '681c428b00159abb5e8b';
-const COLLECTION_ID = '681f3578000b1b1fa716';
+const COLLECTION_ID = 'bill_ID';
 
 const BillPage = () => {
   const params = useLocalSearchParams();
@@ -28,6 +28,7 @@ const BillPage = () => {
   const [cashGiven, setCashGiven] = useState('');
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [gstRate] = useState(0.25); // 25% GST
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     fetchBills();
@@ -39,6 +40,9 @@ const BillPage = () => {
       const response = await databases.listDocuments(
         DATABASE_ID,
         COLLECTION_ID,
+        [
+          Query.orderDesc('date') // Show newest bills first
+        ]
       );
       setBills(response.documents);
     } catch (error) {
@@ -49,14 +53,20 @@ const BillPage = () => {
     }
   };
 
-  // Add the validateForm function
+  const generateBillNumber = () => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
+    const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `BILL-${dateStr}-${randomStr}`;
+  };
+
   const validateForm = () => {
     if (!form.serviceType.trim()) {
       Alert.alert('Error', 'Service type is required');
       return false;
     }
     if (!form.serviceBoyName.trim()) {
-      Alert.alert('Error', 'Service boy name is required');
+      Alert.alert('Error', 'Service provider name is required');
       return false;
     }
     if (!form.customerName.trim()) {
@@ -82,36 +92,41 @@ const BillPage = () => {
     return true;
   };
 
-  const handleSubmitBill = async () => {
-    if (!validateForm()) return;
+const handleSubmitBill = async () => {
+  if (!validateForm()) return;
 
-    const billData = {
-      ...form,
-      paymentMethod,
-      gst: calculateGST(),
-      total: calculateTotal(),
-      cashGiven: paymentMethod === 'cash' ? cashGiven : null,
-      change: paymentMethod === 'cash' ? calculateChange() : null,
-      date: new Date().toISOString()
-    };
-
-    try {
-      await databases.createDocument(
-        DATABASE_ID,
-        COLLECTION_ID,
-        ID.unique(),
-        billData
-      );
-      
-      Alert.alert('Success', 'Bill saved successfully!');
-      fetchBills(); // Refresh the bills list
-      setIsFormVisible(false);
-      resetForm();
-    } catch (error) {
-      console.error('Error saving bill:', error);
-      Alert.alert('Error', 'Failed to save bill');
-    }
+  const billNumber = await generateBillNumber(); // Generate this first
+  
+  const billData = {
+    ...form,
+    paymentMethod,
+    gst: calculateGST(),
+    total: calculateTotal(),
+    cashGiven: paymentMethod === 'cash' ? cashGiven : null,
+    change: paymentMethod === 'cash' ? calculateChange() : null,
+    date: new Date().toISOString(),
+    billNumber, // Use the generated bill number
+    status: 'paid',
+    notes: notes.trim() || null
   };
+
+  try {
+    await databases.createDocument(
+      DATABASE_ID,
+      COLLECTION_ID,
+      billNumber, // Use billNumber as the document ID
+      billData
+    );
+    
+    Alert.alert('Success', 'Bill saved successfully!');
+    fetchBills();
+    setIsFormVisible(false);
+    resetForm();
+  } catch (error) {
+    console.error('Error saving bill:', error);
+    Alert.alert('Error', 'Failed to save bill');
+  }
+};
 
   const resetForm = () => {
     setForm({
@@ -124,6 +139,7 @@ const BillPage = () => {
     });
     setPaymentMethod('cash');
     setCashGiven('');
+    setNotes('');
   };
 
   useEffect(() => {
@@ -193,6 +209,18 @@ const BillPage = () => {
               />
             ))}
 
+            {/* Notes Field */}
+            <Text style={styles.sectionTitle}>Additional Notes</Text>
+            <TextInput
+              placeholder="Enter any additional notes (optional)"
+              style={[styles.input, styles.multilineInput]}
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={4}
+              maxLength={500}
+            />
+
             {/* Charges Breakdown */}
             <View style={styles.chargesContainer}>
               <View style={styles.chargeRow}>
@@ -209,6 +237,7 @@ const BillPage = () => {
               </View>
             </View>
 
+            {/* Payment Method Section */}
             <Text style={styles.sectionTitle}>Payment Method</Text>
             <View style={styles.radioContainer}>
               <TouchableOpacity style={styles.radioOption} onPress={() => setPaymentMethod('cash')}>
@@ -266,19 +295,27 @@ const BillPage = () => {
                 <Text style={styles.emptySubtext}>Tap the + button to create a new bill</Text>
               </View>
             ) : (
-              bills.map((bill, index) => (
+              bills.map((bill) => (
                 <TouchableOpacity 
                   key={bill.$id} 
                   style={styles.billCard}
-                  onPress={() => {
-                    // Optionally view/edit bill details
-                  }}
                 >
                   <View style={styles.billHeader}>
                     <Text style={styles.billCustomer}>{bill.customerName}</Text>
                     <Text style={styles.billAmount}>₹{bill.total}</Text>
                   </View>
-                  <Text style={styles.billService}>{bill.serviceType}</Text>
+                  <View style={styles.billSubHeader}>
+                    <Text style={styles.billNumber}>{bill.billNumber}</Text>
+                    <Text style={[
+                      styles.billStatus,
+                      bill.status === 'paid' && styles.statusPaid,
+                      bill.status === 'pending' && styles.statusPending,
+                      bill.status === 'cancelled' && styles.statusCancelled
+                    ]}>
+                      {bill.status}
+                    </Text>
+                  </View>
+                  <Text style={styles.billService}>{bill.serviceType} by {bill.serviceBoyName}</Text>
                   <Text style={styles.billDate}>
                     {new Date(bill.date).toLocaleDateString()}
                   </Text>
@@ -514,6 +551,78 @@ billDate: {
     fontSize: 14,
     color: '#999',
   },
+  multilineInput: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  billSubHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+  billNumber: {
+    fontSize: 12,
+    color: '#666',
+  },
+  billStatus: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    textTransform: 'capitalize',
+  },
+  statusPaid: {
+    backgroundColor: '#d4edda',
+    color: '#155724',
+  },
+  statusPending: {
+    backgroundColor: '#fff3cd',
+    color: '#856404',
+  },
+  statusCancelled: {
+    backgroundColor: '#f8d7da',
+    color: '#721c24',
+  },
+  billNotes: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+    marginTop: 5,
+  },
 });
 
 export default BillPage;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

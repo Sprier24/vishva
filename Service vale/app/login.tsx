@@ -14,7 +14,11 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { account } from '../lib/appwrite';
+import { Databases, Query } from 'appwrite';
+import { account, databases } from '../lib/appwrite';
+
+const DATABASE_ID = '681c428b00159abb5e8b';
+const COLLECTION_ID = '681c429800281e8a99bd';
 
 const LoginScreen = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -42,28 +46,54 @@ const LoginScreen = () => {
         setResetConfirmPassword('');
     };
 
-    const handleLogin = async () => {
-        if (email === '' || password === '') {
-            Alert.alert('Error', 'Please fill in all fields');
-        } else if (!emailRegex.test(email)) {
-            Alert.alert('Error', 'Please enter a valid email');
-        } else if (!passwordRegex.test(password)) {
-            Alert.alert('Error', 'Password must contain an uppercase letter, number, and special character');
-        } else {
+   const handleLogin = async () => {
+    if (email === '' || password === '') {
+        Alert.alert('Error', 'Please fill in all fields');
+    } else if (!emailRegex.test(email)) {
+        Alert.alert('Error', 'Please enter a valid email');
+    } else if (!passwordRegex.test(password)) {
+        Alert.alert('Error', 'Password must contain an uppercase letter, number, and special character');
+    } else {
+        try {
+            // First check if there's an active session
             try {
-                const session = await account.createEmailPasswordSession(email, password);
-                console.log('Login Success:', session);
-                const user = await account.get();
-                console.log('Current user:', user);
-                Alert.alert('Success', `Logged in as ${email}`);
-                resetFields();
-                router.replace('/home');
-            } catch (error: any) {
-                console.error('Login Error:', error);
-                Alert.alert('Login Error', error?.message || 'An unknown error occurred');
+                const current = await account.get();
+                if (current) {
+                    await account.deleteSession('current');
+                }
+            } catch (error) {
+                // No active session, proceed with login
             }
+            
+            // Create new session
+            const session = await account.createEmailPasswordSession(email, password);
+            console.log('Login Success:', session);
+            
+            // Get user details
+            const user = await account.get();
+            console.log('Current user:', user);
+            
+          
+            
+            
+            // Check if user has admin label
+            const isAdmin = user.labels?.includes('admin');
+            
+            Alert.alert('Success', `Logged in as ${email}`);
+            resetFields();
+            
+            // Redirect based on admin status
+            if (isAdmin) {
+                router.replace('/home'); // Admin dashboard
+            } else {
+                router.replace('/userapp/home'); // User dashboard
+            }
+        } catch (error: any) {
+            console.error('Login Error:', error);
+            Alert.alert('Login Error', error?.message || 'An unknown error occurred');
         }
-    };
+    }
+};
 
     const handleRegister = async () => {
         if (!username || !email || !password || !confirmPassword) {
@@ -80,6 +110,19 @@ const LoginScreen = () => {
                 Alert.alert('Success', 'Account created successfully. Please log in.');
                 resetFields();
                 setIsLogin(true);
+
+                  // Check if user exists in the database (added by admin)
+            const response = await databases.listDocuments(
+                DATABASE_ID, 
+                COLLECTION_ID,
+                [Query.equal('email', email)]
+            );
+                if (response.documents.length === 0) {
+                // User not found in admin-added users
+                await account.deleteSession('current');
+                Alert.alert('Access Denied', 'You are not authorized to access this system');
+                return;
+            }
             } catch (error) {
                 Alert.alert('Registration Error', error instanceof Error ? error.message : 'An unknown error occurred');
             }

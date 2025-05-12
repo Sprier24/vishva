@@ -136,19 +136,6 @@ const HomeScreen = () => {
   </TouchableOpacity>
 );
 
-  const renderHeader = () => (
-    <View style={styles.tableHeader}>
-      <View style={styles.tableHeaderCell}>
-        <Text style={[styles.tableHeaderText, styles.idColumn]}>ID</Text>
-      </View>
-      <View style={styles.tableHeaderCell}>
-        <Text style={[styles.tableHeaderText, styles.serviceColumn]}>Service</Text>
-      </View>
-      <View style={styles.tableHeaderCell}>
-        <Text style={[styles.tableHeaderText, styles.actionColumn]}>Action</Text>
-      </View>
-    </View>
-  );
 
   return (
     <SafeAreaView style={styles.container}>

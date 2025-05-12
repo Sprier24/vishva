@@ -143,31 +143,6 @@ const HomeScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* Recent Activity */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
-          <View style={styles.activityCard}>
-            <View style={styles.activityItem}>
-              <View style={[styles.activityIcon, { backgroundColor: '#e8f4f8' }]}>
-                <MaterialIcons name="car-repair" size={20} color="#3498db" />
-              </View>
-              <View style={styles.activityText}>
-                <Text style={styles.activityTitle}>Oil Change Completed</Text>
-                <Text style={styles.activityTime}>10 minutes ago</Text>
-              </View>
-            </View>
-            <View style={styles.activityItem}>
-              <View style={[styles.activityIcon, { backgroundColor: '#f0f8e8' }]}>
-                <MaterialIcons name="directions-car" size={20} color="#2ecc71" />
-              </View>
-              <View style={styles.activityText}>
-                <Text style={styles.activityTitle}>New Vehicle Added</Text>
-                <Text style={styles.activityTime}>1 hour ago</Text>
-              </View>
-            </View>
-          </View>
-        </View>
       </ScrollView>
 
       <View style={styles.bottomBar}>
