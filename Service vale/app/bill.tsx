@@ -12,6 +12,15 @@ import { databases } from '../lib/appwrite';
 const DATABASE_ID = '681c428b00159abb5e8b';
 const COLLECTION_ID = 'bill_ID';
 
+  const fieldLabels = {
+  serviceType: 'Service Type',
+  serviceBoyName: 'Service Provider Name',
+  customerName: 'Customer Name',
+  address: 'Address',
+  contactNumber: 'Contact Number',
+  serviceCharge: 'Service Charge (₹)'
+};
+
 const BillPage = () => {
   const params = useLocalSearchParams();
   const [form, setForm] = useState({
@@ -27,7 +36,6 @@ const BillPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [cashGiven, setCashGiven] = useState('');
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [gstRate] = useState(0.25); // 25% GST
   const [notes, setNotes] = useState('');
 
   useEffect(() => {
@@ -100,7 +108,6 @@ const handleSubmitBill = async () => {
   const billData = {
     ...form,
     paymentMethod,
-    gst: calculateGST(),
     total: calculateTotal(),
     cashGiven: paymentMethod === 'cash' ? cashGiven : null,
     change: paymentMethod === 'cash' ? calculateChange() : null,
@@ -165,15 +172,9 @@ const handleSubmitBill = async () => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const calculateGST = () => {
-    const charge = parseFloat(form.serviceCharge) || 0;
-    return (charge * gstRate).toFixed(2);
-  };
-
   const calculateTotal = () => {
     const charge = parseFloat(form.serviceCharge) || 0;
-    const gst = parseFloat(calculateGST()) || 0;
-    return (charge + gst).toFixed(2);
+    return (charge).toFixed(2);
   };
 
   const calculateChange = () => {
@@ -199,14 +200,16 @@ const handleSubmitBill = async () => {
             {/* Service Details Section */}
             <Text style={styles.sectionTitle}>Service Details</Text>
             {Object.entries(form).map(([key, value]) => (
-              <TextInput
-                key={key}
-                placeholder={key.replace(/([A-Z])/g, ' $1')}
-                style={styles.input}
-                keyboardType={key === 'contactNumber' || key === 'serviceCharge' ? 'numeric' : 'default'}
-                value={value}
-                onChangeText={(text) => handleChange(key, text)}
-              />
+              <View key={key}>
+                <Text style={styles.fieldLabel}>{fieldLabels[key as keyof typeof fieldLabels]}</Text>
+                <TextInput
+                  placeholder={`Enter ${fieldLabels[key as keyof typeof fieldLabels].toLowerCase()}`}
+                  style={styles.input}
+                  keyboardType={key === 'contactNumber' || key === 'serviceCharge' ? 'numeric' : 'default'}
+                  value={value}
+                  onChangeText={(text) => handleChange(key, text)}
+                />
+              </View>
             ))}
 
             {/* Notes Field */}
@@ -226,10 +229,6 @@ const handleSubmitBill = async () => {
               <View style={styles.chargeRow}>
                 <Text style={styles.chargeLabel}>Service Charge:</Text>
                 <Text style={styles.chargeValue}>₹{form.serviceCharge || '0.00'}</Text>
-              </View>
-              <View style={styles.chargeRow}>
-                <Text style={styles.chargeLabel}>Tax (25%):</Text>
-                <Text style={styles.chargeValue}>₹{calculateGST()}</Text>
               </View>
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Total Amount:</Text>
@@ -315,10 +314,13 @@ const handleSubmitBill = async () => {
                       {bill.status}
                     </Text>
                   </View>
+                  {bill.notes && <Text style={styles.billNotes}>{bill.notes}</Text>}
+                  <View style={styles.userFooter}>
                   <Text style={styles.billService}>{bill.serviceType} by {bill.serviceBoyName}</Text>
                   <Text style={styles.billDate}>
                     {new Date(bill.date).toLocaleDateString()}
                   </Text>
+                </View>
                 </TouchableOpacity>
               ))
             )}
@@ -334,6 +336,14 @@ const handleSubmitBill = async () => {
 };
 
 const styles = StyleSheet.create({
+  userFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 5,
+    paddingTop: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
   billsContainer: {
   flex: 1,
   marginTop: 20,
@@ -590,14 +600,16 @@ billDate: {
     fontStyle: 'italic',
     marginTop: 5,
   },
+  fieldLabel: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#2c3e50',
+  marginBottom: 5,
+  marginTop: 10,
+  },
 });
 
 export default BillPage;
-
-
-
-
-
 
 
 

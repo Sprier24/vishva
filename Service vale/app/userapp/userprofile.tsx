@@ -65,7 +65,6 @@ const ProfileScreen = () => {
                         city: '',
                         category: ''
                     });
-                    Alert.alert('Info', 'Complete your profile details');
                 }
 
                 setLoading(false);
@@ -312,14 +311,6 @@ const ProfileScreen = () => {
 
 
                             <View style={styles.actionButtons}>
-                                <TouchableOpacity
-                                    style={styles.editButton}
-                                    onPress={() => setIsEditing(true)}
-                                >
-                                    <Ionicons name="create-outline" size={18} color="#fff" />
-                                    <Text style={styles.editButtonText}>Edit Profile</Text>
-                                </TouchableOpacity>
-
                                 <TouchableOpacity
                                     style={styles.logoutButton}
                                     onPress={handleLogout}

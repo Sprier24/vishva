@@ -34,7 +34,10 @@ const HomeScreen = () => {
       const response = await databases.listDocuments(
         DATABASE_ID,
         COLLECTION_ID,
-        [Query.equal('status', 'completed')]
+        [
+          Query.equal('status', 'completed'),
+          Query.orderDesc('$createdAt')
+        ]
       );
 
       const formattedServices = response.documents.map(doc => ({
@@ -104,7 +107,7 @@ const HomeScreen = () => {
     }}
   >
     <View style={styles.serviceHeader}>
-      <Text style={styles.serviceType}>{item.title}</Text>
+      <Text style={styles.serviceType}>{item.serviceType}</Text>
       <View style={[styles.statusBadge, styles.completedBadge]}>
         <Text style={styles.statusText}>Completed</Text>
       </View>
@@ -130,12 +133,11 @@ const HomeScreen = () => {
       </View>
     </View>
     <View style={styles.serviceFooter}>
-      <Text style={styles.dateText}>{item.date}</Text>
       <Text style={styles.serviceBoyText}>Assigned to: {item.serviceBoy}</Text>
+      <Text style={styles.dateText}>{item.date}</Text>
     </View>
   </TouchableOpacity>
 );
-
 
   return (
     <SafeAreaView style={styles.container}>
@@ -357,7 +359,8 @@ const styles = StyleSheet.create({
 
   serviceFooter: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
     paddingTop: 12,
@@ -401,11 +404,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
-  serviceBoyText: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontStyle: 'italic',
-  },
+ serviceBoyText: {
+  fontSize: 12,
+  color: '#6B7280',
+  fontStyle: 'italic',
+  width: 150,           
+  textAlign: 'left',   
+},
   pendingBadge: {
     backgroundColor: '#FEF3C7',
   },

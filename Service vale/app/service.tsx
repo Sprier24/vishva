@@ -8,12 +8,12 @@ import { Query } from 'appwrite';
 const DATABASE_ID = '681c428b00159abb5e8b';
 const COLLECTION_ID = '681c429800281e8a99bd';
 
-type ServiceKey = 'ac' | 'washingmachine' | 'fridgerepair' | 'microwave';
+type ServiceKey = 'AC' | 'Washing Machine' | 'Fridge' | 'Microwave';
 
 const ServicePage = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [allUsers, setAllUsers] = useState<{id: string, name: string}[]>([]);
-  const [selectedServiceType, setSelectedServiceType] = useState<ServiceKey>('ac');
+  const [selectedServiceType, setSelectedServiceType] = useState<ServiceKey>('AC');
   const router = useRouter();
 
   useEffect(() => {
@@ -21,7 +21,8 @@ const ServicePage = () => {
       try {
         const response = await databases.listDocuments(
           DATABASE_ID,
-          COLLECTION_ID
+          COLLECTION_ID,
+          [Query.orderDesc('$createdAt')]
         );
         
         const users = response.documents.map(doc => ({
@@ -94,7 +95,7 @@ const ServicePage = () => {
 
       <View style={styles.serviceBox}>
         <View style={styles.imageContainer}>
-          <TouchableOpacity onPress={() => handleImagePress('ac')}>
+          <TouchableOpacity onPress={() => handleImagePress('AC')}>
             <Image
               source={require('../assets/images/ac.jpg')}
               style={styles.image}
@@ -113,7 +114,7 @@ const ServicePage = () => {
 
       <View style={styles.serviceBox}>
         <View style={styles.imageContainer}>
-          <TouchableOpacity onPress={() => handleImagePress('washingmachine')}>
+          <TouchableOpacity onPress={() => handleImagePress('Washing Machine')}>
             <Image
               source={require('../assets/images/washingmachine.jpg')}
               style={styles.image}
@@ -132,7 +133,7 @@ const ServicePage = () => {
 
       <View style={styles.serviceBox}>
         <View style={styles.imageContainer}>
-          <TouchableOpacity onPress={() => handleImagePress('fridgerepair')}>
+          <TouchableOpacity onPress={() => handleImagePress('Fridge')}>
             <Image
               source={require('../assets/images/fridgerepair.jpg')}
               style={styles.image}
@@ -151,7 +152,7 @@ const ServicePage = () => {
 
       <View style={styles.serviceBox}>
         <View style={styles.imageContainer}>
-          <TouchableOpacity onPress={() => handleImagePress('microwave')}>
+          <TouchableOpacity onPress={() => handleImagePress('Microwave')}>
             <Image
               source={require('../assets/images/microwave.jpg')}
               style={styles.image}
@@ -161,7 +162,7 @@ const ServicePage = () => {
         </View>
         <Text style={styles.title}>Microwave Repair:</Text>
         <Text style={styles.description}>
-          We fix microwave malfunctions promptly, ensuring your appliance heats and cooks efficiently without hassle.
+          We fix Microwave malfunctions promptly, ensuring your appliance heats and cooks efficiently without hassle.
         </Text>
         <TouchableOpacity style={styles.button} onPress={handleLearnMore}>
           <Text style={styles.buttonText}>Learn More</Text>

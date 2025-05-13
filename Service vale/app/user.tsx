@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal } from 'react-native';
-import { MaterialIcons, Ionicons, Feather } from '@expo/vector-icons';
+import {
+  View, Text, TextInput, StyleSheet,
+  TouchableOpacity, ScrollView, Alert, Modal
+} from 'react-native';
+import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { Databases, ID, Query } from 'appwrite';
 import { account, databases } from '../lib/appwrite';
@@ -25,11 +28,19 @@ type User = {
   panNo: string;
   city: string;
   category: string;
-  $collectionId?: string;
-  $databaseId?: string;
   $createdAt?: string;
-  $updatedAt?: string;
-  $permissions?: string[];
+  email: string;
+};
+
+const fieldLabels = {
+  name: 'Full Name',
+  address: 'Address',
+  contactNo: 'Contact Number',
+  email: 'Email Address',
+  aadharNo: 'Aadhar Number',
+  panNo: 'PAN Number',
+  city: 'City',
+  category: 'Category'
 };
 
 const UserDetailsForm = () => {
@@ -50,34 +61,40 @@ const UserDetailsForm = () => {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [submittedUsers, setSubmittedUsers] = useState<User[]>([]);
-  const [expandedItem, setExpandedItem] = useState<number | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isUserDetailVisible, setIsUserDetailVisible] = useState(false);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const user = await account.get();
-        console.log('Authenticated as:', user.email);
-
-        const response = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTION_ID
-        );
-        setSubmittedUsers(response.documents as unknown as User[]);
-      } catch (error: unknown) {
-        console.error('Error fetching users:', error);
-        if (error instanceof Error && 'code' in error && error.code === 401) {
-          Alert.alert(
-            'Session Expired',
-            'Please log in again',
-            [{ text: 'OK', onPress: () => router.replace('/') }]
-          );
-        }
-      }
-    };
-
     fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const user = await account.get();
+      console.log('Authenticated as:', user.email);
+
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTION_ID,
+        [Query.orderDesc('$createdAt')]
+      );
+      setSubmittedUsers(response.documents as unknown as User[]);
+    } catch (error: unknown) {
+      console.error('Error fetching users:', error);
+      if (error instanceof Error && 'code' in error && error.code === 401) {
+        Alert.alert(
+          'Session Expired',
+          'Please log in again',
+          [{ text: 'OK', onPress: () => router.replace('/') }]
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const validateForm = () => {
     let valid = true;
@@ -139,7 +156,7 @@ const UserDetailsForm = () => {
     return valid;
   };
 
-  const handleCitySearch = (text: any) => {
+  const handleCitySearch = (text: string) => {
     setSearchQuery(text);
     const filtered = cities.filter(city =>
       city.toLowerCase().includes(text.toLowerCase())
@@ -152,17 +169,15 @@ const UserDetailsForm = () => {
     return cleanData;
   };
 
-  // Update your handleSubmit function
   const handleSubmit = async () => {
     if (validateForm()) {
       try {
         if (editingIndex !== null) {
-          // Update existing document
           const updateData = {
             name: formData.name,
             address: formData.address,
             contactNo: formData.contactNo,
-            email: formData.email, // Make sure to include email in updates
+            email: formData.email,
             aadharNo: formData.aadharNo,
             panNo: formData.panNo,
             city: formData.city,
@@ -184,14 +199,13 @@ const UserDetailsForm = () => {
           setSubmittedUsers(updatedUsers);
           setEditingIndex(null);
         } else {
-          // Create new document with unique ID
           const response = await databases.createDocument(
             DATABASE_ID,
             COLLECTION_ID,
-            ID.unique(), // This ensures a unique ID is generated
+            ID.unique(),
             formData
           );
-          setSubmittedUsers([...submittedUsers, response as unknown as User]);
+          setSubmittedUsers(prevUsers => [response as unknown as User, ...prevUsers]);
         }
 
         Alert.alert('Success', 'User details saved successfully!');
@@ -228,28 +242,19 @@ const UserDetailsForm = () => {
           onPress: async () => {
             try {
               const userId = submittedUsers[index].$id;
-
-              // Delete from database first
               await databases.deleteDocument(
                 DATABASE_ID,
                 COLLECTION_ID,
                 userId
               );
 
-              // Then update local state
               setSubmittedUsers(prevUsers =>
                 prevUsers.filter(user => user.$id !== userId)
               );
 
-              // Reset form if editing the deleted user
               if (editingIndex === index) {
                 setEditingIndex(null);
                 resetForm();
-              }
-
-              // Close expanded view if open
-              if (expandedItem === index) {
-                setExpandedItem(null);
               }
 
               Alert.alert('Success', 'User deleted successfully');
@@ -277,295 +282,292 @@ const UserDetailsForm = () => {
     setErrors({});
   };
 
-  const openFormForNewUser = () => {
-    resetForm();
-    setIsFormVisible(true);
+  const toggleFormVisibility = () => {
+    setIsFormVisible(!isFormVisible);
+    if (!isFormVisible) {
+      resetForm();
+      setEditingIndex(null);
+    }
+  };
+
+  const showUserDetails = (user: User) => {
+    setSelectedUser(user);
+    setIsUserDetailVisible(true);
+  };
+
+  const closeUserDetails = () => {
+    setIsUserDetailVisible(false);
+    setSelectedUser(null);
   };
 
   return (
     <View style={styles.mainContainer}>
-      {/* Plus Icon Button */}
-      <TouchableOpacity
-        style={styles.plusButton}
-        onPress={() => setIsFormVisible(true)}
-      >
-        <Ionicons name="add-circle" size={50} color="#3498db" />
-      </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.heading}>User Management</Text>
 
-      {/* Display Submitted Data */}
-        <ScrollView contentContainerStyle={styles.usersList}>
-        {submittedUsers.map((user, index) => (
-          <View key={user.$id} style={styles.collapsibleContainer}>
-            <TouchableOpacity
-              style={styles.nameItem}
-              onPress={() => setExpandedItem(expandedItem === index ? null : index)}
-            >
-              <Text style={styles.nameText}>{user.name}</Text>
-              <Ionicons
-                name={expandedItem === index ? 'chevron-up' : 'chevron-down'}
-                size={24}
-                color="#3498db"
-              />
-            </TouchableOpacity>
-
-            {expandedItem === index && (
-              <View style={styles.detailsContainer}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Address:</Text>
-                  <Text style={styles.detailValue}>{user.address}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Contact:</Text>
-                  <Text style={styles.detailValue}>{user.contactNo}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Email:</Text>
-                  <Text style={styles.detailValue}>{user.email}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Aadhar:</Text>
-                  <Text style={styles.detailValue}>{user.aadharNo}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>PAN:</Text>
-                  <Text style={styles.detailValue}>{user.panNo}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>City:</Text>
-                  <Text style={styles.detailValue}>{user.city}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Category:</Text>
-                  <Text style={styles.detailValue}>{user.category}</Text>
-                </View>
-
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    style={styles.actioneditButton}
-                    onPress={() => {
-                      setFormData(cleanDocumentData(user));
-                      setEditingIndex(index);
-                      setIsFormVisible(true);
-                    }}
-                  >
-                    <Text style={styles.actionButtonText}>Edit</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={() => handleDeleteUser(index)}
-                  >
-                    <Text style={styles.actionButtonText}>Delete</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-          </View>
-        ))}
-      </ScrollView>
-
-      {/* Form Modal */}
-      <Modal
-        visible={isFormVisible}
-        animationType="slide"
-        transparent={false}
-        onRequestClose={() => {
-          setIsFormVisible(false);
-          setEditingIndex(null), resetForm();
-        }}
-      >
-        <ScrollView contentContainerStyle={styles.container}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.header}>User Details Form</Text>
-            <TouchableOpacity onPress={() => setIsFormVisible(false)}>
-              <Ionicons name="close" size={24} color="#333" />
-            </TouchableOpacity>
-          </View>
-          {/* All your form fields here... */}
-          {/* Name Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Full Name</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="person" size={20} color="#666" style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter full name"
-                value={formData.name}
-                onChangeText={(text) => handleChange('name', text)}
-              />
-            </View>
-            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-          </View>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Address</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="home" size={20} color="#666" style={styles.icon} />
-              <TextInput
-                style={[styles.input, styles.multilineInput]}
-                placeholder="Enter full address"
-                value={formData.address}
-                onChangeText={(text) => handleChange('address', text)}
-                multiline
-                numberOfLines={3}
-              />
-            </View>
-            {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
-          </View>
-
-          {/* Contact Number Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Contact Number</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="phone" size={20} color="#666" style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter 10-digit mobile number"
-                value={formData.contactNo}
-                onChangeText={(text) => handleChange('contactNo', text)}
-                keyboardType="phone-pad"
-                maxLength={10}
-              />
-            </View>
-            {errors.contactNo && <Text style={styles.errorText}>{errors.contactNo}</Text>}
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email Address</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="email" size={20} color="#666" style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter email address"
-                value={formData.email}
-                onChangeText={(text) => handleChange('email', text)}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-          </View>
-
-          {/* Aadhar Card Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Aadhar Card Number</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="credit-card" size={20} color="#666" style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter 12-digit Aadhar number"
-                value={formData.aadharNo}
-                onChangeText={(text) => handleChange('aadharNo', text)}
-                keyboardType="number-pad"
-                maxLength={12}
-              />
-            </View>
-            {errors.aadharNo && <Text style={styles.errorText}>{errors.aadharNo}</Text>}
-          </View>
-
-          {/* PAN Card Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>PAN Card Number</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="assignment" size={20} color="#666" style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Enter PAN number (e.g., ABCDE1234F)"
-                value={formData.panNo}
-                onChangeText={(text) => handleChange('panNo', text.toUpperCase())}
-                maxLength={10}
-                autoCapitalize="characters"
-              />
-            </View>
-            {errors.panNo && <Text style={styles.errorText}>{errors.panNo}</Text>}
-          </View>
-
-          {/* City Field */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>City</Text>
-            <View style={styles.inputWrapper}>
-              <MaterialIcons name="location-city" size={20} color="#666" style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Search or select city"
-                value={formData.city}
-                onChangeText={(text) => {
-                  handleChange('city', text);
-                  handleCitySearch(text);
-                }}
-                onFocus={() => setShowCityDropdown(true)}
-              />
-              <TouchableOpacity
-                onPress={() => setShowCityDropdown(!showCityDropdown)}
-                style={styles.searchIcon}
-              >
-                <Feather name="search" size={20} color="#666" />
-              </TouchableOpacity>
+        {isFormVisible ? (
+          <>
+            <View style={styles.formHeader}>
+              <Text style={styles.sectionTitle}>
+                {editingIndex !== null ? 'Edit User' : 'Add New User'}
+              </Text>
             </View>
 
-            {showCityDropdown && (
-              <View style={styles.dropdownContainer}>
-                <ScrollView
-                  style={styles.dropdownScroll}
-                  nestedScrollEnabled={true}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  {filteredCities.length > 0 ? (
-                    filteredCities.map((city, index) => (
-                      <TouchableOpacity
-                        key={index}
-                        style={styles.dropdownItem}
-                        onPress={() => {
-                          handleChange('city', city);
-                          setShowCityDropdown(false);
-                          setSearchQuery('');
-                          setFilteredCities(cities);
-                        }}
+            {Object.entries(formData).map(([key, value]) => {
+              const currentValue = value || '';
+              const label = fieldLabels[key as keyof typeof fieldLabels] || key;
+
+              return (
+                <View key={key}>
+                  <Text style={styles.fieldLabel}>{label}</Text>
+                  {key === 'category' ? (
+                    <View style={styles.inputWrapper}>
+                      <Picker
+                        selectedValue={currentValue}
+                        onValueChange={(itemValue) => handleChange(key, itemValue)}
+                        style={styles.picker}
                       >
-                        <Text style={styles.dropdownItemText}>{city}</Text>
+                        <Picker.Item label="Select a category" value="" />
+                        <Picker.Item label="Service" value="Service" />
+                        <Picker.Item label="Repair" value="Repair" />
+                        <Picker.Item label="Technician" value="Technician" />
+                      </Picker>
+                    </View>
+                  ) : key === 'city' ? (
+                    <View style={styles.inputWrapper}>
+                      <MaterialIcons name="location-city" size={20} color="#666" style={styles.icon} />
+                      <TextInput
+                        placeholder={`Enter ${label.toLowerCase()}`}
+                        style={styles.input}
+                        value={currentValue}
+                        onChangeText={(text) => {
+                          handleChange(key, text);
+                          handleCitySearch(text);
+                        }}
+                        onFocus={() => setShowCityDropdown(true)}
+                      />
+                      <TouchableOpacity
+                        onPress={() => setShowCityDropdown(!showCityDropdown)}
+                        style={styles.searchIcon}
+                      >
+                        <Feather name="search" size={20} color="#666" />
                       </TouchableOpacity>
-                    ))
+                    </View>
                   ) : (
-                    <View style={styles.noResults}>
-                      <Text style={styles.noResultsText}>No cities found</Text>
+                    <View style={styles.inputWrapper}>
+                      {key === 'name' && <MaterialIcons name="person" size={20} color="#666" style={styles.icon} />}
+                      {key === 'address' && <MaterialIcons name="home" size={20} color="#666" style={styles.icon} />}
+                      {key === 'contactNo' && <MaterialIcons name="phone" size={20} color="#666" style={styles.icon} />}
+                      {key === 'email' && <MaterialIcons name="email" size={20} color="#666" style={styles.icon} />}
+                      {key === 'aadharNo' && <MaterialIcons name="credit-card" size={20} color="#666" style={styles.icon} />}
+                      {key === 'panNo' && <MaterialIcons name="assignment" size={20} color="#666" style={styles.icon} />}
+                      
+                      <TextInput
+                        placeholder={`Enter ${label.toLowerCase()}`}
+                        style={key === 'address' ? [styles.input, styles.multilineInput] : styles.input}
+                        value={currentValue}
+                        onChangeText={(text) => handleChange(key, text)}
+                        keyboardType={
+                          key === 'contactNo' || key === 'aadharNo' ? 'numeric' : 
+                          key === 'email' ? 'email-address' : 'default'
+                        }
+                        multiline={key === 'address'}
+                        numberOfLines={key === 'address' ? 3 : 1}
+                        maxLength={key === 'panNo' ? 10 : key === 'aadharNo' ? 12 : key === 'contactNo' ? 10 : undefined}
+                        autoCapitalize={key === 'panNo' ? 'characters' : 'words'}
+                      />
                     </View>
                   )}
-                </ScrollView>
-              </View>
-            )}
+                  {errors[key] && <Text style={styles.errorText}>{errors[key]}</Text>}
+                  
+                  {key === 'city' && showCityDropdown && (
+                    <View style={styles.dropdownContainer}>
+                      <ScrollView
+                        style={styles.dropdownScroll}
+                        nestedScrollEnabled={true}
+                        keyboardShouldPersistTaps="handled"
+                      >
+                        {filteredCities.length > 0 ? (
+                          filteredCities.map((city, index) => (
+                            <TouchableOpacity
+                              key={index}
+                              style={styles.dropdownItem}
+                              onPress={() => {
+                                handleChange('city', city);
+                                setShowCityDropdown(false);
+                                setSearchQuery('');
+                                setFilteredCities(cities);
+                              }}
+                            >
+                              <Text style={styles.dropdownItemText}>{city}</Text>
+                            </TouchableOpacity>
+                          ))
+                        ) : (
+                          <View style={styles.noResults}>
+                            <Text style={styles.noResultsText}>No cities found</Text>
+                          </View>
+                        )}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
 
-            {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Category</Text>
-            <View style={styles.inputWrapper}>
-              <Picker
-                selectedValue={formData.category}
-                onValueChange={(itemValue) => handleChange('category', itemValue)}
-                style={styles.picker}
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.resetButton]}
+                onPress={resetForm}
               >
-                <Picker.Item label="Select a category" value="" />
-                <Picker.Item label="Service" value="Service" />
-                <Picker.Item label="Repair" value="Repair" />
-                <Picker.Item label="Technicion" value="Technicion" />
-              </Picker>
+                <Text style={styles.actionButtonText}>Reset</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.submitButton]}
+                onPress={handleSubmit}
+              >
+                <Text style={styles.actionButtonText}>
+                  {editingIndex !== null ? 'Update User' : 'Add User'}
+                </Text>
+              </TouchableOpacity>
             </View>
-            {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
+          </>
+        ) : (
+          <View style={styles.usersContainer}>
+            <Text style={styles.sectionTitle}>User List</Text>
+            
+            {isLoading ? (
+              <Text>Loading users...</Text>
+            ) : submittedUsers.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>No users added yet</Text>
+                <Text style={styles.emptySubtext}>Tap the + button to add a new user</Text>
+              </View>
+            ) : (
+              submittedUsers.map((user, index) => (
+                <TouchableOpacity 
+                  key={user.$id} 
+                  style={styles.userCard}
+                  onPress={() => showUserDetails(user)}
+                >
+                  <View style={styles.userHeader}>
+                    <Text style={styles.userName}>{user.name}</Text>
+                  </View>
+                  <Text style={styles.userContact}>{user.contactNo}</Text>
+                  <Text style={styles.userEmail}>{user.email}</Text>
+                  <View style={styles.userFooter}>
+                    <Text style={styles.userCategory}>{user.category}</Text>
+                    <Text style={styles.userDate}>
+                      {new Date(user.$createdAt || '').toLocaleDateString()}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
           </View>
+        )}
+      </ScrollView>
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Submit Details</Text>
-          </TouchableOpacity>
-
-          {/* Reset Button */}
-          <TouchableOpacity
-            style={styles.resetButton}
-            onPress={resetForm}
-          >
-            <Text style={styles.resetButtonText}>Reset Form</Text>
-          </TouchableOpacity>
-        </ScrollView>
+      {/* User Detail Modal */}
+      <Modal
+        visible={isUserDetailVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeUserDetails}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {selectedUser && (
+              <>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>User Details</Text>
+                  <TouchableOpacity onPress={closeUserDetails}>
+                    <Ionicons name="close" size={24} color="#666" />
+                  </TouchableOpacity>
+                </View>
+                
+                <ScrollView style={styles.modalContent}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Name:</Text>
+                    <Text style={styles.detailValue}>{selectedUser.name}</Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Email:</Text>
+                    <Text style={styles.detailValue}>{selectedUser.email}</Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Contact:</Text>
+                    <Text style={styles.detailValue}>{selectedUser.contactNo}</Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Aadhar:</Text>
+                    <Text style={styles.detailValue}>{selectedUser.aadharNo}</Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>PAN:</Text>
+                    <Text style={styles.detailValue}>{selectedUser.panNo}</Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Address:</Text>
+                    <Text style={styles.detailValue}>{selectedUser.address}</Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>City:</Text>
+                    <Text style={styles.detailValue}>{selectedUser.city}</Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Category:</Text>
+                    <Text style={styles.detailValue}>{selectedUser.category}</Text>
+                  </View>
+                  
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Created At:</Text>
+                    <Text style={styles.detailValue}>
+                      {new Date(selectedUser.$createdAt || '').toLocaleString()}
+                    </Text>
+                  </View>
+                </ScrollView>
+                
+                <View style={styles.buttonRow}>
+                  <TouchableOpacity 
+                    style={styles.editButton}
+                    onPress={() => {
+                      setFormData(cleanDocumentData(selectedUser));
+                      const index = submittedUsers.findIndex(u => u.$id === selectedUser.$id);
+                      if (index !== -1) {
+                        setEditingIndex(index);
+                      }
+                      setIsFormVisible(true);
+                      closeUserDetails();
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Edit User</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => {
+                      handleDeleteUser(submittedUsers.findIndex(u => u.$id === selectedUser.$id));
+                      closeUserDetails();
+                    }}
+                  >
+                    <Text style={styles.editButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
       </Modal>
+
+      <TouchableOpacity style={styles.fab} onPress={toggleFormVisibility}>
+        <Ionicons name={isFormVisible ? 'close' : 'add'} size={28} color="white" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -573,118 +575,40 @@ const UserDetailsForm = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  usersList: {
-    flex: 1,
-  },
-  plusButton: {
-    alignSelf: 'center',
-    marginVertical: 20,
-  },
-  collapsibleContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    overflow: 'hidden',
-  },
-  nameItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  nameText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  detailsContainer: {
-    padding: 15,
-    paddingTop: 0,
-  },
-  submittedDataContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  submittedHeader: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
-    textAlign: 'center',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    paddingBottom: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  detailLabel: {
-    fontWeight: 'bold',
-    color: '#555',
-  },
-  detailValue: {
-    color: '#333',
-  },
-  editButton: {
-    backgroundColor: '#3498db',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  editButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+    position: 'relative',
+    backgroundColor: '#f4f4f4',
   },
   container: {
-    flexGrow: 1,
     padding: 20,
-    backgroundColor: '#f5f5f5',
+    paddingBottom: 80,
   },
-  header: {
+  heading: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    marginBottom: 20,
+    color: '#2c3e50',
   },
-  inputContainer: {
+  formHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
   },
-  label: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#444',
-    fontWeight: '500',
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginVertical: 15,
+    color: '#2c3e50',
   },
-  picker: {
-    flex: 1,
-    height: 50,
-    color: '#333',
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   icon: {
     marginRight: 10,
@@ -700,58 +624,23 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     paddingVertical: 15,
   },
-  errorText: {
-    color: 'red',
-    fontSize: 12,
-    marginTop: 5,
-  },
-  submitButton: {
-    backgroundColor: '#3498db',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  submitButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  resetButton: {
-    backgroundColor: '#e74c3c',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  resetButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    position: 'relative',
+  picker: {
+    flex: 1,
+    height: 50,
+    color: '#333',
   },
   searchIcon: {
-    padding: 8,
+    padding: 10,
   },
   dropdownContainer: {
     maxHeight: 200,
     backgroundColor: '#fff',
     borderRadius: 8,
-    marginTop: 5,
+    marginTop: -10,
+    marginBottom: 15,
     borderWidth: 1,
     borderColor: '#ddd',
     zIndex: 1000,
-    elevation: 3,
   },
   dropdownScroll: {
     maxHeight: 200,
@@ -773,30 +662,196 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#888',
   },
-  // In your styles, replace the button-related styles with:
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginTop: -10,
+    marginBottom: 15,
+  },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
+    marginBottom: 10,
     gap: 10,
-  },
-  actioneditButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: '#3498db',
   },
   actionButton: {
     flex: 1,
-    padding: 12,
-    borderRadius: 8,
+    padding: 15,
+    borderRadius: 10,
     alignItems: 'center',
-    backgroundColor: 'red',
+    justifyContent: 'center',
+  },
+  submitButton: {
+    backgroundColor: '#007bff',
+  },
+  resetButton: {
+    backgroundColor: '#e74c3c',
   },
   actionButtonText: {
     color: 'white',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  usersContainer: {
+    flex: 1,
+    marginTop: 10,
+  },
+  userCard: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  userHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  userActions: {
+    flexDirection: 'row',
+  },
+  userContact: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 3,
+  },
+  userEmail: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 5,
+  },
+  userFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 5,
+    paddingTop: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  userCategory: {
+    fontSize: 12,
+    color: '#007bff',
+    fontWeight: '600',
+  },
+  userDate: {
+    fontSize: 12,
+    color: '#888',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 100,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: '#666',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    backgroundColor: '#007bff',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 5,
+    marginTop: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    width: '90%',
+    maxHeight: '80%',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  modalContent: {
+    padding: 15,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    flexWrap: 'wrap',
+  },
+  detailLabel: {
+    fontWeight: 'bold',
+    width: 100,
+    color: '#555',
+  },
+  detailValue: {
+    flex: 1,
+    color: '#333',
+  },
+  modalFooter: {
+    padding: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  editButton: {
+    flex: 1,
+    backgroundColor: '#007bff',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginLeft: 10
+  },
+  deleteButton: {
+    flex: 1,
+    backgroundColor: '#e74c3c',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  editButtonText: {
+    color: 'white',
     fontWeight: 'bold',
   },
 });

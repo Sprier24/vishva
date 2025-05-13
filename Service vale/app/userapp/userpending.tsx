@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, Dimensions, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { AntDesign, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
-import { databases } from '../lib/appwrite';
+import { databases, account } from '../../lib/appwrite';
 import { Query } from 'appwrite';
 
 const DATABASE_ID = '681c428b00159abb5e8b';
@@ -25,15 +25,34 @@ const PendingServicesScreen = () => {
   const router = useRouter();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<string | null>(null);
+
+  // Get current user on component mount
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const user = await account.get();
+        // Assuming the user's name is stored in the name field
+        setCurrentUser(user.name);
+      } catch (error) {
+        console.error('Error fetching current user:', error);
+        Alert.alert('Error', 'Failed to load user information');
+      }
+    };
+
+    getCurrentUser();
+  }, []);
 
   const fetchServices = async () => {
+    if (!currentUser) return; // Don't fetch if we don't know the current user
+
     try {
       const response = await databases.listDocuments(
         DATABASE_ID,
         COLLECTION_ID,
         [
           Query.equal('status', 'pending'),
-          Query.orderDesc('$createdAt')
+          Query.equal('serviceboyName', currentUser) // Filter by the current user
         ]
       );
 
@@ -59,30 +78,11 @@ const PendingServicesScreen = () => {
   };
 
   useEffect(() => {
-    fetchServices();
-
-    // Check for new service from navigation params
-    if (params.newService) {
-      try {
-        const newService = JSON.parse(params.newService as string);
-        setServices(prev => [{
-          id: newService.id,
-          serviceType: newService.serviceType,
-          clientName: newService.clientName,
-          address: newService.address,
-          phone: newService.phoneNumber,
-          amount: `₹${newService.billAmount || '0'}`,
-          status: 'pending',
-          date: 'Just now',
-          serviceBoy: newService.serviceboyName
-        }, ...prev]);
-      } catch (error) {
-        console.error('Error parsing new service:', error);
-      }
+    if (currentUser) {
+      fetchServices();
     }
-  }, [params.newService]);
+  }, [currentUser, params.newService]);
 
-  // In your PendingServicesScreen.tsx
   const handleComplete = async (id: string) => {
     Alert.alert(
       'Complete Service',
@@ -100,10 +100,10 @@ const PendingServicesScreen = () => {
                 id,
                 { status: 'completed' }
               );
-              
+
               // Remove from pending list
               setServices(prev => prev.filter(service => service.id !== id));
-              
+
               // Navigate to completed services with the completed service data
               const completedService = services.find(service => service.id === id);
               if (completedService) {
@@ -125,9 +125,7 @@ const PendingServicesScreen = () => {
   };
 
   const renderServiceItem = ({ item }: { item: Service }) => (
-      <TouchableOpacity
-        style={styles.serviceCard}
-        >
+    <View style={styles.serviceCard}>
       <View style={styles.serviceHeader}>
         <Text style={styles.serviceType}>{item.serviceType}</Text>
         <View style={[styles.statusBadge, styles.pendingBadge]}>
@@ -153,6 +151,7 @@ const PendingServicesScreen = () => {
           <Text style={styles.detailText}>{item.phone}</Text>
         </View>
 
+
         <View style={styles.detailRow}>
           <MaterialCommunityIcons name="currency-inr" size={16} color="#6B7280" />
           <Text style={styles.detailText}>
@@ -163,8 +162,8 @@ const PendingServicesScreen = () => {
       </View>
 
       <View style={styles.serviceFooter}>
-        <Text style={styles.serviceBoyText}>Assigned to: {item.serviceBoy}</Text>
         <Text style={styles.dateText}>{item.date}</Text>
+        <Text style={styles.serviceBoyText}>Assigned to: {item.serviceBoy}</Text>
       </View>
 
       <TouchableOpacity
@@ -173,8 +172,7 @@ const PendingServicesScreen = () => {
       >
         <Text style={styles.completeButtonText}>Mark as Completed</Text>
       </TouchableOpacity>
-    </TouchableOpacity>
-
+    </View>
   );
 
   return (
@@ -281,13 +279,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
- serviceBoyText: {
-  fontSize: 12,
-  color: '#6B7280',
-  fontStyle: 'italic',
-  width: 150,           
-  textAlign: 'left',   
- }, 
+  serviceBoyText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontStyle: 'italic',
+  },
   emptyState: {
     flex: 1,
     justifyContent: 'center',

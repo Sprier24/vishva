@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Dimensions, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Dimensions, Alert, ActivityIndicator, Platform, StatusBar } from 'react-native';
 import { router } from 'expo-router';
 import { AntDesign, MaterialIcons } from '@expo/vector-icons';
 import { account, databases } from '../lib/appwrite';
 import { RefreshControl } from 'react-native';
+import { Query } from 'appwrite';
 
 const DATABASE_ID = '681c428b00159abb5e8b';
-const COLLECTION_ID = '681d92600018a87c1478';
+const COLLECTION_ID = 'bill_ID';
+const ORDERS_COLLECTION_ID = '681d92600018a87c1478';
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
-  const dailyRevenue = 5000;
-  const monthlyRevenue = 150000;
+  const [dailyRevenue, setDailyRevenue] = useState(0);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [completedCount, setCompletedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,38 +22,91 @@ const HomeScreen = () => {
 
   const handleLogout = async () => {
     try {
-      await account.deleteSession('current'); // Delete the current session
+      await account.deleteSession('current');
       Alert.alert('Logged Out', 'You have been successfully logged out');
-      router.replace('/'); // Navigate back to login screen
+      router.replace('/');
     } catch (error) {
       console.error('Logout Error:', error);
       Alert.alert('Error', 'Failed to logout. Please try again.');
     }
   };
 
-    const fetchOrders = async () => {
-      try {
-        setRefreshing(true);
-        const orders = await databases.listDocuments(DATABASE_ID, COLLECTION_ID);
-        
-        const pending = orders.documents.filter(o => o.status === 'pending').length;
-        const completed = orders.documents.filter(o => o.status !== 'pending').length;
-        
-        setPendingCount(pending);
-        setCompletedCount(completed);
-      } catch (error) {
-        console.error('Appwrite error:', error);
-      } finally {
-        setRefreshing(false);
-        setIsLoading(false);
-      }
-    };
-    
-    useEffect(() => {
-    fetchOrders();
+  const fetchRevenueData = async () => {
+    try {
+      const today = new Date();
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+
+      // Fetch today's bills
+      const dailyBills = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTION_ID,
+        [
+          Query.greaterThanEqual('date', startOfDay),
+          Query.orderDesc('date')
+        ]
+      );
+
+      // Fetch this month's bills
+      const monthlyBills = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTION_ID,
+        [
+          Query.greaterThanEqual('date', startOfMonth),
+          Query.orderDesc('date')
+        ]
+      );
+
+      // Calculate daily revenue
+      const dailyTotal = dailyBills.documents.reduce((sum, bill) => {
+        return sum + parseFloat(bill.total || 0);
+      }, 0);
+
+      // Calculate monthly revenue
+      const monthlyTotal = monthlyBills.documents.reduce((sum, bill) => {
+        return sum + parseFloat(bill.total || 0);
+      }, 0);
+
+      setDailyRevenue(dailyTotal);
+      setMonthlyRevenue(monthlyTotal);
+    } catch (error) {
+      console.error('Error fetching revenue data:', error);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      setRefreshing(true);
+      const orders = await databases.listDocuments(DATABASE_ID, ORDERS_COLLECTION_ID);
+
+      const pending = orders.documents.filter(o => o.status === 'pending').length;
+      const completed = orders.documents.filter(o => o.status !== 'pending').length;
+
+      setPendingCount(pending);
+      setCompletedCount(completed);
+    } catch (error) {
+      console.error('Appwrite error:', error);
+    } finally {
+      setRefreshing(false);
+      setIsLoading(false);
+    }
+  };
+
+  const fetchAllData = async () => {
+    setIsLoading(true);
+    await Promise.all([fetchRevenueData(), fetchOrders()]);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchAllData();
   }, []);
 
-  
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchAllData().finally(() => setRefreshing(false));
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -60,29 +115,29 @@ const HomeScreen = () => {
     );
   }
 
-
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={fetchOrders}
-          colors={['#3498db']}
-          tintColor={'#3498db'}
-        />
-      }
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#3498db']}
+            tintColor={'#3498db'}
+          />
+        }
       >
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Service Dashboard</Text>
           <View style={styles.headerIcons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.notificationIcon, { marginRight: 10 }]}
               onPress={() => console.log('Notifications pressed')}
             >
               <MaterialIcons name="notifications" size={24} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.logoutIcon}
               onPress={handleLogout}
             >
@@ -94,19 +149,19 @@ const HomeScreen = () => {
         <View style={styles.revenueContainer}>
           <View style={[styles.card, styles.dailyRevenue]}>
             <Text style={styles.cardTitle}>Daily Revenue</Text>
-            <Text style={styles.cardAmount}>₹{dailyRevenue.toLocaleString()}</Text>
+            <Text style={styles.cardAmount}>₹{dailyRevenue.toLocaleString('en-IN')}</Text>
             <View style={styles.cardTrend}>
               <AntDesign name="arrowup" size={14} color="#fff" />
-              <Text style={styles.trendText}>12% from yesterday</Text>
+              <Text style={styles.trendText}>Today</Text>
             </View>
           </View>
 
           <View style={[styles.card, styles.monthlyRevenue]}>
             <Text style={styles.cardTitle}>Monthly Revenue</Text>
-            <Text style={styles.cardAmount}>₹{monthlyRevenue.toLocaleString()}</Text>
+            <Text style={styles.cardAmount}>₹{monthlyRevenue.toLocaleString('en-IN')}</Text>
             <View style={styles.cardTrend}>
               <AntDesign name="arrowup" size={14} color="#fff" />
-              <Text style={styles.trendText}>8% from last month</Text>
+              <Text style={styles.trendText}>This Month</Text>
             </View>
           </View>
         </View>
@@ -116,10 +171,10 @@ const HomeScreen = () => {
           <View style={[styles.card, styles.pendingCard]}>
             <View style={styles.cardHeader}>
               <MaterialIcons name="pending-actions" size={24} color="#e67e22" />
-              <Text style={styles.cardTitle}>Pending Services</Text>
+              <Text style={styles.cardTitle}>Pending    Services</Text>
             </View>
             <Text style={styles.cardCount}>{pendingCount}</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.viewButton}
               onPress={() => router.push('/pending')}
             >
@@ -134,7 +189,7 @@ const HomeScreen = () => {
               <Text style={styles.cardTitle}>Completed Services</Text>
             </View>
             <Text style={styles.cardCount}>{completedCount}</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.viewButton}
               onPress={() => router.push('/completed')}
             >
@@ -173,7 +228,6 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -196,8 +250,14 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: '#fff',
   },
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+
   scrollContainer: {
     padding: 16,
     paddingBottom: 80,
@@ -323,18 +383,16 @@ const styles = StyleSheet.create({
   bottomBar: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: 12,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 15,
     backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    borderTopColor: '#ccc',
   },
   bottomButton: {
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   bottomButtonText: {
     fontSize: 12,
