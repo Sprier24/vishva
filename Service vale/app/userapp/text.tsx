@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MaterialCommunityIcons, MaterialIcons, Feather } from '@expo/vector-icons';
+import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { databases, account } from '../../lib/appwrite';
 import { ID, Query } from 'appwrite';
 import { styles } from '../../constants/userapp/PendingServicesScreenuser.styles';
@@ -138,9 +138,6 @@ const PendingServicesScreenUser = () => {
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
-    if (event.type === 'dismissed') {
-      return;
-    }
     if (selectedDate) {
       setDateFilter(selectedDate);
       filterByDate(selectedDate);
@@ -199,14 +196,16 @@ const PendingServicesScreenUser = () => {
 
               const completedService = services.find(service => service.id === id);
               if (completedService) {
+                // Send notification
                 await createNotification(
-                  `${completedService.clientName}'s ${completedService.serviceType} service has been marked as completed.`,
+                  `Your ${completedService.serviceType} service has been marked as completed.`,
                   completedService.serviceboyEmail
                 );
 
-
+                // Remove from list
                 setServices(prev => prev.filter(service => service.id !== id));
 
+                // Navigate
                 router.push({
                   pathname: '/userapp/usercompleted',
                   params: {
@@ -225,6 +224,7 @@ const PendingServicesScreenUser = () => {
   };
 
   const sendManualWhatsAppNotification = (service: Service) => {
+    // Format the message (same as scheduled messages)
     const message = `Dear ${service.clientName},\n\n` +
       `Your ${service.serviceType} service is scheduled for:\n` +
       `📅 Date: ${service.serviceDate}\n` +
@@ -236,127 +236,106 @@ const PendingServicesScreenUser = () => {
       `Please be ready for the service. For any queries, contact us.\n\n` +
       `Thank you for choosing our service!`;
 
+    // Format phone number (remove any non-digit characters)
     const phone = service.phone.replace(/\D/g, '');
+
+    // Create WhatsApp URL
     const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`;
 
+    // Try to open WhatsApp
     Linking.canOpenURL(url).then(supported => {
       if (supported) {
         Linking.openURL(url);
       } else {
         Alert.alert('Error', 'WhatsApp is not installed');
+        // Optionally offer to send via SMS instead
       }
     });
   };
 
+
   const renderServiceItem = ({ item }: { item: Service }) => (
-    <View style={styles.serviceCard}>
+    <TouchableOpacity style={styles.serviceCard}>
       <View style={styles.serviceHeader}>
-        <View style={styles.serviceTypeContainer}>
-          <MaterialCommunityIcons
-            name="tools"
-            size={20}
-            color="#5E72E4"
-            style={styles.serviceIcon}
-          />
-          <Text style={styles.serviceType}>{item.serviceType}</Text>
-        </View>
-        <View style={styles.serviceActions}>
-          <TouchableOpacity
-            onPress={() => router.push({
-              pathname: '/userapp/PhotoComparisonPage',
-              params: {
-                notes: `Service: ${item.serviceType}\nClient: ${item.clientName}\nDate: ${item.serviceDate} at ${item.serviceTime}`
-              }
-            })}
-          >
-            <MaterialIcons name="photo-camera" size={24} color="#5E72E4" />
-          </TouchableOpacity>
-          <View style={[styles.statusBadge, styles.pendingBadge]}>
-            <Text style={styles.statusText}>Pending</Text>
-          </View>
+        <Text style={styles.serviceType}>{item.serviceType}</Text>
+        <TouchableOpacity
+          onPress={() => router.push({
+            pathname: '/userapp/PhotoComparisonPage',
+            params: {
+              notes: `Service: ${item.serviceType}\nClient: ${item.clientName}\nAddress: ${item.address}\nPhone: ${item.phone}\nAmount: ₹${item.amount}\nDate: ${item.serviceDate} at ${item.serviceTime}`
+            }
+          })}
+        >
+          <MaterialIcons name="photo-camera" size={24} color="#4B5563" style={{ marginLeft: 10 }} />
+        </TouchableOpacity>
+        <View style={[styles.statusBadge, styles.pendingBadge]}>
+          <Text style={styles.statusText}>Pending</Text>
         </View>
       </View>
-
       <View style={styles.serviceDetails}>
         <View style={styles.detailRow}>
-          <MaterialIcons name="person" size={18} color="#718096" />
+          <MaterialIcons name="person" size={16} color="#6B7280" />
           <Text style={styles.detailText}>{item.clientName}</Text>
         </View>
         <View style={styles.detailRow}>
-          <MaterialIcons name="location-on" size={18} color="#718096" />
+          <MaterialIcons name="location-on" size={16} color="#6B7280" />
           <Text style={styles.detailText} numberOfLines={1} ellipsizeMode="tail">
             {item.address}
           </Text>
         </View>
         <View style={styles.detailRow}>
-          <MaterialIcons name="phone" size={18} color="#718096" />
+          <MaterialIcons name="phone" size={16} color="#6B7280" />
           <Text style={styles.detailText}>{item.phone}</Text>
         </View>
         <View style={styles.detailRow}>
-          <MaterialCommunityIcons name="currency-inr" size={18} color="#718096" />
+          <MaterialCommunityIcons name="currency-inr" size={16} color="#6B7280" />
           <Text style={styles.detailText}>
             {isNaN(Number(item.amount)) ? '0' : Number(item.amount).toLocaleString('en-IN')}
           </Text>
         </View>
       </View>
-
       <View style={styles.serviceFooter}>
-        <View style={styles.dateContainer}>
-          <MaterialIcons name="access-time" size={16} color="#718096" />
-          <Text style={styles.dateText}>
-            {item.serviceDate} • {item.serviceTime}
-          </Text>
-        </View>
+        <Text style={styles.dateText}>
+          Scheduled on {item.serviceDate} • {item.serviceTime}
+        </Text>
       </View>
-
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={styles.completeButton}
-          onPress={() => handleComplete(item.id)}
-        >
-          <MaterialIcons name="check-circle" size={20} color="#FFF" />
-          <Text style={styles.completeButtonText}>Complete</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      <TouchableOpacity
+        style={styles.completeButton}
+        onPress={() => handleComplete(item.id)}
+      >
+        <Text style={styles.completeButtonText}>Mark as Completed</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.whatsappButton, styles.actionButton]}
+        onPress={() => sendManualWhatsAppNotification(item)}
+      >
+        <MaterialCommunityIcons name="whatsapp" size={20} color="#fff" />
+      </TouchableOpacity>
+    </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => router.push('/userapp/home')}>
-            <Feather name="arrow-left" size={24} color="#FFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Pending Services</Text>
-        </View>
-        <View style={styles.headerCount}>
-          <Text style={styles.headerCountText}>{services.length}</Text>
-        </View>
-      </View>
-
-      <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Feather name="calendar" size={18} color="#5E72E4" />
-          <Text style={styles.filterButtonText}>
-            {dateFilter ? format(dateFilter, 'dd MMM yyyy') : 'Filter by date'}
-          </Text>
-        </TouchableOpacity>
-
-        {dateFilter && (
-          <TouchableOpacity
-            style={styles.clearFilterButton}
-            onPress={clearDateFilter}
-          >
-            <Feather name="x" size={16} color="#5E72E4" />
+      <TouchableOpacity
+        style={[
+          styles.filterButton,
+          dateFilter && styles.activeFilter
+        ]}
+        onPress={() => setShowDatePicker(true)}
+      >
+        <Text style={styles.filterButtonText}>
+          {dateFilter ? format(dateFilter, 'dd/MM/yy') : 'Filter by Date'}
+        </Text>
+        <MaterialIcons name="event" size={20} color="#fff" />
+      </TouchableOpacity>
+      {dateFilter && (
+        <View style={styles.activeFiltersContainer}>
+          <Text style={styles.activeFiltersText}>Showing: {format(dateFilter, 'MMMM d, yyyy')}</Text>
+          <TouchableOpacity onPress={clearDateFilter}>
             <Text style={styles.clearFilterText}>Clear</Text>
           </TouchableOpacity>
-        )}
-      </View>
-
+        </View>
+      )}
       {showDatePicker && (
         <DateTimePicker
           value={dateFilter || new Date()}
@@ -365,7 +344,12 @@ const PendingServicesScreenUser = () => {
           onChange={handleDateChange}
         />
       )}
-
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>My Pending Services</Text>
+        <View style={styles.headerCountContainer}>
+          <Text style={styles.headerCountText}>{services.length}</Text>
+        </View>
+      </View>
       {services.length > 0 ? (
         <FlatList
           data={services}
@@ -376,7 +360,7 @@ const PendingServicesScreenUser = () => {
         />
       ) : (
         <View style={styles.emptyState}>
-          <MaterialIcons name="pending-actions" size={48} color="#A0AEC0" />
+          <MaterialIcons name="pending-actions" size={48} color="#9CA3AF" />
           <Text style={styles.emptyText}>
             {dateFilter
               ? `No pending services on ${format(dateFilter, 'MMMM d, yyyy')}`

@@ -10,9 +10,7 @@ export default function Index() {
                 router.replace('/login');
             }
         }, 100);
-
         return () => clearTimeout(timeout);
     }, []);
-
     return null;
 }

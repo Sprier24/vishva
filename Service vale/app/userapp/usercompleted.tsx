@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, FlatList, SafeAreaView, TouchableOpacity, Alert, } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialCommunityIcons, MaterialIcons, Feather } from '@expo/vector-icons';
 import { databases, account } from '../../lib/appwrite';
-import { ID, Query } from 'appwrite';
-import { styles } from '../../constants/userapp/PendingServicesScreenuser.styles';
+import { Query } from 'appwrite';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, isSameDay } from 'date-fns';
-import { Platform, Linking } from 'react-native';
+import { styles } from '../../constants/userapp/CompletedServicesScreenuser.styles';
 
 const DATABASE_ID = '681c428b00159abb5e8b';
 const COLLECTION_ID = '681d92600018a87c1478';
-const NOTIFICATIONS_COLLECTION_ID = 'note_id';
 
 type Service = {
   id: string;
@@ -26,12 +24,11 @@ type Service = {
   serviceDate: string;
   serviceTime: string;
   serviceboyEmail: string;
-  serviceboyContact: string;
-  sortDate: string;
-  sortTime: string;
+  completedAt?: string;
+  formattedCompletedAt?: string;
 };
 
-const PendingServicesScreenUser = () => {
+const CompletedServicesScreenUser = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [allServices, setAllServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,20 +47,29 @@ const PendingServicesScreenUser = () => {
         DATABASE_ID,
         COLLECTION_ID,
         [
-          Query.equal('status', 'pending'),
+          Query.equal('status', 'completed'),
           Query.equal('serviceboyEmail', email),
-          Query.orderAsc('serviceDate'),
-          Query.orderAsc('serviceTime')
+          Query.orderDesc('completedAt')
         ]
       );
       const formattedServices = response.documents.map(doc => {
-        const [year, month, day] = doc.serviceDate.split('-');
-        const displayDate = `${day}/${month}/${year}`;
-        const [hours, minutes] = doc.serviceTime.split(':');
-        const hourNum = parseInt(hours);
-        const ampm = hourNum >= 12 ? 'PM' : 'AM';
-        const displayHour = hourNum % 12 || 12;
-        const displayTime = `${displayHour}:${minutes} ${ampm}`;
+        let formattedCompletedAt = '';
+        if (doc.completedAt) {
+          formattedCompletedAt = formatToAmPm(doc.completedAt);
+        }
+        let serviceDateDisplay = '';
+        if (doc.serviceDate) {
+          const [year, month, day] = doc.serviceDate.split('-');
+          serviceDateDisplay = `${day}/${month}/${year}`;
+        }
+        let serviceTimeDisplay = '';
+        if (doc.serviceTime) {
+          const [hours, minutes] = doc.serviceTime.split(':');
+          const hourNum = parseInt(hours);
+          const ampm = hourNum >= 12 ? 'PM' : 'AM';
+          const displayHour = hourNum % 12 || 12;
+          serviceTimeDisplay = `${displayHour}:${minutes} ${ampm}`;
+        }
         return {
           id: doc.$id,
           serviceType: doc.serviceType,
@@ -72,21 +78,14 @@ const PendingServicesScreenUser = () => {
           phone: doc.phoneNumber,
           amount: doc.billAmount,
           status: doc.status,
-          date: new Date(doc.$createdAt).toLocaleString(),
+          date: serviceDateDisplay,
           serviceBoy: doc.serviceboyName,
-          serviceDate: displayDate,
-          serviceTime: displayTime,
+          serviceDate: serviceDateDisplay,
+          serviceTime: serviceTimeDisplay,
           serviceboyEmail: doc.serviceboyEmail,
-          serviceboyContact: doc.serviceboyContact,
-          sortDate: doc.serviceDate,
-          sortTime: doc.serviceTime
+          completedAt: doc.completedAt,
+          formattedCompletedAt,
         };
-      });
-      formattedServices.sort((a, b) => {
-        if (a.sortDate !== b.sortDate) {
-          return a.sortDate.localeCompare(b.sortDate);
-        }
-        return a.sortTime.localeCompare(b.sortTime);
       });
       setAllServices(formattedServices);
       setServices(formattedServices);
@@ -100,41 +99,52 @@ const PendingServicesScreenUser = () => {
 
   useEffect(() => {
     fetchServices();
-    if (params.newService) {
+    if (params.completedService) {
       try {
-        const newService = JSON.parse(params.newService as string);
+        const newService = JSON.parse(params.completedService as string);
         if (newService.serviceboyEmail === userEmail) {
           const formattedService = {
             id: newService.id,
             serviceType: newService.serviceType,
             clientName: newService.clientName,
             address: newService.address,
-            phone: newService.phoneNumber,
-            amount: `₹${newService.billAmount || '0'}`,
-            status: 'pending',
-            date: 'Just now',
-            serviceBoy: newService.serviceboyName,
-            serviceDate: newService.serviceDate ?
-              newService.serviceDate.split('-').reverse().join('/') : '',
+            phone: newService.phone,
+            amount: newService.amount,
+            status: 'completed',
+            date: newService.date || 'Just now',
+            serviceBoy: newService.serviceBoy,
+            serviceDate: newService.serviceDate || '',
             serviceTime: newService.serviceTime || '',
             serviceboyEmail: newService.serviceboyEmail || '',
-            serviceboyContact: newService.serviceboyContact || '',
-            sortDate: newService.serviceDate || '',
-            sortTime: newService.serviceTime || ''
+            completedAt: newService.completedAt
           };
           setAllServices(prev => [formattedService, ...prev]);
           setServices(prev => {
-            if (!dateFilter || isSameDay(new Date(newService.serviceDate.split('-').join('/')), dateFilter)) {
+            if (!dateFilter || (newService.completedAt && isSameDay(new Date(newService.completedAt), dateFilter))) {
               return [formattedService, ...prev];
             }
             return prev;
           });
         }
       } catch (error) {
-        console.error('Error parsing new service:', error);
+        console.error('Error parsing completed service:', error);
       }
     }
-  }, [params.newService, userEmail]);
+  }, [params.completedService, userEmail]);
+
+  const formatToAmPm = (isoString: string) => {
+    const date = new Date(isoString);
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    return `${day}/${month}/${year} • ${hours}:${minutesStr} ${ampm}`;
+  };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -149,9 +159,9 @@ const PendingServicesScreenUser = () => {
 
   const filterByDate = (date: Date) => {
     const filtered = allServices.filter(service => {
-      const [day, month, year] = service.serviceDate.split('/');
-      const serviceDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      return isSameDay(serviceDate, date);
+      if (!service.completedAt) return false;
+      const completedDate = new Date(service.completedAt);
+      return isSameDay(completedDate, date);
     });
     setServices(filtered);
   };
@@ -161,91 +171,44 @@ const PendingServicesScreenUser = () => {
     setServices(allServices);
   };
 
-  const createNotification = async (description: string, userEmail: string) => {
-    try {
-      await databases.createDocument(
-        DATABASE_ID,
-        NOTIFICATIONS_COLLECTION_ID,
-        ID.unique(),
-        {
-          description,
-          isRead: false,
-          createdAt: new Date().toISOString(),
-          userEmail,
-        }
-      );
-      console.log('Notification sent to:', userEmail);
-    } catch (error) {
-      console.error('Notification creation failed:', error);
-    }
-  };
-
-  const handleComplete = async (id: string) => {
+  const handleMoveToPending = async (id: string) => {
     Alert.alert(
-      'Complete Service',
-      'Are you sure this service is completed?',
+      'Move to Pending',
+      'Are you sure you want to move this service back to pending?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Complete',
+          text: 'Move',
           onPress: async () => {
             try {
               await databases.updateDocument(
                 DATABASE_ID,
                 COLLECTION_ID,
                 id,
-                { status: 'completed' }
+                { status: 'pending' }
               );
-
-              const completedService = services.find(service => service.id === id);
-              if (completedService) {
-                await createNotification(
-                  `${completedService.clientName}'s ${completedService.serviceType} service has been marked as completed.`,
-                  completedService.serviceboyEmail
-                );
-
-
-                setServices(prev => prev.filter(service => service.id !== id));
-
+              setAllServices(prev => prev.filter(service => service.id !== id));
+              setServices(prev => prev.filter(service => service.id !== id));
+              const movedService = allServices.find(service => service.id === id);
+              if (movedService) {
                 router.push({
-                  pathname: '/userapp/usercompleted',
+                  pathname: '/userapp/home',
                   params: {
-                    completedService: JSON.stringify(completedService)
+                    movedService: JSON.stringify({
+                      ...movedService,
+                      status: 'pending'
+                    })
                   }
                 });
               }
             } catch (error) {
-              console.error('Error completing service:', error);
-              Alert.alert('Error', 'Failed to complete service');
+              console.error('Error moving service:', error);
+              Alert.alert('Error', 'Failed to move service to pending');
             }
           }
         }
       ]
     );
-  };
-
-  const sendManualWhatsAppNotification = (service: Service) => {
-    const message = `Dear ${service.clientName},\n\n` +
-      `Your ${service.serviceType} service is scheduled for:\n` +
-      `📅 Date: ${service.serviceDate}\n` +
-      `⏰ Time: ${service.serviceTime}\n\n` +
-      `Service Provider Details:\n` +
-      `👨‍🔧 Name: ${service.serviceBoy}\n` +
-      `📞 Contact: ${service.serviceboyContact}\n\n` +
-      `Service Amount: ₹${service.amount}\n\n` +
-      `Please be ready for the service. For any queries, contact us.\n\n` +
-      `Thank you for choosing our service!`;
-
-    const phone = service.phone.replace(/\D/g, '');
-    const url = `whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`;
-
-    Linking.canOpenURL(url).then(supported => {
-      if (supported) {
-        Linking.openURL(url);
-      } else {
-        Alert.alert('Error', 'WhatsApp is not installed');
-      }
-    });
   };
 
   const renderServiceItem = ({ item }: { item: Service }) => (
@@ -260,20 +223,8 @@ const PendingServicesScreenUser = () => {
           />
           <Text style={styles.serviceType}>{item.serviceType}</Text>
         </View>
-        <View style={styles.serviceActions}>
-          <TouchableOpacity
-            onPress={() => router.push({
-              pathname: '/userapp/PhotoComparisonPage',
-              params: {
-                notes: `Service: ${item.serviceType}\nClient: ${item.clientName}\nDate: ${item.serviceDate} at ${item.serviceTime}`
-              }
-            })}
-          >
-            <MaterialIcons name="photo-camera" size={24} color="#5E72E4" />
-          </TouchableOpacity>
-          <View style={[styles.statusBadge, styles.pendingBadge]}>
-            <Text style={styles.statusText}>Pending</Text>
-          </View>
+        <View style={[styles.statusBadge, styles.completedBadge]}>
+          <Text style={styles.statusText}>Completed</Text>
         </View>
       </View>
 
@@ -302,22 +253,20 @@ const PendingServicesScreenUser = () => {
 
       <View style={styles.serviceFooter}>
         <View style={styles.dateContainer}>
-          <MaterialIcons name="access-time" size={16} color="#718096" />
+          <MaterialIcons name="check-circle" size={16} color="#718096" />
           <Text style={styles.dateText}>
             {item.serviceDate} • {item.serviceTime}
           </Text>
         </View>
       </View>
 
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={styles.completeButton}
-          onPress={() => handleComplete(item.id)}
-        >
-          <MaterialIcons name="check-circle" size={20} color="#FFF" />
-          <Text style={styles.completeButtonText}>Complete</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={styles.moveToPendingButton}
+        onPress={() => handleMoveToPending(item.id)}
+      >
+        <MaterialIcons name="pending-actions" size={20} color="#FFF" />
+        <Text style={styles.moveToPendingButtonText}>Move to Pending</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -328,7 +277,7 @@ const PendingServicesScreenUser = () => {
           <TouchableOpacity onPress={() => router.push('/userapp/home')}>
             <Feather name="arrow-left" size={24} color="#FFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Pending Services</Text>
+          <Text style={styles.headerTitle}>Completed Services</Text>
         </View>
         <View style={styles.headerCount}>
           <Text style={styles.headerCountText}>{services.length}</Text>
@@ -376,18 +325,19 @@ const PendingServicesScreenUser = () => {
         />
       ) : (
         <View style={styles.emptyState}>
-          <MaterialIcons name="pending-actions" size={48} color="#A0AEC0" />
+          <MaterialIcons name="check-circle" size={48} color="#A0AEC0" />
           <Text style={styles.emptyText}>
             {dateFilter
-              ? `No pending services on ${format(dateFilter, 'MMMM d, yyyy')}`
-              : 'No pending services assigned to you'
+              ? `No services completed on ${format(dateFilter, 'MMMM d, yyyy')}`
+              : 'No completed services found'
             }
           </Text>
-          <Text style={styles.emptySubtext}>All your assigned services are completed</Text>
+          <Text style={styles.emptySubtext}>You haven't completed any services yet</Text>
         </View>
       )}
     </SafeAreaView>
   );
 };
 
-export default PendingServicesScreenUser;
+
+export default CompletedServicesScreenUser;

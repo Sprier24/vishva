@@ -1,304 +1,286 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Dimensions, Alert, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
-import { AntDesign, MaterialIcons } from '@expo/vector-icons';
+import { AntDesign, MaterialIcons, Feather } from '@expo/vector-icons';
+import { account, databases } from '../../lib/appwrite';
+import { RefreshControl } from 'react-native';
+import { Query } from 'react-native-appwrite';
+import { styles } from '../../constants/userapp/HomeScreenuser.styles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const DATABASE_ID = '681c428b00159abb5e8b';
+const COLLECTION_ID = 'bill_ID';
+const ORDERS_COLLECTION_ID = '681d92600018a87c1478';
+const NOTIFICATIONS_COLLECTION_ID = 'note_id';
 const { width } = Dimensions.get('window');
 
-const HomeScreen = () => {
-    const dailyRevenue = 5000;
-    const monthlyRevenue = 150000;
+const HomeScreenuser = () => {
+  const [dailyRevenue, setDailyRevenue] = useState(0);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const insets = useSafeAreaInsets();
 
-    const pendingServices = [
-        { id: '1', title: 'Oil Change - Car A', status: 'Pending' },
-        { id: '2', title: 'Brake Inspection - Car B', status: 'Pending' },
-        { id: '3', title: 'Engine Repair - Car G', status: 'Pending' },
-    ];
+  const handleLogout = async () => {
+    try {
+      await account.deleteSession('current');
+      Alert.alert('Logged Out', 'You have been successfully logged out');
+      router.replace('/');
+    } catch (error) {
+      console.error('Logout Error:', error);
+      Alert.alert('Error', 'Failed to logout. Please try again.');
+    }
+  };
 
-    const completedServices = [
-        { id: '6', title: 'Engine Repair - Car C', status: 'Completed' },
-        { id: '7', title: 'Tire Replacement - Car D', status: 'Completed' },
-        { id: '8', title: 'Tire Replacement - Car H', status: 'Completed' }
-    ];
+  const fetchRevenueData = async () => {
+    try {
+      const currentUser = await account.get();
+      const userResponse = await databases.listDocuments(
+        DATABASE_ID,
+        '681c429800281e8a99bd',
+        [Query.equal('email', currentUser.email)]
+      );
+      if (userResponse.documents.length === 0) return;
+      const userName = userResponse.documents[0].name;
+      const today = new Date();
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
+      const dailyBills = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTION_ID,
+        [
+          Query.greaterThanEqual('date', startOfDay),
+          Query.equal('serviceBoyName', userName),
+          Query.orderDesc('date')
+        ]
+      );
+      const monthlyBills = await databases.listDocuments(
+        DATABASE_ID,
+        COLLECTION_ID,
+        [
+          Query.greaterThanEqual('date', startOfMonth),
+          Query.equal('serviceBoyName', userName),
+          Query.orderDesc('date')
+        ]
+      );
+      const dailyTotal = dailyBills.documents.reduce((sum, bill) => {
+        return sum + parseFloat(bill.total || 0);
+      }, 0);
+      const monthlyTotal = monthlyBills.documents.reduce((sum, bill) => {
+        return sum + parseFloat(bill.total || 0);
+      }, 0);
+      setDailyRevenue(dailyTotal);
+      setMonthlyRevenue(monthlyTotal);
+    } catch (error) {
+      console.error('Error fetching revenue data:', error);
+    }
+  };
 
-    const pendingServicesCount = pendingServices.length;
+  const fetchOrders = async () => {
+    try {
+      setRefreshing(true);
+      const currentUser = await account.get();
+      const email = currentUser.email;
+      const orders = await databases.listDocuments(
+        DATABASE_ID,
+        ORDERS_COLLECTION_ID,
+        [
+          Query.equal('status', 'pending'),
+          Query.equal('serviceboyEmail', email)
+        ]
+      );
+      setPendingCount(orders.total);
+      const completedOrders = await databases.listDocuments(
+        DATABASE_ID,
+        ORDERS_COLLECTION_ID,
+        [
+          Query.notEqual('status', 'pending'),
+          Query.equal('serviceboyEmail', email)
+        ]
+      );
+      setCompletedCount(completedOrders.total);
+    } catch (error) {
+      console.error('Appwrite error:', error);
+    } finally {
+      setRefreshing(false);
+      setIsLoading(false);
+    }
+  };
 
+  const fetchUnreadNotifications = async () => {
+    try {
+      const res = await databases.listDocuments(
+        DATABASE_ID,
+        NOTIFICATIONS_COLLECTION_ID,
+        [Query.equal('isRead', false)]
+      );
+      setUnreadCount(res.total);
+    } catch (error) {
+      console.error('Notification fetch error:', error);
+    }
+  };
 
+  const fetchAllData = async () => {
+    setIsLoading(true);
+    await Promise.all([fetchRevenueData(), fetchOrders(), fetchUnreadNotifications()]);
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchAllData().finally(() => setRefreshing(false));
+  };
+
+  if (isLoading) {
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scrollContainer}>
-                <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Service Dashboard</Text>
-                    <TouchableOpacity style={styles.notificationIcon}>
-                        <MaterialIcons name="notifications" size={24} color="#fff" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => router.replace('/login')}
-                        style={[styles.notificationIcon, { marginLeft: 10, backgroundColor: '#e74c3c' }]}
-                    >
-                        <MaterialIcons name="logout" size={24} color="#fff" />
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.revenueContainer}>
-                    <View style={[styles.card, styles.dailyRevenue]}>
-                        <Text style={styles.cardTitle}>Daily Revenue</Text>
-                        <Text style={styles.cardAmount}>₹{dailyRevenue.toLocaleString()}</Text>
-                        <View style={styles.cardTrend}>
-                            <AntDesign name="arrowup" size={14} color="#fff" />
-                            <Text style={styles.trendText}>12% from yesterday</Text>
-                        </View>
-                    </View>
-
-                    <View style={[styles.card, styles.monthlyRevenue]}>
-                        <Text style={styles.cardTitle}>Monthly Revenue</Text>
-                        <Text style={styles.cardAmount}>₹{monthlyRevenue.toLocaleString()}</Text>
-                        <View style={styles.cardTrend}>
-                            <AntDesign name="arrowup" size={14} color="#fff" />
-                            <Text style={styles.trendText}>8% from last month</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Services Cards */}
-                <View style={styles.servicesContainer}>
-                    <View style={[styles.card, styles.pendingCard]}>
-                        <View style={styles.cardHeader}>
-                            <MaterialIcons name="pending-actions" size={24} color="#e67e22" />
-                            <Text style={styles.cardTitle}>Pending          Services</Text>
-                        </View>
-                        <Text style={styles.cardCount}>{pendingServicesCount}</Text>
-                        <TouchableOpacity
-                            style={styles.viewButton}
-                            onPress={() => router.push('/pending')}
-                        >
-                            <Text style={styles.viewButtonText}>View All</Text>
-                            <AntDesign name="right" size={16} color="#3498db" />
-                        </TouchableOpacity>
-                    </View>
-
-                    <View style={[styles.card, styles.completedCard]}>
-                        <View style={styles.cardHeader}>
-                            <MaterialIcons name="check-circle" size={24} color="#27ae60" />
-                            <Text style={styles.cardTitle}>Completed Services</Text>
-                        </View>
-                        <Text style={styles.cardCount}>{completedServices.length}</Text>
-                        <TouchableOpacity
-                            style={styles.viewButton}
-                            onPress={() => router.push('/completed')}
-                        >
-                            <Text style={styles.viewButtonText}>View All</Text>
-                            <AntDesign name="right" size={16} color="#3498db" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                {/* Recent Activity */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Recent Activity</Text>
-                    <View style={styles.activityCard}>
-                        <View style={styles.activityItem}>
-                            <View style={[styles.activityIcon, { backgroundColor: '#e8f4f8' }]}>
-                                <MaterialIcons name="car-repair" size={20} color="#3498db" />
-                            </View>
-                            <View style={styles.activityText}>
-                                <Text style={styles.activityTitle}>Oil Change Completed</Text>
-                                <Text style={styles.activityTime}>10 minutes ago</Text>
-                            </View>
-                        </View>
-                        <View style={styles.activityItem}>
-                            <View style={[styles.activityIcon, { backgroundColor: '#f0f8e8' }]}>
-                                <MaterialIcons name="directions-car" size={20} color="#2ecc71" />
-                            </View>
-                            <View style={styles.activityText}>
-                                <Text style={styles.activityTitle}>New Vehicle Added</Text>
-                                <Text style={styles.activityTime}>1 hour ago</Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-            </ScrollView>
-
-            <View style={styles.bottomBar}>
-                <TouchableOpacity
-                    style={styles.bottomButton}
-                    onPress={() => router.push('/userapp/userprofile')}
-                >
-                    <MaterialIcons name="people" size={24} color="#3498db" />
-                    <Text style={styles.bottomButtonText}>User</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.bottomButton}
-                    onPress={() => router.push('/bill')}
-                >
-                    <MaterialIcons name="receipt" size={24} color="#3498db" />
-                    <Text style={styles.bottomButtonText}>Bill</Text>
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#5E72E4" />
+      </View>
     );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Engineer Dashboard</Text>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity
+            style={styles.notificationIcon}
+            onPress={() => router.push('/userapp/notificationpage')}
+          >
+            <MaterialIcons name="notifications" size={24} color="#FFF" />
+            {unreadCount > 0 && (
+              <View style={styles.redDot} />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.logoutIcon}
+            onPress={handleLogout}
+          >
+            <Feather name="log-out" size={24} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[styles.scrollContainer, { paddingBottom: 150 }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#5E72E4']}
+            tintColor={'#5E72E4'}
+          />
+        }
+      >
+        {/* Revenue Cards */}
+        <View style={styles.revenueRow}>
+          <View style={[styles.revenueCard, styles.dailyCard]}>
+            <View style={styles.cardIconContainer}>
+              <MaterialIcons name="today" size={24} color="#FFF" />
+            </View>
+            <Text style={styles.cardTitle}>Today's Revenue</Text>
+            <Text style={styles.cardAmount}>
+              ₹{dailyRevenue.toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              })}
+            </Text>
+          </View>
+
+          <View style={[styles.revenueCard, styles.monthlyCard]}>
+            <View style={styles.cardIconContainer}>
+              <MaterialIcons name="date-range" size={24} color="#FFF" />
+            </View>
+            <Text style={styles.cardTitle}>Monthly Revenue</Text>
+            <Text style={styles.cardAmount}>
+              ₹{monthlyRevenue.toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+              })}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.servicesRow}>
+          <View style={[styles.serviceCard, styles.pendingCard]}>
+            <View style={styles.serviceCardHeader}>
+              <View style={[styles.serviceIconContainer, { backgroundColor: '#FEEBC8' }]}>
+                <MaterialIcons name="pending-actions" size={24} color="#DD6B20" />
+              </View>
+              <Text style={styles.serviceCardTitle}>Pending Services</Text>
+            </View>
+            <Text style={styles.serviceCardCount}>{pendingCount}</Text>
+            <TouchableOpacity
+              style={styles.serviceCardButton}
+              onPress={() => router.push('/userapp/userpending')}
+            >
+              <Text style={styles.serviceCardButtonText}>View All</Text>
+              <AntDesign name="right" size={16} color="#5E72E4" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={[styles.serviceCard, styles.completedCard]}>
+            <View style={styles.serviceCardHeader}>
+              <View style={[styles.serviceIconContainer, { backgroundColor: '#C6F6D5' }]}>
+                <MaterialIcons name="check-circle" size={24} color="#38A169" />
+              </View>
+              <Text style={styles.serviceCardTitle}>Completed Services</Text>
+            </View>
+            <Text style={styles.serviceCardCount}>{completedCount}</Text>
+            <TouchableOpacity
+              style={styles.serviceCardButton}
+              onPress={() => router.push('/userapp/usercompleted')}
+            >
+              <Text style={styles.serviceCardButtonText}>View All</Text>
+              <AntDesign name="right" size={16} color="#5E72E4" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={[styles.bottomBar, { paddingBottom: insets.bottom || 20, marginTop: 40 }]}>
+        <TouchableOpacity
+          style={styles.bottomButton}
+          onPress={() => router.push('/userapp/userprofile')}
+        >
+          <View style={styles.bottomButtonIcon}>
+            <Feather name="user" size={20} color="#5E72E4" />
+          </View>
+          <Text style={styles.bottomButtonText}>Profile</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.bottomButton, styles.bottomButtonActive]}
+          // onPress={() => router.push('/userapp/home')}
+        >
+          <View style={[styles.bottomButtonIcon, styles.bottomButtonIconActive]}>
+            <Feather name="home" size={20} color="#FFF" />
+          </View>
+          <Text style={[styles.bottomButtonText, styles.bottomButtonTextActive]}>Home</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.bottomButton}
+          onPress={() => router.push('/userapp/userbill')}
+        >
+          <View style={styles.bottomButtonIcon}>
+            <Feather name="file-text" size={20} color="#5E72E4" />
+          </View>
+          <Text style={styles.bottomButtonText}>Bills</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f8f9fa',
-    },
-    scrollContainer: {
-        padding: 16,
-        paddingBottom: 80,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: '#2c3e50',
-    },
-    notificationIcon: {
-        backgroundColor: '#3498db',
-        borderRadius: 20,
-        padding: 8,
-    },
-    revenueContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 16,
-    },
-    servicesContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 16,
-    },
-    card: {
-        width: '48%',
-        padding: 16,
-        borderRadius: 12,
-        elevation: 3,
-    },
-    dailyRevenue: {
-        backgroundColor: '#3498db',
-    },
-    monthlyRevenue: {
-        backgroundColor: '#2ecc71',
-    },
-    pendingCard: {
-        backgroundColor: '#fff',
-        borderLeftWidth: 4,
-        borderLeftColor: '#e67e22',
-    },
-    completedCard: {
-        backgroundColor: '#fff',
-        borderLeftWidth: 4,
-        borderLeftColor: '#27ae60',
-    },
-    cardTitle: {
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 8,
-    },
-    cardAmount: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        marginBottom: 8,
-    },
-    cardCount: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        marginVertical: 8,
-        color: '#2c3e50',
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    cardTrend: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    trendText: {
-        fontSize: 12,
-        color: '#fff',
-        marginLeft: 4,
-    },
-    viewButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 8,
-    },
-    viewButtonText: {
-        color: '#3498db',
-        fontSize: 14,
-        fontWeight: '500',
-        marginRight: 4,
-    },
-    section: {
-        marginBottom: 16,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#2c3e50',
-        marginBottom: 12,
-    },
-    activityCard: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 16,
-        elevation: 2,
-    },
-    activityItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 16,
-    },
-    activityIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 12,
-    },
-    activityText: {
-        flex: 1,
-    },
-    activityTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#2c3e50',
-    },
-    activityTime: {
-        fontSize: 12,
-        color: '#7f8c8d',
-    },
-    bottomBar: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        paddingVertical: 12,
-        backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-    },
-    bottomButton: {
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    bottomButtonText: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: '#3498db',
-        marginTop: 4,
-    },
-});
 
-export default HomeScreen;
+
+export default HomeScreenuser;

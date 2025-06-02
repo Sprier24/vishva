@@ -1,19 +1,21 @@
-import React, {useState,useEffect} from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
-import { Modal } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, TouchableOpacity, ScrollView, Modal, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { databases } from '../lib/appwrite';
-import { Query } from 'appwrite';
+import { ID, Query } from 'appwrite';
+import { MaterialIcons, AntDesign, Feather } from '@expo/vector-icons';
+import { styles } from '../constants/ServicePage.styles';
 
 const DATABASE_ID = '681c428b00159abb5e8b';
 const COLLECTION_ID = '681c429800281e8a99bd';
-
+const NOTIFICATIONS_COLLECTION_ID = 'note_id';
 type ServiceKey = 'AC' | 'Washing Machine' | 'Fridge' | 'Microwave';
 
 const ServicePage = () => {
   const [modalVisible, setModalVisible] = useState(false);
-  const [allUsers, setAllUsers] = useState<{id: string, name: string}[]>([]);
+  const [allUsers, setAllUsers] = useState<{ id: string, name: string, email: string, phone: string }[]>([]);
   const [selectedServiceType, setSelectedServiceType] = useState<ServiceKey>('AC');
+  const [selectedServiceboyName, setSelectedServiceboyName] = useState<string>('');
   const router = useRouter();
 
   useEffect(() => {
@@ -24,250 +26,225 @@ const ServicePage = () => {
           COLLECTION_ID,
           [Query.orderDesc('$createdAt')]
         );
-        
         const users = response.documents.map(doc => ({
           id: doc.$id,
-          name: doc.name
+          name: doc.name,
+          email: doc.email,
+          phone: doc.contactNo
         }));
-        
         setAllUsers(users);
       } catch (error) {
         console.error('Error fetching users:', error);
       }
     };
-
     fetchAllUsers();
   }, []);
+
+  const createNotification = async (description: string, userEmail: string) => {
+    try {
+      await databases.createDocument(
+        DATABASE_ID,
+        NOTIFICATIONS_COLLECTION_ID,
+        ID.unique(),
+        {
+          description,
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          userEmail,
+        }
+      );
+      console.log('Notification sent to:', userEmail);
+    } catch (error) {
+      console.error('Notification creation failed:', error);
+    }
+  };
 
   const handleImagePress = (serviceKey: ServiceKey) => {
     setSelectedServiceType(serviceKey);
     setModalVisible(true);
   };
 
-  const handleApplicantPress = (applicantId: string, applicantName: string) => {
+  const handleApplicantPress = async (
+    applicantId: string,
+    applicantName: string,
+    applicantEmail: string,
+    applicantPhone: string
+  ) => {
     setModalVisible(false);
+    setSelectedServiceboyName(applicantName);
+
+    await createNotification(
+      ` ${applicantName} has been assigned a new ${selectedServiceType} service.`,
+      applicantEmail
+    );
+
     router.push({
       pathname: '/order',
       params: {
         applicantId,
         applicantName,
         serviceType: selectedServiceType,
+        applicantEmail,
+        applicantPhone
       },
     });
   };
 
-  const handleLearnMore = () => {
-    Alert.alert('Learn More', 'Here you can navigate to detailed service info.');
-  };
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-<Modal
-  animationType="slide"
-  transparent={true}
-  visible={modalVisible}
-  onRequestClose={() => setModalVisible(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <Text style={styles.modalTitle}>Applicants for this service</Text>
-      {allUsers.length > 0 ? (
-        allUsers.map((user, index) => (
-          <TouchableOpacity key={index} onPress={() => handleApplicantPress(user.id, user.name)}>
-          <View style={styles.applicantItem}>
-            <Text style={styles.applicantName}>{user.name}</Text>
-          </View>
-        </TouchableOpacity>
-        ))
-      ) : (
-        <Text style={styles.noApplicantsText}>No applicants yet</Text>
-      )}
-      
-      <TouchableOpacity   
-        style={styles.modalCloseButton}
-        onPress={() => setModalVisible(false)}
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Feather name="arrow-left" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Service Selection</Text>
+        </View>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Text style={styles.sectionTitle}>Available Services</Text>
+        
+        <View style={styles.servicesGrid}>
+          {/* AC Service */}
+          <TouchableOpacity 
+            style={styles.serviceCard}
+            onPress={() => handleImagePress('AC')}
+          >
+            <View style={styles.serviceImageContainer}>
+              <Image
+                source={require('../assets/images/ac.jpg')}
+                style={styles.serviceImage}
+                resizeMode="cover"
+              />
+            </View>
+            <View style={styles.serviceInfo}>
+              <View style={styles.serviceButton}>
+                <Text style={styles.serviceTitle}>AC Service</Text>
+                <View style={styles.serviceButton}>
+                  <Text style={styles.serviceButtonText}>Select</Text>
+                  <AntDesign name="right" size={16} color="#5E72E4" />
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Washing Machine Service */}
+          <TouchableOpacity 
+            style={styles.serviceCard}
+            onPress={() => handleImagePress('Washing Machine')}
+          >
+            <View style={styles.serviceImageContainer}>
+              <Image
+                source={require('../assets/images/washingmachine.jpg')}
+                style={styles.serviceImage}
+                resizeMode="cover"
+              />
+            </View>
+            <View style={styles.serviceInfo}>
+              <View style={styles.serviceButton}>
+                <Text style={styles.serviceTitle}>Washing Machine Service</Text>
+                <View style={styles.serviceButton}>
+                  <Text style={styles.serviceButtonText}>Select</Text>
+                  <AntDesign name="right" size={16} color="#5E72E4" />
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Fridge Service */}
+          <TouchableOpacity 
+            style={styles.serviceCard}
+            onPress={() => handleImagePress('Fridge')}
+          >
+            <View style={styles.serviceImageContainer}>
+              <Image
+                source={require('../assets/images/fridgerepair.jpg')}
+                style={styles.serviceImage}
+                resizeMode="cover"
+              />
+            </View>
+            <View style={styles.serviceInfo}>
+              <View style={styles.serviceButton}>
+                <Text style={styles.serviceTitle}>Fridge Service</Text>
+                <View style={styles.serviceButton}>
+                  <Text style={styles.serviceButtonText}>Select</Text>
+                  <AntDesign name="right" size={16} color="#5E72E4" />
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          {/* Microwave Service */}
+          <TouchableOpacity 
+            style={styles.serviceCard}
+            onPress={() => handleImagePress('Microwave')}
+          >
+            <View style={styles.serviceImageContainer}>
+              <Image
+                source={require('../assets/images/microwave.jpg')}
+                style={styles.serviceImage}
+                resizeMode="cover"
+              />
+            </View>
+            <View style={styles.serviceInfo}>
+              <View style={styles.serviceButton}>
+                <Text style={styles.serviceTitle}>Microwave Service</Text>
+                <View style={styles.serviceButton}>
+                  <Text style={styles.serviceButtonText}>Select</Text>
+                  <AntDesign name="right" size={16} color="#5E72E4" />
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {/* Service Boy Selection Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
       >
-        <Text style={styles.modalCloseButtonText}>Close</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
-
-      <View style={styles.serviceBox}>
-        <View style={styles.imageContainer}>
-          <TouchableOpacity onPress={() => handleImagePress('AC')}>
-            <Image
-              source={require('../assets/images/ac.jpg')}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Service Technician</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <MaterialIcons name="close" size={24} color="#718096" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalScroll}>
+              {allUsers.length > 0 ? (
+                allUsers.map((user, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => handleApplicantPress(user.id, user.name, user.email, user.phone)}
+                    style={styles.applicantItem}
+                  >
+                    <View style={styles.applicantAvatar}>
+                      <MaterialIcons name="person" size={24} color="#5E72E4" />
+                    </View>
+                    <View style={styles.applicantInfo}>
+                      <Text style={styles.applicantName}>{user.name}</Text>
+                      <Text style={styles.applicantEmail}>{user.email}</Text>
+                    </View>
+                    <AntDesign name="right" size={16} color="#A0AEC0" />
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={styles.noApplicants}>
+                  <MaterialIcons name="people-outline" size={40} color="#CBD5E0" />
+                  <Text style={styles.noApplicantsText}>No technicians available</Text>
+                </View>
+              )}
+            </ScrollView>
+          </View>
         </View>
-        <Text style={styles.title}>A.C Repair And Services:</Text>
-        <Text style={styles.description}>
-          Expert A.C repair and maintenance services to keep your cooling system efficient. Fast, reliable, and professional solutions for optimal comfort.
-        </Text>
-        <TouchableOpacity style={styles.button} onPress={handleLearnMore}>
-          <Text style={styles.buttonText}>Learn More</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.serviceBox}>
-        <View style={styles.imageContainer}>
-          <TouchableOpacity onPress={() => handleImagePress('Washing Machine')}>
-            <Image
-              source={require('../assets/images/washingmachine.jpg')}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.title}>Washing Machine Repair:</Text>
-        <Text style={styles.description}>
-          We provide efficient washing machine repairs, tackling everything from leaks to spin cycle problems, restoring your laundry routine.
-        </Text>
-        <TouchableOpacity style={styles.button} onPress={handleLearnMore}>
-          <Text style={styles.buttonText}>Learn More</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.serviceBox}>
-        <View style={styles.imageContainer}>
-          <TouchableOpacity onPress={() => handleImagePress('Fridge')}>
-            <Image
-              source={require('../assets/images/fridgerepair.jpg')}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.title}>Fridge Repair</Text>
-        <Text style={styles.description}>
-          Our experts quickly diagnose and fix fridge issues, ensuring your food stays fresh with minimal downtime.
-        </Text>
-        <TouchableOpacity style={styles.button} onPress={handleLearnMore}>
-          <Text style={styles.buttonText}>Learn More</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.serviceBox}>
-        <View style={styles.imageContainer}>
-          <TouchableOpacity onPress={() => handleImagePress('Microwave')}>
-            <Image
-              source={require('../assets/images/microwave.jpg')}
-              style={styles.image}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.title}>Microwave Repair:</Text>
-        <Text style={styles.description}>
-          We fix Microwave malfunctions promptly, ensuring your appliance heats and cooks efficiently without hassle.
-        </Text>
-        <TouchableOpacity style={styles.button} onPress={handleLearnMore}>
-          <Text style={styles.buttonText}>Learn More</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
-  );    
+      </Modal>
+    </SafeAreaView>
+  );
 };
 
-export default ServicePage
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-  },
-  serviceBox: {
-    width: '100%',
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    marginBottom: 30,
-    padding: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-    alignItems: 'center',
-  },
-  imageContainer: {
-    width: '100%',
-    borderRadius: 10,
-    overflow: 'hidden', // Ensures the image respects the border radius
-  },
-  image: {
-    width: '100%',
-    height: 200,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  description: {
-    fontSize: 15,
-    color: '#555',
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  button: {
-    backgroundColor: '#007bff',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 20,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    width: '80%',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 20,
-    maxHeight: '60%',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-    color: '#333',
-  },
-  applicantItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  applicantName: {
-    fontSize: 16,
-    color: '#007bff',
-  },
-  noApplicantsText: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    paddingVertical: 15,
-  },
-  modalCloseButton: {
-    marginTop: 15,
-    backgroundColor: '#007bff',
-    padding: 10,
-    borderRadius: 5,
-    alignSelf: 'center',
-  },
-  modalCloseButtonText: {
-    color: 'white',
-    fontSize: 16,
-  },
-});
+export default ServicePage;

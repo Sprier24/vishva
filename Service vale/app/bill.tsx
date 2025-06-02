@@ -1,20 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View, Text, TextInput, StyleSheet,
-  TouchableOpacity, ScrollView, Image,
-  Alert
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
-import { Databases, ID, Query } from 'appwrite';
-import { databases } from '../lib/appwrite';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, Alert, Modal, SafeAreaView, ActivityIndicator, FlatList } from 'react-native';
+import { MaterialCommunityIcons, MaterialIcons, Feather } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Query } from 'appwrite';
+import { databases, account } from '../lib/appwrite';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import SignatureScreen from 'react-native-signature-canvas';
+import { styles } from '../constants/BillPage.styles';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { format, isSameDay } from 'date-fns';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DATABASE_ID = '681c428b00159abb5e8b';
 const COLLECTION_ID = 'bill_ID';
+const USERS_COLLECTION_ID = '681c429800281e8a99bd';
 
-  const fieldLabels = {
+type Bill = {
+  $id: string;
+  notes: string;
+  billNumber: string;
+  serviceType: string;
+  serviceBoyName: string;
+  customerName: string;
+  contactNumber: string;
+  address: string;
+  serviceCharge: string;
+  paymentMethod: string;
+  cashGiven: string;
+  change: string;
+  $createdAt: string;
+  signature?: string;
+  status: string;
+  total: string;
+  date: string;
+};
+
+type User = {
+  id: string;
+  name: string;
+};
+
+const fieldLabels = {
   serviceType: 'Service Type',
-  serviceBoyName: 'Service Provider Name',
+  serviceBoyName: 'Service Engineer Name',
   customerName: 'Customer Name',
   address: 'Address',
   contactNumber: 'Contact Number',
@@ -23,6 +52,9 @@ const COLLECTION_ID = 'bill_ID';
 
 const BillPage = () => {
   const params = useLocalSearchParams();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  
   const [form, setForm] = useState({
     serviceType: '',
     serviceBoyName: '',
@@ -31,16 +63,75 @@ const BillPage = () => {
     contactNumber: '',
     serviceCharge: '',
   });
-  const [bills, setBills] = useState<any[]>([]);
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [allBills, setAllBills] = useState<Bill[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [cashGiven, setCashGiven] = useState('');
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [notes, setNotes] = useState('');
+  const [isBillDetailVisible, setIsBillDetailVisible] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [signature, setSignature] = useState<string | null>(null);
+  const [isSignatureVisible, setIsSignatureVisible] = useState(false);
+  const [serviceBoys, setServiceBoys] = useState<User[]>([]);
+  const [selectedServiceBoy, setSelectedServiceBoy] = useState<string | null>(null);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [dateFilter, setDateFilter] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [filterType, setFilterType] = useState<'serviceBoy' | 'date'>('serviceBoy');
 
   useEffect(() => {
     fetchBills();
-  }, []);
+    fetchServiceBoys();
+    if (params.serviceData) {
+      try {
+        const serviceData = JSON.parse(params.serviceData as string);
+        setForm({
+          serviceType: serviceData.serviceType || '',
+          serviceBoyName: serviceData.serviceBoy || '',
+          customerName: serviceData.clientName || '',
+          address: serviceData.address || '',
+          contactNumber: serviceData.phone || '',
+          serviceCharge: serviceData.serviceCharge || '',
+
+        });
+        setIsFormVisible(true);
+      } catch (error) {
+        console.error('Error parsing service data:', error);
+      }
+    }
+  }, [params.serviceData]);
+
+  const formatToAmPm = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+    return `${day}/${month}/${year} • ${hours}:${minutesStr} ${ampm}`;
+  };
+
+  const fetchServiceBoys = async () => {
+    try {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        USERS_COLLECTION_ID
+      );
+      const boys = response.documents.map(doc => ({
+        id: doc.$id,
+        name: doc.name
+      }));
+      setServiceBoys(boys);
+    } catch (error) {
+      console.error('Error fetching service boys:', error);
+    }
+  };
 
   const fetchBills = async () => {
     setIsLoading(true);
@@ -48,17 +139,63 @@ const BillPage = () => {
       const response = await databases.listDocuments(
         DATABASE_ID,
         COLLECTION_ID,
-        [
-          Query.orderDesc('date') // Show newest bills first
-        ]
+        [Query.orderDesc('$createdAt')]
       );
-      setBills(response.documents);
+      const formattedBills = response.documents as unknown as Bill[];
+      setAllBills(formattedBills);
+      setBills(formattedBills);
     } catch (error) {
       console.error('Error fetching bills:', error);
       Alert.alert('Error', 'Failed to fetch bills');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const countBillsByServiceBoy = () => {
+    const counts: Record<string, number> = { 'All': allBills.length };
+    serviceBoys.forEach(boy => {
+      counts[boy.name] = allBills.filter(bill => bill.serviceBoyName === boy.name).length;
+    });
+    return counts;
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setDateFilter(selectedDate);
+      applyFilters(selectedServiceBoy, selectedDate);
+    }
+  };
+
+  const applyFilters = (serviceBoy: string | null, date: Date | null) => {
+    let filtered = allBills;
+    if (serviceBoy) {
+      filtered = filtered.filter(bill => bill.serviceBoyName === serviceBoy);
+    }
+    if (date) {
+      filtered = filtered.filter(bill => {
+        const billDate = new Date(bill.$createdAt);
+        return isSameDay(billDate, date);
+      });
+    }
+    setBills(filtered);
+  };
+
+  const filterServices = (serviceBoyName: string | null) => {
+    setSelectedServiceBoy(serviceBoyName);
+    applyFilters(serviceBoyName, dateFilter);
+    setFilterModalVisible(false);
+  };
+
+  const clearDateFilter = () => {
+    setDateFilter(null);
+    applyFilters(selectedServiceBoy, null);
+  };
+
+  const clearServiceBoyFilter = () => {
+    setSelectedServiceBoy(null);
+    applyFilters(null, dateFilter);
   };
 
   const generateBillNumber = () => {
@@ -100,40 +237,247 @@ const BillPage = () => {
     return true;
   };
 
-const handleSubmitBill = async () => {
-  if (!validateForm()) return;
-
-  const billNumber = await generateBillNumber(); // Generate this first
-  
-  const billData = {
-    ...form,
-    paymentMethod,
-    total: calculateTotal(),
-    cashGiven: paymentMethod === 'cash' ? cashGiven : null,
-    change: paymentMethod === 'cash' ? calculateChange() : null,
-    date: new Date().toISOString(),
-    billNumber, // Use the generated bill number
-    status: 'paid',
-    notes: notes.trim() || null
+  const handleSubmitBill = async () => {
+    if (!validateForm()) return;
+    if (!signature) {
+      Alert.alert('Error', 'Customer signature is required');
+      return;
+    }
+    const billNumber = generateBillNumber();
+    const billData = {
+      ...form,
+      paymentMethod,
+      total: calculateTotal(),
+      cashGiven: paymentMethod === 'cash' ? cashGiven : null,
+      change: paymentMethod === 'cash' ? calculateChange() : null,
+      date: new Date().toISOString(),
+      billNumber,
+      status: 'paid',
+      notes: notes.trim() || null,
+      signature: signature
+    };
+    try {
+      await databases.createDocument(
+        DATABASE_ID,
+        COLLECTION_ID,
+        billNumber,
+        billData
+      );
+      Alert.alert('Success', 'Bill saved successfully!');
+      fetchBills();
+      setIsFormVisible(false);
+      resetForm();
+      setSignature(null);
+    } catch (error) {
+      console.error('Error saving bill:', error);
+      Alert.alert('Error', 'Failed to save bill');
+    }
   };
 
-  try {
-    await databases.createDocument(
-      DATABASE_ID,
-      COLLECTION_ID,
-      billNumber, // Use billNumber as the document ID
-      billData
-    );
-    
-    Alert.alert('Success', 'Bill saved successfully!');
-    fetchBills();
-    setIsFormVisible(false);
-    resetForm();
-  } catch (error) {
-    console.error('Error saving bill:', error);
-    Alert.alert('Error', 'Failed to save bill');
-  }
-};
+  const generateBillHtml = (bill: Bill) => {
+    return `
+      <html>
+        <head>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 20px;
+              color: #2D3748;
+            }
+            .header {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 20px;
+              padding-bottom: 10px;
+              border-bottom: 2px solid #5E72E4;
+            }
+            .company-name {
+              font-size: 24px;
+              font-weight: bold;
+              color: #5E72E4;
+            }
+            .invoice-title {
+              font-size: 28px;
+              font-weight: bold;
+              color: #2D3748;
+            }
+            .invoice-number {
+              font-size: 14px;
+              color: #718096;
+            }
+            .section {
+              margin-bottom: 20px;
+              padding: 15px;
+              background: #F7FAFC;
+              border-radius: 8px;
+            }
+            .section-title {
+              font-size: 18px;
+              font-weight: bold;
+              margin-bottom: 10px;
+              color: #2D3748;
+              padding-bottom: 5px;
+              border-bottom: 1px solid #E2E8F0;
+            }
+            .row {
+              display: flex;
+              margin-bottom: 8px;
+            }
+            .label {
+              font-weight: bold;
+              min-width: 150px;
+              color: #4A5568;
+            }
+            .value {
+              flex: 1;
+            }
+            .highlight {
+              color: #5E72E4;
+              font-weight: bold;
+            }
+            .total-row {
+              font-size: 16px;
+              font-weight: bold;
+              margin-top: 10px;
+              padding-top: 10px;
+              border-top: 1px dashed #CBD5E0;
+            }
+            .signature-section {
+              margin-top: 30px;
+              text-align: center;
+              padding: 20px 0;
+              border-top: 2px dashed #5E72E4;
+            }
+            .signature-title {
+              font-weight: bold;
+              margin-bottom: 15px;
+              color: #4A5568;
+            }
+            .signature-image {
+              max-width: 250px;
+              height: 80px;
+              margin: 0 auto;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 30px;
+              font-size: 12px;
+              color: #718096;
+              padding-top: 15px;
+              border-top: 1px solid #E2E8F0;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="company-name">Service Vale</div>
+              <div>Quality Service Solutions</div>
+            </div>
+            <div>
+              <div class="invoice-title">INVOICE</div>
+              <div class="invoice-number">Bill No: ${bill.billNumber}</div>
+              <div class="invoice-number">Date: ${new Date(bill.$createdAt).toLocaleDateString()}</div>
+            </div>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">Customer Details</div>
+            <div class="row">
+              <span class="label">Customer Name:</span>
+              <span class="value">${bill.customerName}</span>
+            </div>
+            <div class="row">
+              <span class="label">Contact Number:</span>
+              <span class="value">${bill.contactNumber}</span>
+            </div>
+            <div class="row">
+              <span class="label">Address:</span>
+              <span class="value">${bill.address}</span>
+            </div>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">Service Details</div>
+            <div class="row">
+              <span class="label">Service Type:</span>
+              <span class="value">${bill.serviceType}</span>
+            </div>
+            <div class="row">
+              <span class="label">Service Provider:</span>
+              <span class="value">${bill.serviceBoyName}</span>
+            </div>
+            <div class="row total-row">
+              <span class="label">Service Charge:</span>
+              <span class="value highlight">₹${bill.serviceCharge}</span>
+            </div>
+          </div>
+          
+          <div class="section">
+            <div class="section-title">Payment Details</div>
+            <div class="row">
+              <span class="label">Payment Method:</span>
+              <span class="value highlight">${bill.paymentMethod.toUpperCase()}</span>
+            </div>
+            ${bill.paymentMethod === 'cash' ? `
+            <div class="row">
+              <span class="label">Amount Received:</span>
+              <span class="value">₹${bill.cashGiven}</span>
+            </div>
+            <div class="row">
+              <span class="label">Change Returned:</span>
+              <span class="value">₹${bill.change}</span>
+            </div>
+            ` : ''}
+          </div>
+          
+          ${bill?.signature ? `
+            <div class="signature-section">
+              <div class="signature-title">Customer Signature</div>
+              <img src="data:image/png;base64,${bill.signature}" class="signature-image" />
+            </div>
+          ` : ''}
+          
+          <div class="footer">
+            <div>Thank You For Your Business!</div>
+            <div>Contact: +91 635 320 2602 | Email: info@servicevale.com</div>
+          </div>
+        </body>
+      </html>
+    `;
+  };
+
+  const handleShareViaWhatsApp = async () => {
+    if (!selectedBill) return;
+    try {
+      const htmlContent = generateBillHtml(selectedBill);
+      const { uri } = await Print.printToFileAsync({
+        html: htmlContent,
+        width: 595,
+        height: 842,
+      });
+      await Sharing.shareAsync(uri, {
+        mimeType: 'application/pdf',
+        dialogTitle: 'Share Bill via WhatsApp',
+        UTI: 'net.whatsapp.pdf'
+      });
+    } catch (error) {
+      console.error('Error sharing via WhatsApp:', error);
+      Alert.alert('Error', 'Failed to share bill');
+    }
+  };
+
+  const handlePrint = async () => {
+    if (!selectedBill) return;
+    try {
+      const htmlContent = generateBillHtml(selectedBill);
+      await Print.printAsync({ html: htmlContent });
+    } catch (error) {
+      console.error('Error printing:', error);
+      Alert.alert('Print Failed', 'Unable to generate PDF');
+    }
+  };
 
   const resetForm = () => {
     setForm({
@@ -149,32 +493,13 @@ const handleSubmitBill = async () => {
     setNotes('');
   };
 
-  useEffect(() => {
-    if (params.serviceData) {
-      try {
-        const serviceData = JSON.parse(params.serviceData as string);
-        setForm({
-          serviceType: serviceData.serviceType || '',
-          serviceBoyName: serviceData.serviceBoyName || '',
-          customerName: serviceData.customerName || '',
-          address: serviceData.address || '',
-          contactNumber: serviceData.contactNumber || '',
-          serviceCharge: serviceData.serviceCharge || '',
-        });
-        setIsFormVisible(true);
-      } catch (error) {
-        console.error('Error parsing service data:', error);
-      }
-    }
-  }, [params.serviceData]);
-
   const handleChange = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
   const calculateTotal = () => {
     const charge = parseFloat(form.serviceCharge) || 0;
-    return (charge).toFixed(2);
+    return charge.toFixed(2);
   };
 
   const calculateChange = () => {
@@ -190,33 +515,207 @@ const handleSubmitBill = async () => {
     }
   };
 
-  return (
-    <View style={styles.mainContainer}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.heading}>Bill Summary</Text>
+  const showBillDetails = (bill: Bill) => {
+    setSelectedBill(bill);
+    setIsBillDetailVisible(true);
+  };
 
+  const closeBillDetails = () => {
+    setIsBillDetailVisible(false);
+    setSelectedBill(null);
+  };
+
+  const handleSignature = (signatureData: string) => {
+    const base64Data = signatureData.replace('data:image/png;base64,', '');
+    setSignature(base64Data);
+    setIsSignatureVisible(false);
+  };
+
+  const handleDeleteBill = async (id: string) => {
+    Alert.alert(
+      'Delete Bill',
+      'Are you sure you want to delete this bill?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          onPress: async () => {
+            try {
+              await databases.deleteDocument(DATABASE_ID, COLLECTION_ID, id);
+              setBills(prev => prev.filter(bill => bill.$id !== id));
+              setAllBills(prev => prev.filter(bill => bill.$id !== id));
+              closeBillDetails();
+              Alert.alert('Success', 'Bill deleted successfully');
+            } catch (error) {
+              console.error('Error deleting bill:', error);
+              Alert.alert('Error', 'Failed to delete bill');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleLogout = async () => {
+    try {
+      await account.deleteSession('current');
+      router.replace('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      Alert.alert('Error', 'Failed to logout');
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Feather name="arrow-left" size={24} color="#FFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Bills Management</Text>
+        </View>
+        <View style={styles.headerCount}>
+          <Text style={styles.headerCountText}>{bills.length}</Text>
+        </View>
+      </View>
+
+      {!isFormVisible ? (<View style={styles.filterContainer}>
+        <TouchableOpacity
+          style={[styles.filterButton, selectedServiceBoy && styles.activeFilter]}
+          onPress={() => {
+            setFilterType('serviceBoy');
+            setFilterModalVisible(true);
+          }}
+        >
+          <Feather name="user" size={18} color={selectedServiceBoy ? "#FFF" : "#5E72E4"} />
+          <Text style={[styles.filterButtonText, selectedServiceBoy && styles.activeFilterText]}>
+            {selectedServiceBoy ? selectedServiceBoy : 'Filter by boy'}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.filterButton, dateFilter && styles.activeFilter]}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Feather name="calendar" size={18} color={dateFilter ? "#FFF" : "#5E72E4"} />
+          <Text style={[styles.filterButtonText, dateFilter && styles.activeFilterText]}>
+            {dateFilter ? format(dateFilter, 'dd MMM yyyy') : 'Filter by date'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      ) : null}
+        
+      {/* Active Filters Chips */}
+      {(selectedServiceBoy || dateFilter) && (
+        <View style={styles.activeFiltersContainer}>
+          {selectedServiceBoy && (
+            <View style={styles.filterChip}>
+              <Text style={styles.filterChipText}>{selectedServiceBoy}</Text>
+              <TouchableOpacity onPress={clearServiceBoyFilter}>
+                <Feather name="x" size={16} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+          )}
+          {dateFilter && (
+            <View style={styles.filterChip}>
+              <Text style={styles.filterChipText}>{format(dateFilter, 'dd MMM yyyy')}</Text>
+              <TouchableOpacity onPress={clearDateFilter}>
+                <Feather name="x" size={16} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Date Picker */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={dateFilter || new Date()}
+          mode="date"
+          display="default"
+          onChange={handleDateChange}
+        />
+      )}
+
+      {/* Service Boy Filter Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={filterModalVisible}
+        onRequestClose={() => setFilterModalVisible(false)}
+      >
+        <View style={styles.modalContainer1}>
+          <View style={styles.modalContent1}>
+            <Text style={styles.modalTitle1}>Select Service Boy</Text>
+            <View style={styles.modalScrollBox1}>
+              <TouchableOpacity
+                style={styles.filterOption1}
+                onPress={() => filterServices(null)}
+              >
+                <View style={styles.filterOptionContainer1}>
+                  <Text style={styles.filterOptionText1}>All Service Boys</Text>
+                  <Text style={styles.countBadge1}>
+                    {countBillsByServiceBoy()['All']}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <FlatList
+                data={serviceBoys}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.filterOption1}
+                    onPress={() => filterServices(item.name)}
+                  >
+                    <View style={styles.filterOptionContainer1}>
+                      <Text style={styles.filterOptionText1}>{item.name}</Text>
+                      <Text style={styles.countBadge1}>
+                        {countBillsByServiceBoy()[item.name] || 0}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                showsVerticalScrollIndicator={true}
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.modalCloseButton1}
+              onPress={() => setFilterModalVisible(false)}
+            >
+              <Text style={styles.modalCloseButtonText1}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Main Content */}
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
         {isFormVisible ? (
-          <>
-            {/* Service Details Section */}
-            <Text style={styles.sectionTitle}>Service Details</Text>
+          <View style={styles.formContainer}>
+            <Text style={styles.sectionTitle1}>Service Details</Text>
             {Object.entries(form).map(([key, value]) => (
               <View key={key}>
-                <Text style={styles.fieldLabel}>{fieldLabels[key as keyof typeof fieldLabels]}</Text>
+                <Text style={styles.inputLabel}>{fieldLabels[key as keyof typeof fieldLabels]}</Text>
                 <TextInput
                   placeholder={`Enter ${fieldLabels[key as keyof typeof fieldLabels].toLowerCase()}`}
                   style={styles.input}
                   keyboardType={key === 'contactNumber' || key === 'serviceCharge' ? 'numeric' : 'default'}
                   value={value}
                   onChangeText={(text) => handleChange(key, text)}
+                  maxLength={key === 'contactNumber' ? 10 : undefined}
                 />
               </View>
             ))}
 
-            {/* Notes Field */}
             <Text style={styles.sectionTitle}>Additional Notes</Text>
             <TextInput
               placeholder="Enter any additional notes (optional)"
-              style={[styles.input, styles.multilineInput]}
+              style={[styles.input, styles.textArea]}
               value={notes}
               onChangeText={setNotes}
               multiline
@@ -224,34 +723,49 @@ const handleSubmitBill = async () => {
               maxLength={500}
             />
 
-            {/* Charges Breakdown */}
-            <View style={styles.chargesContainer}>
-              <View style={styles.chargeRow}>
-                <Text style={styles.chargeLabel}>Service Charge:</Text>
-                <Text style={styles.chargeValue}>₹{form.serviceCharge || '0.00'}</Text>
+            <View style={styles.paymentSummary}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Service Charge:</Text>
+                <Text style={styles.summaryValue}>₹{form.serviceCharge || '0.00'}</Text>
               </View>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total Amount:</Text>
-                <Text style={styles.totalValue}>₹{calculateTotal()}</Text>
+              <View style={[styles.summaryRow, styles.totalRow]}>
+                <Text style={styles.summaryLabel}>Total Amount:</Text>
+                <Text style={styles.summaryValue}>₹{calculateTotal()}</Text>
               </View>
             </View>
 
-            {/* Payment Method Section */}
             <Text style={styles.sectionTitle}>Payment Method</Text>
-            <View style={styles.radioContainer}>
-              <TouchableOpacity style={styles.radioOption} onPress={() => setPaymentMethod('cash')}>
-                <View style={[styles.radioCircle, paymentMethod === 'cash' && styles.selected]} />
-                <Text style={styles.radioText}>Cash</Text>
+            <View style={styles.paymentMethodContainer}>
+              <TouchableOpacity 
+                style={[styles.methodButton, paymentMethod === 'cash' && styles.methodButtonActive]}
+                onPress={() => setPaymentMethod('cash')}
+              >
+                <MaterialCommunityIcons 
+                  name="cash" 
+                  size={20} 
+                  color={paymentMethod === 'cash' ? '#FFF' : '#5E72E4'} 
+                />
+                <Text style={[styles.methodText, paymentMethod === 'cash' && styles.methodTextActive]}>
+                  Cash
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.radioOption} onPress={() => setPaymentMethod('upi')}>
-                <View style={[styles.radioCircle, paymentMethod === 'upi' && styles.selected]} />
-                <Text style={styles.radioText}>UPI</Text>
+              <TouchableOpacity 
+                style={[styles.methodButton, paymentMethod === 'upi' && styles.methodButtonActive]}
+                onPress={() => setPaymentMethod('upi')}
+              >
+                <MaterialCommunityIcons 
+                  name="bank-transfer" 
+                  size={20} 
+                  color={paymentMethod === 'upi' ? '#FFF' : '#5E72E4'} 
+                />
+                <Text style={[styles.methodText, paymentMethod === 'upi' && styles.methodTextActive]}>
+                  UPI
+                </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Payment Details */}
             {paymentMethod === 'cash' && (
-              <View style={styles.cashContainer}>
+              <View style={styles.cashPaymentContainer}>
                 <Text style={styles.sectionTitle}>Cash Payment</Text>
                 <TextInput
                   placeholder="Amount Given by Customer"
@@ -267,30 +781,49 @@ const handleSubmitBill = async () => {
               </View>
             )}
 
-            {paymentMethod === 'upi' && (
-              <View style={styles.upiContainer}>
-                <Text style={styles.sectionTitle}>Scan UPI QR Code</Text>
+            {signature ? (
+              <View style={styles.signatureContainer}>
+                <Text style={styles.signatureLabel}>Customer Signature:</Text>
                 <Image
-                  source={require('../assets/images/payment.jpg')}
-                  style={styles.qrCode}
+                  source={{ uri: `data:image/png;base64,${signature}` }}
+                  style={styles.signatureImage}
                 />
-                <Text style={styles.upiId}>UPI ID: yourupi@bank</Text>
+                <TouchableOpacity
+                  style={styles.changeSignatureButton}
+                  onPress={() => setIsSignatureVisible(true)}
+                >
+                  <Text style={styles.changeSignatureText}>Change Signature</Text>
+                </TouchableOpacity>
               </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.addSignatureButton}
+                onPress={() => setIsSignatureVisible(true)}
+              >
+                <Feather name="edit" size={18} color="#5E72E4" />
+                <Text style={styles.addSignatureText}>Add Customer Signature</Text>
+              </TouchableOpacity>
             )}
 
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmitBill}>
               <Text style={styles.submitText}>Submit Bill</Text>
             </TouchableOpacity>
-          </>
+          </View>
         ) : (
-          <View style={styles.billsContainer}>
-            <Text style={styles.sectionTitle}>Recent Bills</Text>
-            
+          <View style={styles.billsListContainer}>
             {isLoading ? (
-              <Text>Loading bills...</Text>
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#5E72E4" />
+              </View>
             ) : bills.length === 0 ? (
               <View style={styles.emptyState}>
-                <Text style={styles.emptyText}>No bills created yet</Text>
+                <MaterialCommunityIcons name="file-document-outline" size={48} color="#A0AEC0" />
+                <Text style={styles.emptyText}>
+                  {dateFilter || selectedServiceBoy
+                    ? 'No bills match your filters'
+                    : 'No bills created yet'
+                  }
+                </Text>
                 <Text style={styles.emptySubtext}>Tap the + button to create a new bill</Text>
               </View>
             ) : (
@@ -298,29 +831,32 @@ const handleSubmitBill = async () => {
                 <TouchableOpacity 
                   key={bill.$id} 
                   style={styles.billCard}
+                  onPress={() => showBillDetails(bill)}
                 >
                   <View style={styles.billHeader}>
-                    <Text style={styles.billCustomer}>{bill.customerName}</Text>
-                    <Text style={styles.billAmount}>₹{bill.total}</Text>
+                    <View>
+                      <Text style={styles.billCustomer}>{bill.customerName}</Text>
+                      <Text style={styles.billService}>{bill.serviceType}</Text>
+                      <Text style={styles.billNumber}>{bill.billNumber}</Text>
+                    </View>
+                    <View style={styles.billAmountContainer}>
+                      <Text style={styles.billAmount}>₹{bill.total}</Text>
+                    </View>
                   </View>
-                  <View style={styles.billSubHeader}>
-                    <Text style={styles.billNumber}>{bill.billNumber}</Text>
-                    <Text style={[
-                      styles.billStatus,
-                      bill.status === 'paid' && styles.statusPaid,
-                      bill.status === 'pending' && styles.statusPending,
-                      bill.status === 'cancelled' && styles.statusCancelled
-                    ]}>
-                      {bill.status}
+                  <View style={styles.billFooter}>
+                    <View style={styles.billDateContainer}>
+                      <MaterialCommunityIcons name="account" size={14} color="#718096" />
+                    <Text style={styles.billDate}>
+                      {bill.serviceBoyName}
                     </Text>
+                    </View>
+                    <View style={styles.billDateContainer}>
+                      <MaterialCommunityIcons name="calendar" size={14} color="#718096" />
+                    <Text style={styles.billDate}>
+                      {formatToAmPm(bill.date)}
+                    </Text>
+                    </View>
                   </View>
-                  {bill.notes && <Text style={styles.billNotes}>{bill.notes}</Text>}
-                  <View style={styles.userFooter}>
-                  <Text style={styles.billService}>{bill.serviceType} by {bill.serviceBoyName}</Text>
-                  <Text style={styles.billDate}>
-                    {new Date(bill.date).toLocaleDateString()}
-                  </Text>
-                </View>
                 </TouchableOpacity>
               ))
             )}
@@ -328,313 +864,203 @@ const handleSubmitBill = async () => {
         )}
       </ScrollView>
 
-      <TouchableOpacity style={styles.fab} onPress={toggleFormVisibility}>
-        <Ionicons name={isFormVisible ? 'close' : 'add'} size={28} color="white" />
+      {/* Bill Details Modal */}
+      <Modal
+        visible={isBillDetailVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeBillDetails}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {selectedBill && (
+              <>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Bill Details</Text>
+                  <TouchableOpacity onPress={closeBillDetails}>
+                    <Feather name="x" size={24} color="#718096" />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.modalContent}>
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailSectionTitle}>Bill Information</Text>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Bill Number:</Text>
+                      <Text style={styles.detailValue}>{selectedBill.billNumber}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Date:</Text>
+                      <Text style={styles.detailValue}>
+                        {formatToAmPm(selectedBill.$createdAt || '')}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailSectionTitle}>Customer Details</Text>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Name:</Text>
+                      <Text style={styles.detailValue}>{selectedBill.customerName}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Contact:</Text>
+                      <Text style={styles.detailValue}>{selectedBill.contactNumber}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Address:</Text>
+                      <Text style={styles.detailValue}>{selectedBill.address}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailSectionTitle}>Service Details</Text>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Service Type:</Text>
+                      <Text style={styles.detailValue}>{selectedBill.serviceType}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Service Provider:</Text>
+                      <Text style={styles.detailValue}>{selectedBill.serviceBoyName}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Service Charge:</Text>
+                      <Text style={styles.detailValue}>₹{selectedBill.serviceCharge}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailSectionTitle}>Payment Details</Text>
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Payment Method:</Text>
+                      <Text style={styles.detailValue}>{selectedBill.paymentMethod.toUpperCase()}</Text>
+                    </View>
+                    {selectedBill.paymentMethod === 'cash' && (
+                      <>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>Cash Received:</Text>
+                          <Text style={styles.detailValue}>₹{selectedBill.cashGiven}</Text>
+                        </View>
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>Change Returned:</Text>
+                          <Text style={styles.detailValue}>₹{selectedBill.change}</Text>
+                        </View>
+                      </>
+                    )}
+                  </View>
+
+                  {selectedBill.notes && (
+                    <View style={styles.detailSection}>
+                      <Text style={styles.detailSectionTitle}>Additional Notes</Text>
+                      <Text style={styles.notesText}>{selectedBill.notes}</Text>
+                    </View>
+                  )}
+
+                  {selectedBill?.signature && (
+                    <View style={styles.detailSection}>
+                      <Text style={styles.detailSectionTitle}>Customer Signature</Text>
+                      <Image
+                        source={{ uri: `data:image/png;base64,${selectedBill.signature}` }}
+                        style={styles.signatureImage}
+                      />
+                    </View>
+                  )}
+
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.printButton]}
+                      onPress={handlePrint}
+                    >
+                      <Feather name="printer" size={18} color="#FFF" />
+                      <Text style={styles.actionButtonText}>Print</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.whatsappButton]}
+                      onPress={handleShareViaWhatsApp}
+                    >
+                      <Feather name="share-2" size={18} color="#FFF" />
+                      <Text style={styles.actionButtonText}>Share</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionButton, styles.deleteButton]}
+                      onPress={() => handleDeleteBill(selectedBill.$id)}
+                    >
+                      <Feather name="trash-2" size={18} color="#FFF" />
+                      <Text style={styles.actionButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                </ScrollView>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Signature Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isSignatureVisible}
+        onRequestClose={() => setIsSignatureVisible(false)}
+      >
+        <View style={styles.signatureModalContainer}>
+          <View style={styles.signatureModalContent}>
+            <View style={styles.signatureModalHeader}>
+              <Text style={styles.signatureModalTitle}>Customer Signature</Text>
+              <TouchableOpacity onPress={() => setIsSignatureVisible(false)}>
+                <Feather name="x" size={24} color="#718096" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.signatureCanvasContainer}>
+              <SignatureScreen
+                onOK={handleSignature}
+                onEmpty={() => Alert.alert('Error', 'Please provide a signature')}
+                descriptionText=""
+                clearText="Clear"
+                confirmText="Save"
+                webStyle={`
+                  .m-signature-pad {
+                    box-shadow: none;
+                    border: none;
+                    margin: 0;
+                    padding: 0;
+                    height: 100%;
+                  }
+                  .m-signature-pad--body {
+                    border: none;
+                    height: calc(100% - 60px);
+                  }
+                  .m-signature-pad--footer {
+                    height: 60px;
+                    margin: 0;
+                    padding: 10px;
+                    background: white;
+                  }
+                  body, html {
+                    background-color: #fff;
+                    margin: 0;
+                    padding: 0;
+                    height: 100%;
+                  }
+                  canvas {
+                    background-color: #fff;
+                  }
+                `}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity 
+        style={styles.fab} 
+        onPress={toggleFormVisibility}
+      >
+        <Feather name={isFormVisible ? 'x' : 'plus'} size={24} color="#FFF" />
       </TouchableOpacity>
-    </View>
+
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  userFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 5,
-    paddingTop: 5,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  billsContainer: {
-  flex: 1,
-  marginTop: 20,
-},
-billCard: {
-  backgroundColor: '#fff',
-  borderRadius: 10,
-  padding: 15,
-  marginBottom: 10,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 4,
-  elevation: 3,
-},
-billHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginBottom: 5,
-},
-billCustomer: {
-  fontSize: 16,
-  fontWeight: 'bold',
-},
-billAmount: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: '#007bff',
-},
-billService: {
-  fontSize: 14,
-  color: '#555',
-  marginBottom: 5,
-},
-billDate: {
-  fontSize: 12,
-  color: '#888',
-},
-  mainContainer: {
-    flex: 1,
-    position: 'relative',
-  },
-  container: {
-    padding: 20,
-    paddingBottom: 40,
-    backgroundColor: '#f4f4f4',
-    flexGrow: 1,
-  },
-  heading: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 15,
-    fontSize: 16,
-    borderColor: '#ccc',
-    borderWidth: 1,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginVertical: 15,
-    color: '#2c3e50',
-  },
-  radioContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
-  radioOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 20,
-  },
-  radioCircle: {
-    height: 20,
-    width: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#007bff',
-    marginRight: 8,
-  },
-  selected: {
-    backgroundColor: '#007bff',
-  },
-  radioText: {
-    fontSize: 16,
-    color: '#2c3e50',
-  },
-  chargesContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 15,
-  },
-  chargeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  chargeLabel: {
-    fontSize: 16,
-    color: '#555',
-  },
-  chargeValue: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  totalLabel: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2c3e50',
-  },
-  totalValue: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#007bff',
-  },
-  cashContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 10,
-    marginBottom: 15,
-  },
-  changeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  changeLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#555',
-  },
-  changeValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'green',
-  },
-  upiContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  qrCode: {
-    width: 200,
-    height: 200,
-    resizeMode: 'contain',
-    borderRadius: 10,
-    marginVertical: 10,
-  },
-  upiId: {
-    textAlign: 'center',
-    marginTop: 10,
-    fontSize: 16,
-    color: '#555',
-  },
-  submitButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  submitText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    backgroundColor: '#007bff',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 100,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#666',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-  },
-  multilineInput: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  billSubHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  billNumber: {
-    fontSize: 12,
-    color: '#666',
-  },
-  billStatus: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    textTransform: 'capitalize',
-  },
-  statusPaid: {
-    backgroundColor: '#d4edda',
-    color: '#155724',
-  },
-  statusPending: {
-    backgroundColor: '#fff3cd',
-    color: '#856404',
-  },
-  statusCancelled: {
-    backgroundColor: '#f8d7da',
-    color: '#721c24',
-  },
-  billNotes: {
-    fontSize: 12,
-    color: '#666',
-    fontStyle: 'italic',
-    marginTop: 5,
-  },
-  fieldLabel: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#2c3e50',
-  marginBottom: 5,
-  marginTop: 10,
-  },
-});
-
 export default BillPage;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
