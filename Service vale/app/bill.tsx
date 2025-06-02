@@ -724,11 +724,8 @@ const BillPage = () => {
             />
 
             <View style={styles.paymentSummary}>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Service Charge:</Text>
-                <Text style={styles.summaryValue}>₹{form.serviceCharge || '0.00'}</Text>
-              </View>
-              <View style={[styles.summaryRow, styles.totalRow]}>
+              
+              <View style={[styles.summaryRow]}>
                 <Text style={styles.summaryLabel}>Total Amount:</Text>
                 <Text style={styles.summaryValue}>₹{calculateTotal()}</Text>
               </View>

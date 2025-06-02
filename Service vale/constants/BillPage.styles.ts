@@ -118,8 +118,8 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     marginRight: 6,
   },
-  
-  
+
+
 
 
 
@@ -248,19 +248,16 @@ export const styles = StyleSheet.create({
     backgroundColor: "#F7FAFC",
     borderRadius: 10,
     padding: 15,
-    marginBottom: 15, 
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  totalRow: {
-    borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
-    paddingTop: 10,
-    marginTop: 5,
-  },
+
   summaryLabel: {
     fontSize: 14,
     color: "#4A5568",
@@ -274,6 +271,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 15,
+
   },
   methodButton: {
     flexDirection: "row",
@@ -338,9 +336,11 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
     borderRadius: 5,
+    marginBottom: 10,
+
   },
   changeSignatureButton: {
-    marginTop: 10,
+    marginBottom: 10,
   },
   changeSignatureText: {
     color: "#5E72E4",
@@ -516,7 +516,7 @@ export const styles = StyleSheet.create({
   modalContent: {
     padding: 20,
   },
-    modalScrollBox: {
+  modalScrollBox: {
     maxHeight: 300,
     marginBottom: 10,
   },
