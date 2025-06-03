@@ -1,7 +1,7 @@
 import { Platform, StatusBar, StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
-   container: {
+  container: {
     flex: 1,
     backgroundColor: "#F7FAFC",
   },
@@ -215,8 +215,9 @@ export const styles = StyleSheet.create({
   detailText: {
     fontSize: 14,
     color: "#4A5568",
-    marginLeft: 10,
-    flexShrink: 1,
+    marginLeft: 8,
+    flex: 1, 
+    flexWrap: 'wrap', 
   },
   serviceFooter: {
     flexDirection: "row",

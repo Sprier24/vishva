@@ -272,7 +272,7 @@ const PendingServicesScreen = () => {
     setDateFilter(null);
     applyFilters(selectedServiceBoy, null);
   };
-  
+
   const clearServiceBoyFilter = () => {
     setSelectedServiceBoy(null);
     applyFilters(null, dateFilter);
@@ -306,10 +306,10 @@ const PendingServicesScreen = () => {
     <View style={styles.serviceCard}>
       <View style={styles.serviceHeader}>
         <View style={styles.serviceTypeContainer}>
-          <MaterialCommunityIcons 
-            name="tools" 
-            size={20} 
-            color="#5E72E4" 
+          <MaterialCommunityIcons
+            name="tools"
+            size={20}
+            color="#5E72E4"
             style={styles.serviceIcon}
           />
           <Text style={styles.serviceType}>{item.serviceType}</Text>
@@ -320,7 +320,7 @@ const PendingServicesScreen = () => {
           </View>
         </View>
       </View>
-      
+
       <View style={styles.serviceDetails}>
         <View style={styles.detailRow}>
           <MaterialIcons name="person" size={18} color="#718096" />
@@ -328,7 +328,7 @@ const PendingServicesScreen = () => {
         </View>
         <View style={styles.detailRow}>
           <MaterialIcons name="location-on" size={18} color="#718096" />
-          <Text style={styles.detailText} numberOfLines={1} ellipsizeMode="tail">
+          <Text style={styles.detailText}>
             {item.address}
           </Text>
         </View>
@@ -355,7 +355,7 @@ const PendingServicesScreen = () => {
           {item.serviceBoy}
         </Text>
       </View>
-      
+
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={styles.whatsappButton}
@@ -364,7 +364,7 @@ const PendingServicesScreen = () => {
           <MaterialCommunityIcons name="whatsapp" size={20} color="#FFF" />
           <Text style={styles.whatsappButtonText}>WhatsApp</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={styles.completeButton}
           onPress={() => handleComplete(item.id)}
@@ -382,7 +382,7 @@ const PendingServicesScreen = () => {
         </TouchableOpacity>
       </View>
     </View>
-    
+
   );
 
   return (
@@ -412,7 +412,7 @@ const PendingServicesScreen = () => {
             {selectedServiceBoy ? selectedServiceBoy : 'Filter by boy'}
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.filterButton, dateFilter && styles.activeFilter]}
           onPress={() => setShowDatePicker(true)}
@@ -423,27 +423,27 @@ const PendingServicesScreen = () => {
           </Text>
         </TouchableOpacity>
       </View>
-        
-        {(selectedServiceBoy || dateFilter) && (
-          <View style={styles.activeFiltersContainer}>
-            {selectedServiceBoy && (
-              <View style={styles.filterChip}>
-                <Text style={styles.filterChipText}>{selectedServiceBoy}</Text>
-                <TouchableOpacity onPress={clearServiceBoyFilter}>
-                  <Feather name="x" size={16} color="#FFF" />
-                </TouchableOpacity>
-              </View>
-            )}
-            {dateFilter && (
-              <View style={styles.filterChip}>
-                <Text style={styles.filterChipText}>{format(dateFilter, 'dd MMM yyyy')}</Text>
-                <TouchableOpacity onPress={clearDateFilter}>
-                  <Feather name="x" size={16} color="#FFF" />
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        )}
+
+      {(selectedServiceBoy || dateFilter) && (
+        <View style={styles.activeFiltersContainer}>
+          {selectedServiceBoy && (
+            <View style={styles.filterChip}>
+              <Text style={styles.filterChipText}>{selectedServiceBoy}</Text>
+              <TouchableOpacity onPress={clearServiceBoyFilter}>
+                <Feather name="x" size={16} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+          )}
+          {dateFilter && (
+            <View style={styles.filterChip}>
+              <Text style={styles.filterChipText}>{format(dateFilter, 'dd MMM yyyy')}</Text>
+              <TouchableOpacity onPress={clearDateFilter}>
+                <Feather name="x" size={16} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
 
       {showDatePicker && (
         <DateTimePicker
@@ -508,7 +508,7 @@ const PendingServicesScreen = () => {
         <FlatList
           data={services}
           renderItem={renderServiceItem}
-          keyExtractor={(item) => item.id || item._id || item.createdAt} // Use a truly unique field
+          keyExtractor={(item) => item.id} // Use a truly unique field
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
         />

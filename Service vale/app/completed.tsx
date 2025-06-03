@@ -276,10 +276,10 @@ const AdminCompletedServicesScreen = () => {
     <View style={styles.serviceCard}>
       <View style={styles.serviceHeader}>
         <View style={styles.serviceTypeContainer}>
-          <MaterialCommunityIcons 
-            name="tools" 
-            size={20} 
-            color="#5E72E4" 
+          <MaterialCommunityIcons
+            name="tools"
+            size={20}
+            color="#5E72E4"
             style={styles.serviceIcon}
           />
           <Text style={styles.serviceType}>{item.serviceType}</Text>
@@ -288,7 +288,7 @@ const AdminCompletedServicesScreen = () => {
           <Text style={styles.statusText}>Completed</Text>
         </View>
       </View>
-      
+
       <View style={styles.serviceDetails}>
         <View style={styles.detailRow}>
           <MaterialIcons name="person" size={18} color="#718096" />
@@ -296,7 +296,7 @@ const AdminCompletedServicesScreen = () => {
         </View>
         <View style={styles.detailRow}>
           <MaterialIcons name="location-on" size={18} color="#718096" />
-          <Text style={styles.detailText} numberOfLines={1} ellipsizeMode="tail">
+          <Text style={styles.detailText}>
             {item.address}
           </Text>
         </View>
@@ -311,7 +311,7 @@ const AdminCompletedServicesScreen = () => {
           </Text>
         </View>
       </View>
-      
+
       <View style={styles.serviceFooter}>
         <View style={styles.dateContainer}>
           <MaterialIcons name="check-circle" size={16} color="#718096" />
@@ -325,7 +325,7 @@ const AdminCompletedServicesScreen = () => {
           {item.serviceBoy}
         </Text>
       </View>
-      
+
       <View style={styles.actionButtons}>
         <TouchableOpacity
           style={styles.createBillButton}
@@ -372,7 +372,7 @@ const AdminCompletedServicesScreen = () => {
             {selectedServiceBoy ? selectedServiceBoy : 'Filter by boy'}
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.filterButton, dateFilter && styles.activeFilter]}
           onPress={() => setShowDatePicker(true)}

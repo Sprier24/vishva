@@ -35,7 +35,7 @@ export const styles = StyleSheet.create({
   headerIcons: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 15,
+    gap: 25,
   },
   notificationIcon: {
     position: "relative",

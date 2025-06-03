@@ -24,16 +24,31 @@ const HomeScreenuser = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const insets = useSafeAreaInsets();
 
-  const handleLogout = async () => {
-    try {
-      await account.deleteSession('current');
-      Alert.alert('Logged Out', 'You have been successfully logged out');
-      router.replace('/');
-    } catch (error) {
-      console.error('Logout Error:', error);
-      Alert.alert('Error', 'Failed to logout. Please try again.');
-    }
-  };
+  const handleLogout = () => {
+  Alert.alert(
+    'Logout',
+    'Are you sure you want to logout?',
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await account.deleteSession('current');
+            router.replace('/login'); // or your login screen route
+          } catch (error) {
+            Alert.alert('Error', 'Failed to logout');
+          }
+        },
+      },
+    ],
+    { cancelable: true }
+  );
+};
 
   const fetchRevenueData = async () => {
     try {

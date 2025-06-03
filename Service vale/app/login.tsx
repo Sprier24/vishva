@@ -136,12 +136,13 @@ const LoginScreen = () => {
 
     return (
         <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
         >
             <ScrollView
-                contentContainerStyle={styles.container}
+                contentContainerStyle={[styles.container]}
                 keyboardShouldPersistTaps="handled"
+                automaticallyAdjustContentInsets={true}
             >
                 <View style={styles.brandContainer}>
                     <Image
