@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@libsql/client";
 
 const client = createClient({
-  url: process.env.TURSO_DATABASE_URL!,
-  authToken: process.env.TURSO_AUTH_TOKEN!,
+  url: process.env.TURSO_CONNECTION_URL!,
+  authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
 export async function POST(request: Request) {

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2, Loader2, PlusCircle, SearchIcon, ChevronDownIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 
 interface Account {
     _id: string;
+    key?: string;
     accountHolderName: string;
     bankName: string;
     accountNumber: string;
@@ -56,51 +57,52 @@ const accountSchema = z.object({
 });
 
 export default function AccountTable() {
-    const [accounts, setLeads] = useState<Account[]>([]);
+    const [accounts, setAccounts] = useState<Account[]>([]);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const fetchAccounts = React.useCallback(async () => {
+    // In your AccountTable component, modify the fetchAccounts function:
+    const fetchAccounts = useCallback(async () => {
         try {
-            const response = await axios.get(
-                `http://localhost:8000/api/v1/account/getAllAccounts`
-            );
-            let accountsData;
-            if (typeof response.data === 'object' && 'data' in response.data) {
-                accountsData = response.data.data;
-            } else if (Array.isArray(response.data)) {
-                accountsData = response.data;
-            } else {
-                console.error('Unexpected response format:', response.data);
-                throw new Error('Invalid response format');
+            const response = await axios.get("/api/account/add");
+
+            if (!response.data?.success) {
+                throw new Error(response.data?.message || "Failed to fetch accounts");
             }
+
+            const accountsData = response.data.data || [];
+
             if (!Array.isArray(accountsData)) {
-                accountsData = [];
+                throw new Error("Invalid data format received.");
             }
-            const sortedAccounts = [...accountsData].sort((a, b) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
-            const accountsWithKeys = sortedAccounts.map((account: Account) => ({
+
+            // Ensure each account has a key property
+            const accountsWithKeys = accountsData.map((account: any) => ({
                 ...account,
-                key: account._id || generateUniqueId()
+                key: account.id || generateUniqueId(), // Use existing id or generate a new one
+                IFSCCode: account.ifscCode || account.IFSCCode, // Handle both cases
             }));
-            setLeads(accountsWithKeys);
+
+            setAccounts(accountsWithKeys);
             setError(null);
         } catch (error) {
             console.error("Error fetching accounts:", error);
             if (axios.isAxiosError(error)) {
-                setError(`Failed to fetch accounts: ${error.response?.data?.message || error.message}`);
+                setError(
+                    `Failed to fetch accounts: ${error.response?.data?.message || error.message}`
+                );
             } else {
-                setError("Failed to fetch account.");
+                setError("Failed to fetch accounts.");
             }
-            setLeads([]);
+            setAccounts([]);
         }
     }, []);
 
     useEffect(() => {
         fetchAccounts();
     }, [fetchAccounts]);
+
 
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -148,7 +150,7 @@ export default function AccountTable() {
             });
         }
         return filteredLeads;
-    }, [accounts, filterValue,hasSearchFilter]);
+    }, [accounts, filterValue, hasSearchFilter]);
 
     const pages = Math.ceil(filteredItems.length / rowsPerPage);
 
@@ -191,17 +193,20 @@ export default function AccountTable() {
     const handleDeleteConfirm = async () => {
         if (!selectedAccount?._id) return;
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/account/deleteAccount/${selectedAccount._id}`, {
+            const response = await fetch(`/api/account/add?id=${selectedAccount._id}`, {
                 method: "DELETE",
             });
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to delete Account");
             }
+
             toast({
                 title: "Account Deleted",
                 description: "The account has been successfully deleted",
             });
+
             fetchAccounts();
         } catch (error) {
             toast({
@@ -221,19 +226,24 @@ export default function AccountTable() {
         if (!selectedAccount?._id) return;
         setIsSubmitting(true);
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/account/updateAccount/${selectedAccount._id}`, {
+            const response = await fetch(`/api/account/add?id=${selectedAccount._id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
             });
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to update account");
             }
+
+            const result = await response.json();
+
             toast({
                 title: "Account Updated",
                 description: "The account has been successfully updated",
             });
+
             setIsEditOpen(false);
             setSelectedAccount(null);
             form.reset();
@@ -250,6 +260,7 @@ export default function AccountTable() {
     }
 
     const renderCell = React.useCallback((account: Account, columnKey: string) => {
+        if (columnKey === "key") return null;
         const cellValue = account[columnKey as keyof Account];
         if ((columnKey === "date" || columnKey === "endDate") && cellValue) {
             return formatDate(cellValue);
@@ -281,7 +292,7 @@ export default function AccountTable() {
         }
 
         return cellValue;
-    },[handleEditClick, handleDeleteClick]);
+    }, [handleEditClick, handleDeleteClick]);
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {
@@ -431,31 +442,28 @@ export default function AccountTable() {
                             <h1 className="text-1xl mb-4 mt-4 text-center">Store client / customer&apos;s bank account details</h1>
                             <Table
                                 isHeaderSticky
-                                aria-label="Leads table with custom cells, pagination and sorting"
+                                aria-label="Accounts table"
                                 bottomContent={bottomContent}
-                                bottomContentPlacement="outside"
-                                classNames={{ wrapper: "max-h-[382px] overflow-y-auto" }}
                                 topContent={topContent}
-                                topContentPlacement="outside"
                                 sortDescriptor={sortDescriptor}
                                 onSortChange={setSortDescriptor}
                             >
-                                <TableHeader columns={headerColumns}>
+                                <TableHeader columns={columns}>
                                     {(column) => (
                                         <TableColumn
                                             key={column.uid}
-                                            align={column.uid === "actions" ? "center" : "start"}
                                             allowsSorting={column.sortable}
+                                            width={column.width}
                                         >
                                             {column.name}
                                         </TableColumn>
                                     )}
                                 </TableHeader>
-                                <TableBody emptyContent={"Create account and add data"} items={sortedItems}>
+                                <TableBody items={sortedItems}>
                                     {(item) => (
-                                        <TableRow key={item._id}>
+                                        <TableRow key={item.key || item.id}>
                                             {(columnKey) => (
-                                                <TableCell style={{ fontSize: "12px", padding: "8px" }}>
+                                                <TableCell>
                                                     {renderCell(item, columnKey.toString())}
                                                 </TableCell>
                                             )}

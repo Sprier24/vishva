@@ -71,26 +71,7 @@ export function NavUser() {
     },
   });
 
-  useEffect(() => {
-    const fetchOwners = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get("http://localhost:8000/api/v1/owner/getAllOwners");
-        setOwners(response.data.data);
-        const emailFromStorage = typeof window !== "undefined" ? localStorage.getItem("userEmail") : null;
-        if (emailFromStorage) {
-          const filtered = response.data.data.filter((owner: Owner) => owner.emailAddress === emailFromStorage);
-          setFilteredOwners(filtered);
-        }
-      } catch (err) {
-        setError("Failed to fetch owners.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOwners();
-  }, []);
+
 
   const handleEditClick = (owner: Owner) => {
     setEditOwner(owner);

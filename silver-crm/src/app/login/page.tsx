@@ -127,12 +127,12 @@
       }
     };
 
-   const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setIsSubmitting(true);
 
-  // Client-side validation
-  if (formData.password !== formData.confirmPassword && !isLogin) {
+  // ✅ Password match validation for registration
+  if (!isLogin && formData.password !== formData.confirmPassword) {
     toast({
       title: "Error",
       description: "Passwords do not match.",
@@ -144,43 +144,50 @@
 
   try {
     const endpoint = isLogin
-      ? "/api/users/login"
-      : "/api/users/register";
+      ? "/api/user/login"
+      : "/api/user/register";
 
     const response = await axios.post(endpoint, {
       name: formData.name,
       email: formData.email,
       password: formData.password,
-      confirmPassword: formData.confirmPassword
+      confirmPassword: formData.confirmPassword,
     });
 
     if (response.data.success) {
       if (isLogin) {
-        // Handle login success
-        const { token, user } = response.data;
+        // ✅ Handle successful login
+        const { token, userId, redirectTo } = response.data;
+
         localStorage.setItem("authToken", token);
-        localStorage.setItem("userId", user.id);
-        router.push("/dashboard");
+        localStorage.setItem("userId", userId);
+
+        // ✅ Redirect based on isFirstLogin flag
+        router.push(redirectTo );
       } else {
-        // Handle registration success
+        // ✅ Registration: Show verification modal/toast
         setShowVerification(true);
         toast({
           title: "Verification Required",
-          description: "A verification code has been sent to your email.",
+          description:
+            response.data.message ||
+            "A verification code has been sent to your email.",
         });
       }
     } else {
+      // ✅ Backend responded with success: false
       toast({
         title: "Error",
-        description: response.data.error || "Operation failed",
+        description: response.data.message || "Operation failed",
         variant: "destructive",
       });
     }
   } catch (error) {
-    const message = axios.isAxiosError(error) 
-      ? error.response?.data?.error || error.message
+    // ✅ Catch unexpected or Axios errors
+    const message = axios.isAxiosError(error)
+      ? error.response?.data?.message || error.message
       : "Failed to process request";
-    
+
     toast({
       title: "Error",
       description: message,
@@ -201,7 +208,7 @@
   setIsSubmitting(true);
 
   try {
-    const response = await axios.post('/api/users/verify', {
+    const response = await axios.post('/api/user/verify', {
       verificationCode, 
     });
 

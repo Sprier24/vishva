@@ -131,84 +131,90 @@ const NewProfile: React.FC = () => {
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsSubmitting(true);
-    const formData = new FormData();
+  setIsSubmitting(true);
 
-    Object.keys(values).forEach((key) => {
-      const value = values[key as keyof typeof values];
-      if (value instanceof File) {
-        formData.append(key, value);
-      } else if (typeof value === "string") {
-        formData.append(key, value);
-      }
-    });
+  const formData = new FormData();
 
-    try {
-      const token = localStorage.getItem("authToken");
-      console.log("Token being sent:", token);
+  // Append form fields
+  Object.entries(values).forEach(([key, value]) => {
+    if (value instanceof File) {
+      formData.append(key, value);
+    } else if (value !== undefined && value !== null) {
+      formData.append(key, value.toString());
+    }
+  });
 
-      if (!token) {
-        toast({
-          title: "Authentication Error",
-          description: "You are not logged in. Please log in and try again.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
+  try {
+    const token = localStorage.getItem("authToken");
+    console.log("Token being sent:", token);
 
-      const response = await fetch("http://localhost:8000/api/v1/owner/add-owner", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
-      console.log("Response from server:", data);
-
-      if (response.status === 401) {
-        toast({
-          title: "Unauthorized",
-          description: "Your session has expired. Please log in again.",
-          variant: "destructive",
-        });
-        localStorage.removeItem("authToken");
-        router.push("/login");
-        return;
-      }
-
-      if (response.status === 403) {
-        toast({
-          title: "Unauthorized",
-          description: "The email entered does not match the logged-in user's email.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to submit the profile.");
-      }
-
+    if (!token) {
       toast({
-        title: "Profile Submitted",
-        description: "Your profile has been created successfully",
-      });
-      setIsRedirecting(true);
-      router.push("/dashboard");
-    } catch (error) {
-      console.error("Error submitting profile:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "There was an error submitting the profile.",
+        title: "Authentication Error",
+        description: "You are not logged in. Please log in and try again.",
         variant: "destructive",
       });
-    } finally {
       setIsSubmitting(false);
+      return;
     }
-  };
+
+    const response = await fetch("/api/owners/add", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`, // optional if your route needs it
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+    console.log("Response from server:", data);
+
+    if (response.status === 401) {
+      toast({
+        title: "Unauthorized",
+        description: "Your session has expired. Please log in again.",
+        variant: "destructive",
+      });
+      localStorage.removeItem("authToken");
+      router.push("/login");
+      return;
+    }
+
+    if (response.status === 403) {
+      toast({
+        title: "Unauthorized",
+        description: "The email entered does not match the logged-in user's email.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to submit the profile.");
+    }
+
+    toast({
+      title: "Profile Submitted",
+      description: "Your profile has been created successfully",
+    });
+
+    setIsRedirecting(true);
+    router.push("/dashboard");
+  } catch (error) {
+    console.error("Error submitting profile:", error);
+    toast({
+      title: "Error",
+      description:
+        error instanceof Error
+          ? error.message
+          : "There was an error submitting the profile.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   return (
     <div >

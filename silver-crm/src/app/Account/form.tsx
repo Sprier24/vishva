@@ -38,30 +38,38 @@ export default function AccountForm() {
   const onSubmit = async (values: z.infer<typeof accountSchema>) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch("http://localhost:8000/api/v1/account/accountAdd", {
+      const response = await fetch("/api/account/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
+
       const data = await response.json();
+
       if (!response.ok) {
         throw new Error(data.error || "Failed to submit the account.");
       }
+
       toast({
         title: "Account Submitted",
         description: "The account has been successfully created",
       });
+
       router.push("/Account/table");
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "There was an error creating the account",
+        description:
+          error instanceof Error
+            ? error.message
+            : "There was an error creating the account",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <Form {...form}>
