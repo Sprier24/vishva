@@ -45,7 +45,7 @@ export default function ComplaintForm() {
   const onSubmit = async (values: z.infer<typeof complaintSchema>) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch("http://localhost:8000/api/v1/complaint/createComplaint", {
+      const response = await fetch("/api/complaint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),

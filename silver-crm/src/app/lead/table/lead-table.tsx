@@ -143,40 +143,40 @@ export default function LeadTable() {
 
     const fetchLeads = async () => {
         try {
-            const response = await axios.get(
-                "http://localhost:8000/api/v1/lead/getAllLeads"
-            );
+            const response = await fetch("/api/lead"); // Changed endpoint to match your GET route
+
+            // First parse the JSON response
+            const responseData = await response.json();
             console.log('Full API Response:', {
                 status: response.status,
-                data: response.data,
-                type: typeof response.data,
-                hasData: 'data' in response.data
+                data: responseData,
+                type: typeof responseData,
+                hasData: 'data' in responseData
             });
+
             let leadsData;
-            if (typeof response.data === 'object' && 'data' in response.data) {
-                leadsData = response.data.data;
-            } else if (Array.isArray(response.data)) {
-                leadsData = response.data;
+            if (responseData.success && Array.isArray(responseData.data)) {
+                leadsData = responseData.data;
             } else {
-                console.error('Unexpected response format:', response.data);
+                console.error('Unexpected response format:', responseData);
                 throw new Error('Invalid response format');
             }
-            if (!Array.isArray(leadsData)) {
-                leadsData = [];
-            }
-            const sortedLeads = [...leadsData].sort((a, b) =>
+            const formattedLeads = leadsData.map((lead: any) => ({
+                ...lead,
+                _id: lead.id,
+                key: lead.id || generateUniqueId()
+            }));
+
+            const sortedLeads = [...formattedLeads].sort((a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
-            const leadsWithKeys = sortedLeads.map((lead: Lead) => ({
-                ...lead,
-                key: lead._id || generateUniqueId()
-            }));
-            setLeads(leadsWithKeys);
+
+            setLeads(sortedLeads);
             setError(null);
         } catch (error) {
             console.error("Error fetching leads:", error);
-            if (axios.isAxiosError(error)) {
-                setError(`Failed to fetch leads: ${error.response?.data?.message || error.message}`);
+            if (error instanceof Error) {
+                setError(`Failed to fetch leads: ${error.message}`);
             } else {
                 setError("Failed to fetch leads.");
             }
@@ -186,7 +186,7 @@ export default function LeadTable() {
 
     useEffect(() => {
         fetchLeads();
-    }, []);
+    }, [])
 
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -308,10 +308,12 @@ export default function LeadTable() {
                 remainingAmount,
                 date: format(values.date, "yyyy-MM-dd")
             };
-            await axios.post(
-                "http://localhost:8000/api/v1/invoice/invoiceAdd",
-                invoiceData
-            );
+            const response = await fetch("/api/invoice", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(values),
+            });
+            const data = await response.json();
             toast({
                 title: "Invoice Submitted",
                 description: "The invoice has been successfully created",
@@ -453,7 +455,7 @@ export default function LeadTable() {
     const handleDeleteConfirm = React.useCallback(async () => {
         if (!selectedLead?._id) return;
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/lead/deleteLead/${selectedLead._id}`, {
+            const response = await fetch(`/api/lead?id=${selectedLead._id}`, {
                 method: "DELETE",
             });
             if (!response.ok) {
@@ -482,43 +484,60 @@ export default function LeadTable() {
     async function onEdit(values: z.infer<typeof formSchema>) {
         if (!selectedLead?._id) return;
         setIsSubmitting(true);
+
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/lead/updateLead/${selectedLead._id}`, {
+            const response = await fetch(`/api/lead?id=${selectedLead._id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
+                body: JSON.stringify({
+                    ...values,
+                    isActive: values.isActive ? 1 : 0
+                }),
             });
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to update lead");
             }
+
+            const result = await response.json();
+
             toast({
                 title: "Lead Updated",
                 description: "The lead has been successfully updated",
             });
+
             setIsEditOpen(false);
             setSelectedLead(null);
             form.reset();
             fetchLeads();
+
+            return result;
         } catch (error) {
+            console.error("Update error:", error);
             toast({
                 title: "Error",
-                description: error instanceof Error ? error.message : "There was an error updating the lead",
+                description: error instanceof Error ? error.message : "Update failed",
                 variant: "destructive",
             });
+            throw error;
         } finally {
             setIsSubmitting(false);
         }
     }
-
     const handleContactSubmit = async (values: z.infer<typeof contactSchema>) => {
         try {
             setIsSubmitting(true);
 
-            await axios.post(
-                "http://localhost:8000/api/v1/contact/createContact",
-                values
-            );
+            const response = await fetch("/api/contact", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(values),
+            });
+             const data = await response.json();
+              if (!response.ok) {
+                     throw new Error(data.error || "Failed to submit the contact.");
+                   }
             setIsContactFormVisible(false);
             contactform.reset();
             toast({

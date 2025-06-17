@@ -51,7 +51,7 @@ export default function ScheduledEventForm() {
         ...values,
         date: values.date ? format(new Date(values.date), "yyyy-MM-dd") : undefined,
       };
-      const response = await fetch("http://localhost:8000/api/v1/scheduledevents/createScheduledEvent", {
+      const response = await fetch("/api/schedule", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formattedValues),

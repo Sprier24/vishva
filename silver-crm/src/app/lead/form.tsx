@@ -56,7 +56,7 @@ export default function LeadForm() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true)
         try {
-            const response = await fetch("http://localhost:8000/api/v1/lead/createLead", {
+            const response = await fetch("/api/lead", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),

@@ -15,6 +15,7 @@ import SearchBar from '@/components/globalSearch';
 import Notification from '@/components/notification';
 import { Mail } from "lucide-react";
 import Select from "react-select";
+import { toast } from "@/hooks/use-toast";
 
 interface Event {
   _id: string;
@@ -54,18 +55,22 @@ export default function CalendarPage() {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      try {
-        const response = await fetch('http://localhost:8000/api/v1/calendar/getAllData');
-        if (!response.ok) {
-          throw new Error('Failed to fetch events');
-        }
-        const data = await response.json();
-        setEvents(data.data);
-      } catch (error) {
-        console.error('Error fetching events:', error);
-      }
-    };
-
+  try {
+    const response = await fetch('/api/calendar', {
+      method: 'GET',
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch events');
+    }
+    
+    const data = await response.json();
+    setEvents(data.data);
+    
+  } catch (error) {
+    console.error('Error fetching events:', error);
+  }
+};
     fetchEvents();
   }, []);
 
@@ -94,55 +99,81 @@ export default function CalendarPage() {
     setShowEventModal(true);
   };
 
-  const handleUpdateEvent = async (newEvent: Event) => {
-    try {
-      const response = await fetch(`http://localhost:8000/api/v1/calendar/updateData/${newEvent._id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newEvent),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update event');
-      }
-      const updatedEvent = await response.json();
-      setEvents(events.map((event) => (event._id === updatedEvent.data._id ? updatedEvent.data : event)));
-    } catch (error) {
-      console.error('Error updating event:', error);
+const handleUpdateEvent = async (newEvent: Event) => {
+  try {
+    console.log('Updating event:', newEvent); // Debug log
+    
+    const response = await fetch(`/api/calendar?id=${newEvent._id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: newEvent.event,
+        date: newEvent.date,
+        calendarId: newEvent.calendarId
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Update failed:', errorData);
+      throw new Error(errorData.message || 'Failed to update event');
     }
-  };
+    
+    const updatedEvent = await response.json();
+    console.log('Update response:', updatedEvent);
+    
+    setEvents(events.map(e => e._id === updatedEvent.data._id ? updatedEvent.data : e));
+    
+  } catch (error) {
+    console.error('Detailed update error:', error);
+    toast({
+      title: 'Error',
+      description: error instanceof Error ? error.message : 'Failed to update event',
+      variant: 'destructive',
+    });
+  }
+};
 
   const handleDeleteEvent = async (eventId: string) => {
-    try {
-      const response = await fetch('http://localhost:8000/api/v1/calendar/deleteData', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: eventId }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete event');
-      }
-      setEvents(events.filter((event) => event._id !== eventId));
-    } catch (error) {
-      console.error('Error deleting event:', error);
+  try {
+    const response = await fetch(`/api/calendar?id=${eventId}`, {  // Changed endpoint
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to delete event');
     }
-  };
+    
+    setEvents(events.filter(e => e._id !== eventId));
+    
+  } catch (error) {
+    console.error('Error deleting event:', error);
+  }
+};
 
   const handleCreateEvent = async (newEvent: Event) => {
-    try {
-      const response = await fetch('http://localhost:8000/api/v1/calendar/createData', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newEvent),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to create event');
-      }
-      const createdEvent = await response.json();
-      setEvents([...events, createdEvent.data]);
-    } catch (error) {
-      console.error('Error creating event:', error);
+  try {
+    const response = await fetch('/api/calendar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: newEvent.event,
+        date: newEvent.date,
+        calendarId: newEvent.calendarId
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to create event');
     }
-  };
+    
+    const createdEvent = await response.json();
+    setEvents([...events, createdEvent.data]);
+    
+  } catch (error) {
+    console.error('Error creating event:', error);
+  }
+};
 
   const renderCalendarDays = () => {
     const days = [];
@@ -167,7 +198,7 @@ export default function CalendarPage() {
             }`}
         >
           <div
-            className={`font-bold text-center ${isToday ? 'flex items-center justify-center w-6 h-6 bg-blue-500 text-white rounded-full mx-auto' : ''
+            className={`font-bold text-center ${isToday ? 'flex items-center justify-center w-6 h-6 bg-blue-500 text-BLACK rounded-full mx-auto' : ''
               }`}
           >
             {day}
@@ -176,7 +207,7 @@ export default function CalendarPage() {
             <div
               key={event._id}
               className={`${calendars.find((cal) => cal.id === event.calendarId)?.color
-                } text-white p-1 mb-1 rounded cursor-pointer text-sm leading-tight truncate hover:opacity-90 transition-opacity`}
+                } text-black p-1 mb-1 rounded cursor-pointer text-sm leading-tight truncate hover:opacity-90 transition-opacity`}
               style={{ maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
               onClick={() => {
                 setSelectedEvent(event);
@@ -306,7 +337,7 @@ export default function CalendarPage() {
               </button>
               <button
                 onClick={handleAddEvent}
-                className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="bg-blue-500 text-black p-2 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
                 <FaPlus />
               </button>

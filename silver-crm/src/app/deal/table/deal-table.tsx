@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useRouter } from "next/navigation";
 
 interface Deal {
-    _id: string;
+    id: string;
     companyName: string;
     customerName: string;
     contactNumber: string;
@@ -142,31 +142,31 @@ export default function DealTable() {
     const [isInvoiceFormVisible, setIsInvoiceFormVisible] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-    const fetchdeal = React.useCallback(async () => {
+    const fetchDeal = React.useCallback(async () => {
         try {
             const response = await axios.get(
-                'http://localhost:8000/api/v1/deal/getAllDeals'
+                '/api/deal'
             );
-            let leadsData;
+            let dealsData;
             if (typeof response.data === 'object' && 'data' in response.data) {
-                leadsData = response.data.data;
+                dealsData = response.data.data;
             } else if (Array.isArray(response.data)) {
-                leadsData = response.data;
+                dealsData = response.data;
             } else {
                 console.error('Unexpected response format:', response.data);
                 throw new Error('Invalid response format');
             }
-            if (!Array.isArray(leadsData)) {
-                leadsData = [];
+            if (!Array.isArray(dealsData)) {
+                dealsData = [];
             }
-            const sortedDeals = [...leadsData].sort((a, b) =>
+            const sortedDeals = [...dealsData].sort((a, b) =>
                 new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
             );
-            const leadsWithKeys = sortedDeals.map((deal: Deal) => ({
+            const dealsWithKeys = sortedDeals.map((deal: Deal) => ({
                 ...deal,
-                key: deal._id || generateUniqueId()
+                key: deal.id || generateUniqueId()
             }));
-            setDeals(leadsWithKeys);
+            setDeals(dealsWithKeys);
             setError(null);
         } catch (error) {
             console.error("Error fetching deals:", error);
@@ -180,8 +180,8 @@ export default function DealTable() {
     }, []);
 
     useEffect(() => {
-        fetchdeal();
-    }, [fetchdeal]);
+        fetchDeal();
+    }, [fetchDeal]);
 
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -302,10 +302,12 @@ export default function DealTable() {
                 remainingAmount,
                 date: format(values.date, "yyyy-MM-dd")
             };
-            await axios.post(
-                "http://localhost:8000/api/v1/invoice/invoiceAdd",
-                invoiceData
-            );
+              const response = await fetch("/api/invoice", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(values),
+            });
+            const data = await response.json();
             toast({
                 title: "Invoice Submmited",
                 description: "The invoice has been successfully created",
@@ -364,11 +366,15 @@ export default function DealTable() {
     const handleContactSubmit = async (values: z.infer<typeof contactSchema>) => {
         try {
             setIsSubmitting(true);
-            await axios.post(
-                "http://localhost:8000/api/v1/contact/createContact",
-                values
-            );
-
+             const response = await fetch("/api/contact", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(values),
+            });
+             const data = await response.json();
+              if (!response.ok) {
+                     throw new Error(data.error || "Failed to submit the contact.");
+                   }
             setIsContactFormVisible(false);
             contactform.reset();
             toast({
@@ -466,66 +472,77 @@ export default function DealTable() {
     }, []);
 
     const handleDeleteConfirm = React.useCallback(async () => {
-        if (!selectedDeal?._id) return;
-        try {
-            const response = await fetch(`http://localhost:8000/api/v1/deal/deleteDeal/${selectedDeal._id}`, {
-                method: "DELETE",
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to delete deal");
-            }
-            toast({
-                title: "Deal Deleted",
-                description: "The deal has been successfully deleted",
-            });
-            fetchdeal();
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: error instanceof Error ? error.message : "Failed to delete deal",
-                variant: "destructive",
-            });
-        } finally {
-            setIsDeleteDialogOpen(false);
-            setSelectedDeal(null);
-        }
-    }, [selectedDeal,fetchdeal]);
-
-    const [isSubmitting, setIsSubmitting] = useState(false)
-
-    async function onEdit(values: z.infer<typeof formSchema>) {
-        if (!selectedDeal?._id) return;
-        setIsSubmitting(true);
-        try {
-            const response = await fetch(`http://localhost:8000/api/v1/deal/updateDeal/${selectedDeal._id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to update deal");
-            }
-            toast({
-                title: "Deal Updated",
-                description: "The deal has been successfully updated",
-            });
-            setIsEditOpen(false);
-            setSelectedDeal(null);
-            form.reset();
-
-            fetchdeal();
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: error instanceof Error ? error.message : "There was an error updating the deal",
-                variant: "destructive",
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
-    }
+           if (!selectedDeal?.id) return;
+           try {
+               const response = await fetch(`/api/deal?id=${selectedDeal.id}`, {
+                   method: "DELETE",
+               });
+               if (!response.ok) {
+                   const errorData = await response.json();
+                   throw new Error(errorData.message || "Failed to delete deal");
+               }
+               toast({
+                   title: "Deal Deleted",
+                   description: "The deal has been successfully deleted",
+               });
+               fetchDeal();
+           } catch (error) {
+               toast({
+                   title: "Error",
+                   description: error instanceof Error ? error.message : "Failed to delete lead",
+                   variant: "destructive",
+               });
+           } finally {
+               setIsDeleteDialogOpen(false);
+               setSelectedDeal(null);
+           }
+       }, [selectedDeal,]);
+   
+       const [isSubmitting, setIsSubmitting] = useState(false)
+   
+       async function onEdit(values: z.infer<typeof formSchema>) {
+           if (!selectedDeal?.id) return;
+           setIsSubmitting(true);
+   
+           try {
+               const response = await fetch(`/api/deal?id=${selectedDeal.id}`, {
+                   method: "PUT",
+                   headers: { "Content-Type": "application/json" },
+                   body: JSON.stringify({
+                       ...values,
+                       isActive: values.isActive ? 1 : 0
+                   }),
+               });
+   
+               if (!response.ok) {
+                   const errorData = await response.json();
+                   throw new Error(errorData.message || "Failed to update deal");
+               }
+   
+               const result = await response.json();
+   
+               toast({
+                   title: "Deal Updated",
+                   description: "The deal has been successfully updated",
+               });
+   
+               setIsEditOpen(false);
+               setSelectedDeal(null);
+               form.reset();
+               fetchDeal();
+               return result;
+           } catch (error) {
+               console.error("Update error:", error);
+               toast({
+                   title: "Error",
+                   description: error instanceof Error ? error.message : "Update failed",
+                   variant: "destructive",
+               });
+               throw error;
+           } finally {
+               setIsSubmitting(false);
+           }
+       }
 
     const renderCell = React.useCallback((Deals: Deal, columnKey: string) => {
         const cellValue = Deals[columnKey as keyof Deal];
@@ -749,7 +766,7 @@ export default function DealTable() {
                                 </TableHeader>
                                 <TableBody emptyContent={"Create deal and add data"} items={sortedItems}>
                                     {(item) => (
-                                        <TableRow key={item._id}>
+                                        <TableRow key={item.id}>
                                             {(columnKey) => (
                                                 <TableCell style={{ fontSize: "12px", padding: "8px" }}>
                                                     {renderCell(item, columnKey.toString())}

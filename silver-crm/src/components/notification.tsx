@@ -18,7 +18,40 @@ const Notification = () => {
   const [notifications, setNotifications] = useState<NotificationEvent[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:8000/api/v1/notification/getAllNotifications"
+        );
+        const data = await response.json();
+        if (data.success) {
+          const storedStarred = JSON.parse(
+            localStorage.getItem("starredNotifications") || "{}"
+          );
+          const notificationsWithStars = data.data.map(
+            (notification: NotificationEvent) => ({
+              ...notification,
+              starred: !!storedStarred[notification._id],
+            })
+          );
+          notificationsWithStars.sort((a: NotificationEvent, b: NotificationEvent) => {
+            if (a.error && !b.error) return -1;
+            if (!a.error && b.error) return 1;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
+          setNotifications(notificationsWithStars);
+        } else {
+          setError("Error fetching notifications. Please try again later.");
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      }
+    };
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleDelete = async (id: string) => {
     try {

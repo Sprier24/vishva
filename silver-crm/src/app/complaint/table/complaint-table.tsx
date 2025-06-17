@@ -82,7 +82,7 @@ export default function ComplaintTable() {
     const fetchComplaints = React.useCallback(async () => {
         try {
             const response = await axios.get(
-                "http://localhost:8000/api/v1/complaint/getAllComplaints"
+                "/api/complaint",
             );
             let complaintsData;
             if (typeof response.data === 'object' && 'data' in response.data) {
@@ -219,12 +219,12 @@ export default function ComplaintTable() {
     const handleDeleteConfirm = React.useCallback(async () => {
         if (!selectedcomplaint?._id) return;
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/complaint/deleteComplaint/${selectedcomplaint._id}`, {
+            const response = await fetch(`/api/complaint?id=${selectedcomplaint._id}`, {
                 method: "DELETE",
             });
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to delete deal");
+                throw new Error(errorData.message || "Failed to delete complaint");
             }
             toast({
                 title: "Complaint Deleted",
@@ -245,37 +245,43 @@ export default function ComplaintTable() {
 
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    async function onEdit(values: z.infer<typeof complaintSchema>) {
-        if (!selectedcomplaint?._id) return;
-        setIsSubmitting(true);
-        try {
-            const response = await fetch(`http://localhost:8000/api/v1/complaint/updateComplaint/${selectedcomplaint._id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to update deal");
-            }
-            toast({
-                title: "Complaint Updated",
-                description: "The complaint has been successfully updated",
-            });
-            setIsEditOpen(false);
-            setSelectedcomplaint(null);
-            form.reset();
-            fetchComplaints();
-        } catch (error) {
-            toast({
-                title: "Error",
-                description: error instanceof Error ? error.message : "There was an error updating the complaint",
-                variant: "destructive",
-            });
-        } finally {
-            setIsSubmitting(false);
-        }
+   async function onEdit(values: z.infer<typeof complaintSchema>) {
+  if (!selectedcomplaint?._id) return;
+  setIsSubmitting(true);
+  
+  try {
+    const response = await fetch(`/api/complaint?id=${selectedcomplaint._id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values),
+    });
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.message || "Failed to update complaint");
     }
+
+    toast({
+      title: "Complaint Updated",
+      description: "The complaint has been successfully updated",
+    });
+    
+    setIsEditOpen(false);
+    setSelectedcomplaint(null);
+    form.reset();
+    fetchComplaints();
+    
+  } catch (error) {
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "There was an error updating the complaint",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+}
 
     const renderCell = React.useCallback((complaint: Complaint, columnKey: string) => {
         const cellValue = complaint[columnKey as keyof Complaint];

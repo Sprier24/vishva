@@ -45,7 +45,7 @@ export default function Task() {
   const onSubmit = async (values: z.infer<typeof taskSchema>) => {
     setIsSubmitting(true);
     try {
-      const response = await fetch("http://localhost:8000/api/v1/task/createTask", {
+      const response = await fetch("/api/task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),

@@ -92,7 +92,7 @@ export default function ScheduledEvents() {
     const fetchScheduledEvents = useCallback(async () => {
         try {
             const response = await axios.get(
-                `http://localhost:8000/api/v1/scheduledevents/getAllScheduledEvents`
+                `/api/schedule`
             );
 
             let scheduledEventsData;
@@ -251,7 +251,7 @@ export default function ScheduledEvents() {
         if (!selectedScheduledEvents?._id) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/scheduledevents/deleteScheduledEvent/${selectedScheduledEvents._id}`, {
+            const response = await fetch(`/api/schedule?id=${selectedScheduledEvents._id}`, {
                 method: "DELETE",
             });
 
@@ -283,7 +283,7 @@ export default function ScheduledEvents() {
 
         setIsSubmitting(true);
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/scheduledevents/updateScheduledEvent/${selectedScheduledEvents._id}`, {
+            const response = await fetch(`/api/schedule?id=${selectedScheduledEvents._id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),

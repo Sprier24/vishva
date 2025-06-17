@@ -9,14 +9,14 @@ import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { SortDescriptor, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from "@heroui/react"
-import axios from "axios";
 import { format } from "date-fns"
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Pagination, Tooltip } from "@heroui/react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 
 interface Invoice {
-    _id: string;
+    [x: string]: string | number | undefined;
+    id: string;
     companyName: string;
     customerName: string;
     contactNumber: string;
@@ -99,46 +99,52 @@ export default function InvoiceTable() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const router = useRouter();
 
-    const fetchInvoices = React.useCallback(async () => {
-        try {
-            const response = await axios.get(
-                "http://localhost:8000/api/v1/invoice/getAllInvoices"
-            );
-            let invoicesData;
-            if (typeof response.data === 'object' && 'data' in response.data) {
-                invoicesData = response.data.data;
-            } else if (Array.isArray(response.data)) {
-                invoicesData = response.data;
-            } else {
-                console.error('Unexpected response format:', response.data);
-                throw new Error('Invalid response format');
-            }
-            if (!Array.isArray(invoicesData)) {
-                invoicesData = [];
-            }
-            const sortedInvoices = [...invoicesData].sort((a, b) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
-            const invoicesWithKeys = sortedInvoices.map((invoice: Invoice) => ({
-                ...invoice,
-                key: invoice._id || generateUniqueId()
-            }));
-            setInvoices(invoicesWithKeys);
-            setError(null);
-        } catch (error) {
-            console.error("Error fetching invoices:", error);
-            if (axios.isAxiosError(error)) {
-                setError(`Failed to fetch invoices: ${error.response?.data?.message || error.message}`);
-            } else {
-                setError("Failed to fetch invoice.");
-            }
-            setInvoices([]);
-        }
-    }, []);
+   const fetchInvoices = React.useCallback(async () => {
+  try {
+    const response = await fetch("/api/invoice"); // Use GET endpoint
 
-    useEffect(() => {
-        fetchInvoices();
-    }, [fetchInvoices]);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const responseData = await response.json();
+
+    console.log("Full API Response:", {
+      status: response.status,
+      data: responseData,
+      type: typeof responseData,
+      hasData: "data" in responseData,
+    });
+
+    // Check if data is an array
+    const invoicesData = Array.isArray(responseData.data) ? responseData.data : [];
+
+    const sortedInvoices = [...invoicesData].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    const invoicesWithKeys = sortedInvoices.map((invoice: any) => ({
+      ...invoice,
+      key: invoice.id || generateUniqueId(), // Use 'id' from SQL, not '_id'
+    }));
+
+    setInvoices(invoicesWithKeys);
+    setError(null);
+  } catch (error: any) {
+    console.error("Error fetching invoices:", error);
+    setError(
+      error instanceof Error
+        ? `Failed to fetch invoices: ${error.message}`
+        : "Failed to fetch invoice."
+    );
+    setInvoices([]);
+  }
+}, []);
+
+useEffect(() => {
+  fetchInvoices();
+}, [fetchInvoices]);
+
 
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
@@ -485,7 +491,21 @@ export default function InvoiceTable() {
         return [...items].sort((a, b) => {
             const first = a[sortDescriptor.column as keyof Invoice];
             const second = b[sortDescriptor.column as keyof Invoice];
-            const cmp = first < second ? -1 : first > second ? 1 : 0;
+
+            let cmp = 0;
+            if (first === undefined && second === undefined) {
+                cmp = 0;
+            } else if (first === undefined) {
+                cmp = -1;
+            } else if (second === undefined) {
+                cmp = 1;
+            } else if (first < second) {
+                cmp = -1;
+            } else if (first > second) {
+                cmp = 1;
+            } else {
+                cmp = 0;
+            }
 
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
@@ -519,11 +539,12 @@ export default function InvoiceTable() {
         setIsDeleteDialogOpen(true);
     }, []);
 
+ 
     const handleDeleteConfirm = React.useCallback(async () => {
-        if (!selectedInvoice?._id) return;
+        if (!selectedInvoice?.id) return;
 
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/invoice/deleteInvoice/${selectedInvoice._id}`, {
+            const response = await fetch(`/api/invoice?id=${selectedInvoice.id}`, {
                 method: "DELETE",
             });
 
@@ -531,11 +552,15 @@ export default function InvoiceTable() {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to delete invoice");
             }
+
             toast({
                 title: "Invoice Deleted",
                 description: "The invoice has been successfully deleted",
             });
-            fetchInvoices();
+            
+            // Optimistically update the UI
+            setInvoices(prev => prev.filter(invoice => invoice.id !== selectedInvoice.id));
+            
         } catch (error) {
             toast({
                 title: "Error",
@@ -546,32 +571,47 @@ export default function InvoiceTable() {
             setIsDeleteDialogOpen(false);
             setSelectedInvoice(null);
         }
-    }, [selectedInvoice,fetchInvoices]);
+    }, [selectedInvoice]);
 
     const [isSubmitting, setIsSubmitting] = useState(false)
 
+    
     async function onEdit(values: z.infer<typeof formSchema>) {
-        if (!selectedInvoice?._id) return;
+        if (!selectedInvoice?.id) return;
         setIsSubmitting(true);
+        
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/invoice/updateInvoice/${selectedInvoice._id}`, {
+            const response = await fetch(`/api/invoice?id=${selectedInvoice.id}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
+                headers: { 
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    ...values,
+                    date: values.date.toISOString() // Convert date to string
+                }),
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to update invoice");
             }
+
+            const updatedInvoice = await response.json();
+
             toast({
                 title: "Invoice Updated",
                 description: "The invoice has been successfully updated",
             });
+
+            // Update the invoice in state
+            setInvoices(prev => prev.map(invoice => 
+                invoice.id === selectedInvoice.id ? updatedInvoice : invoice
+            ));
+
             setIsEditDialogOpen(false);
             setSelectedInvoice(null);
             form.reset();
-            fetchInvoices();
         } catch (error) {
             toast({
                 title: "Error",
@@ -609,7 +649,7 @@ export default function InvoiceTable() {
                         <Tooltip color="danger">
                             <span
                                 className="text-lg text-danger cursor-pointer active:opacity-50"
-                                onClick={() => printInvoice(invoice._id)}
+                                onClick={() => typeof invoice._id === "string" ? printInvoice(invoice._id) : undefined}
                             >
                                 <Printer className="h-4 w-4" />
                             </span>

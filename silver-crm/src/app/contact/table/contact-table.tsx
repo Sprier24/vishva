@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useRouter } from "next/navigation";
 
 interface Contact {
-    _id: string;
+    id: string;
     companyName: string;
     customerName: string;
     contactNumber: string;
@@ -70,7 +70,7 @@ export default function ContactTable() {
     const fetchContacts = React.useCallback(async () => {
         try {
             const response = await axios.get(
-                "http://localhost:8000/api/v1/contact/getallContacts"
+                "/api/contact",
             );
             console.log('Full API Response:', {
                 status: response.status,
@@ -97,7 +97,7 @@ export default function ContactTable() {
             );
             const ContactWithKeys = sortedContacts.map((contact: Contact) => ({
                 ...contact,
-                key: contact._id || generateUniqueId()
+                key: contact.id || generateUniqueId()
             }));
             setContact(ContactWithKeys);
             setError(null);
@@ -190,6 +190,7 @@ export default function ContactTable() {
 
     const handleEditClick = React.useCallback((contact: Contact) => {
         setSelectedContact(contact);
+         console.log('Edit clicked, contact:', contact);    
         form.reset({
             companyName: contact.companyName,
             customerName: contact.customerName,
@@ -208,9 +209,9 @@ export default function ContactTable() {
     }, []);
 
     const handleDeleteConfirm = async () => {
-        if (!selectedContact?._id) return;
+        if (!selectedContact?.id) return;
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/contact/deleteContact/${selectedContact._id}`, {
+            const response = await fetch(`/api/contact?id=${selectedContact.id}`, {
                 method: "DELETE",
             });
             if (!response.ok) {
@@ -237,10 +238,10 @@ export default function ContactTable() {
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     async function onEdit(values: z.infer<typeof contactSchema>) {
-        if (!selectedContact?._id) return;
+        if (!selectedContact?.id) return;
         setIsSubmitting(true);
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/contact/updateContact/${selectedContact._id}`, {
+            const response = await fetch(`/api/contact?id=${selectedContact.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
@@ -474,7 +475,7 @@ export default function ContactTable() {
                                 </TableHeader>
                                 <TableBody emptyContent={"Create contact and add data"} items={sortedItems}>
                                     {(item) => (
-                                        <TableRow key={item._id}>
+                                        <TableRow key={item.id}>
                                             {(columnKey) => (
                                                 <TableCell style={{ fontSize: "12px", padding: "8px" }}>
                                                     {renderCell(item, columnKey.toString())}

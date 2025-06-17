@@ -95,7 +95,7 @@ export default function TaskTable() {
     const fetchTasks = useCallback(async () => {
         try {
             const response = await axios.get(
-                "http://localhost:8000/api/v1/task/getAllTasks"
+                "/api/task",
             );
 
             console.log('Full API Response:', {
@@ -262,7 +262,7 @@ export default function TaskTable() {
 
         setIsSubmitting(true);
         try {
-            const response = await fetch(`http://localhost:8000/api/v1/task/updateTask/${selectedTask._id}`, {
+            const response = await fetch(`/api/task?id=${selectedTask._id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
@@ -754,7 +754,7 @@ export default function TaskTable() {
                             onClick={async () => {
                                 if (taskToDelete) {
                                     try {
-                                        const response = await fetch(`http://localhost:8000/api/v1/task/deleteTask/${taskToDelete._id}`, {
+                                        const response = await fetch(`/api/task?id=${taskToDelete._id}`, {
                                             method: "DELETE",
                                         });
 

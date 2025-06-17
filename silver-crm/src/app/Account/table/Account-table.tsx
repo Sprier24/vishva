@@ -162,8 +162,8 @@ export default function AccountTable() {
 
     const sortedItems = React.useMemo(() => {
         return [...items].sort((a, b) => {
-            const first = a[sortDescriptor.column as keyof Account];
-            const second = b[sortDescriptor.column as keyof Account];
+            const first = a[sortDescriptor.column as keyof Account] ?? "";
+            const second = b[sortDescriptor.column as keyof Account] ?? "";
             const cmp = first < second ? -1 : first > second ? 1 : 0;
             return sortDescriptor.direction === "descending" ? -cmp : cmp;
         });
@@ -193,7 +193,7 @@ export default function AccountTable() {
     const handleDeleteConfirm = async () => {
         if (!selectedAccount?._id) return;
         try {
-            const response = await fetch(`/api/account/add?id=${selectedAccount._id}`, {
+            const response = await fetch(`/api/account?id=${selectedAccount._id}`, {
                 method: "DELETE",
             });
 
@@ -226,7 +226,7 @@ export default function AccountTable() {
         if (!selectedAccount?._id) return;
         setIsSubmitting(true);
         try {
-            const response = await fetch(`/api/account/add?id=${selectedAccount._id}`, {
+            const response = await fetch(`/api/account?id=${selectedAccount._id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(values),
@@ -453,7 +453,6 @@ export default function AccountTable() {
                                         <TableColumn
                                             key={column.uid}
                                             allowsSorting={column.sortable}
-                                            width={column.width}
                                         >
                                             {column.name}
                                         </TableColumn>
@@ -461,7 +460,7 @@ export default function AccountTable() {
                                 </TableHeader>
                                 <TableBody items={sortedItems}>
                                     {(item) => (
-                                        <TableRow key={item.key || item.id}>
+                                        <TableRow key={item.key || item._id}>
                                             {(columnKey) => (
                                                 <TableCell>
                                                     {renderCell(item, columnKey.toString())}
