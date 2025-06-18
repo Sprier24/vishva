@@ -18,7 +18,8 @@ export async function POST(req: Request) {
       status = 'Pending',
       priority = 'Medium',
       assignedTo,
-    } = await req.json();
+      notes,
+       } = await req.json();
 
     // Generate UUID for the task
     const taskId = crypto.randomUUID();
@@ -34,9 +35,9 @@ const formattedEndDate = endDate ? new Date(endDate).toISOString() : null;
      sql: `
     INSERT INTO tasks (
       id, subject, name, related_to, date, end_date, 
-      status, priority, assigned_to, created_at, updated_at
+      status, priority, assigned_to, notes, created_at, updated_at
     ) VALUES (
-      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
     )
   `,
    args : [
@@ -49,10 +50,17 @@ const formattedEndDate = endDate ? new Date(endDate).toISOString() : null;
   status ?? "Pending",
   priority ?? "Medium",
   assignedTo ?? null,
+  notes ?? "",
   createdAt,
   updatedAt,
 ]
     });
+
+    console.log("Insert Task Args:", [
+  taskId, subject, name, relatedTo,
+  formattedDate, formattedEndDate,
+  status, priority, assignedTo, notes, createdAt, updatedAt
+]);
 
     // Fetch the newly created task to return it
     const { rows } = await client.execute({
@@ -77,6 +85,7 @@ const formattedEndDate = endDate ? new Date(endDate).toISOString() : null;
         status: rows[0].status,
         priority: rows[0].priority,
         assignedTo: rows[0].assigned_to,
+        notes: rows[0].notes,
         createdAt: rows[0].created_at,
         updatedAt: rows[0].updated_at,
       }
@@ -109,6 +118,7 @@ export async function GET() {
       status: row.status,
       priority: row.priority,
       assignedTo: row.assigned_to,
+      notes: row.notes,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
@@ -146,6 +156,7 @@ export async function PUT(req: Request) {
       status = 'Pending',
       priority = 'Medium',
       assignedTo,
+      notes,
     } = body;
 
     const updatedAt = new Date().toISOString();
@@ -161,6 +172,7 @@ export async function PUT(req: Request) {
         status = ?,
         priority = ?,
         assigned_to = ?,
+        notes = ?,
         updated_at = ?
     WHERE id = ?
   `,
@@ -173,6 +185,7 @@ export async function PUT(req: Request) {
         status,
         priority,
         assignedTo,
+        notes,
         updatedAt,
         id,
       ],

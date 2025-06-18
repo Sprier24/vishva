@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import Image from "next/image";
 
 type File = {
-  _id: string;
+  id: string;
   name: string;
   type: string;
   parentId: number | null;
@@ -26,7 +26,7 @@ const GoogleDriveClone = () => {
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
   const getFileImage = (fileName: string) => {
-    const extension = fileName.split(".").pop()?.toLowerCase(); 
+    const extension = fileName.split(".").pop()?.toLowerCase();
 
     switch (extension) {
       case "pdf":
@@ -50,12 +50,12 @@ const GoogleDriveClone = () => {
   useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/v1/file-folder/files');
+        const response = await fetch('/api/document'); // <-- Turso API
         const data = await response.json();
         if (data.success) {
           setFiles(data.data);
         } else {
-          console.error('Failed to fetch files');
+          console.error('Failed to fetch files:', data.message);
         }
       } catch (error) {
         console.error('Error fetching files:', error);
@@ -64,6 +64,7 @@ const GoogleDriveClone = () => {
 
     fetchFiles();
   }, []);
+
 
   const filteredFoldersAndFiles = files
     .filter(
@@ -90,25 +91,24 @@ const GoogleDriveClone = () => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('name', file.name);
-      formData.append('type', 'file');
-      formData.append('parentId', currentFolderId ? currentFolderId.toString() : 'null');
+      formData.append('type', 'file'); // optional if hardcoded in backend
+      formData.append('parentId', currentFolderId ? currentFolderId.toString() : '');
 
-      fetch('http://localhost:8000/api/v1/file-folder/upload', {
+      fetch('/api/document', { // update to match your API route
         method: 'POST',
         body: formData,
       })
         .then((res) => res.json())
         .then((data) => {
-          const newFile = {
-            ...data.data,
-            type: 'file',
-            parentId: currentFolderId,
-          };
-
-          setFiles((prevFiles) => [
-            ...prevFiles,
-            newFile,
-          ]);
+          if (data.success) {
+            const newFile = {
+              ...data.data, // assume backend returns full file data
+              parentId: currentFolderId,
+            };
+            setFiles((prevFiles) => [...prevFiles, newFile]);
+          } else {
+            console.error('Upload failed:', data.message);
+          }
         })
         .catch((error) => {
           console.error('Error uploading file:', error);
@@ -116,24 +116,24 @@ const GoogleDriveClone = () => {
     }
   };
 
+
   const handleDeleteClick = (fileId: string) => {
     setFileToDelete(fileId);
     setIsDeleteDialogOpen(true);
     setSelectedFile(null);
   };
 
-  const handleDeleteConfirm = async () => {
+    const handleDeleteConfirm = async () => {
     if (!fileToDelete) return;
 
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/file-folder/files/${fileToDelete}`, {
+      const response = await fetch(`/api/document?id=${fileToDelete}`, {
         method: 'DELETE',
       });
-
       const data = await response.json();
 
       if (data.success) {
-        setFiles(prevFiles => prevFiles.filter(file => file._id !== fileToDelete));
+        setFiles(prevFiles => prevFiles.filter(file => file.id !== fileToDelete));
         setIsDeleteDialogOpen(false);
         setFileToDelete(null);
       } else {
@@ -153,34 +153,36 @@ const GoogleDriveClone = () => {
   };
 
   const handleDownload = async (file: File) => {
+    if (!file.fileUrl) return;
+    
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/file-folder/files/download/${file._id}`);
-      if (!response.ok) {
-        throw new Error('Failed to download file');
-      }
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = file.name;
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1];
-        }
-      }
+      // For files stored via your API route
+      const downloadUrl = file.fileUrl.startsWith('/api/uploads/') 
+        ? file.fileUrl 
+        : `/api/uploads/${file.fileUrl.split('/uploads/').pop()}`;
+
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error('Failed to download file');
+      
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const downloadLink = document.createElement('a');
-      downloadLink.href = url;
-      downloadLink.download = filename;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(downloadLink);
+      document.body.removeChild(a);
+      
+      setDownloadStatus('Download started');
       setTimeout(() => setDownloadStatus(null), 2000);
     } catch (error) {
       console.error("Download failed:", error);
+      setDownloadStatus('Download failed');
       setTimeout(() => setDownloadStatus(null), 2000);
     }
   };
+
 
   return (
     <div className="google-drive-clone flex flex-col md:flex-row h-[90vh] bg-gray-100 border border-gray-300 shadow-[0_4px_10px_rgba(0,0,0,0.4)] p-4">
@@ -218,9 +220,9 @@ const GoogleDriveClone = () => {
         {filteredFoldersAndFiles
           .filter((item) => item.type === 'folder')
           .map((folder: File) => (
-            <div key={folder._id} className="relative">
+            <div key={folder.id} className="relative">
               <button
-                onClick={() => handleFolderClick(Number(folder._id))}
+                onClick={() => handleFolderClick(Number(folder.id))}
                 className="text-gray-700 py-2 px-4 rounded-md mb-2 w-full text-left hover:bg-gray-100"
               >
                 📁 {folder.name}
@@ -248,30 +250,32 @@ const GoogleDriveClone = () => {
 
       <div className="main-content flex-1 p-6 bg-gray-60 overflow-y-auto scrollbar-hide">
         <div className="files grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredFoldersAndFiles.map((item: File) =>
+            {filteredFoldersAndFiles.map((item) =>
             item.type === 'folder' ? (
-              <div
-                key={`folder-${item._id}`}
-                onClick={() => handleFolderClick(Number(item._id))}
-                className="folder p-4 bg-white rounded-lg shadow-sm cursor-pointer hover:shadow-md"
+              <div key={`folder-${item.id}`} 
+              onClick={() => handleFolderClick(Number(item.id))}
+              className="folder p-4 bg-white rounded-lg shadow-sm cursor-pointer hover:shadow-md"
               >
                 <h3 className="text-gray-900">{item.name}</h3>
               </div>
             ) : (
               <div
-                key={`file-${item._id}`}
+                key={`file-${item.id}`}
                 onClick={() => handleFileClick(item)}
                 className="file p-4 bg-white rounded-lg shadow-md cursor-pointer hover:shadow-lg items-center justify-center text-gray-900 text-center max-w-full overflow-hidden text-ellipsis "
               >
                 {item.fileType === 'image' ? (
                   <div className="flex flex-col items-center">
-                    <Image
-                      src={`http://localhost:8000/uploads/${item.fileUrl}`}
-                      alt={item.name}
-                      className="w-32 h-32 object-cover mb-2 rounded-md"
-                      width={200}
-                      height={200}
-                    />
+                    {item.fileUrl && (
+                      <Image
+                        src={item.fileUrl.startsWith('/') ? item.fileUrl : `/api/uploads/${item.fileUrl}`}
+                        alt={item.name}
+                        className="w-32 h-32 object-cover mb-2 rounded-md"
+                        width={200}
+                        height={200}
+                      />
+                    )}
+
                     <p className="text-gray-900 text-center max-w-full overflow-hidden text-ellipsis">
                       {item.name}
                     </p>
@@ -316,8 +320,8 @@ const GoogleDriveClone = () => {
 
             <div className="mb-4">
               {selectedFile.fileType === "image" ? (
-                <Image
-                  src={`http://localhost:8000/uploads/${selectedFile.fileUrl}`}
+                   <Image
+                  src={selectedFile.fileUrl?.startsWith('/') ? selectedFile.fileUrl : `/api/uploads/${selectedFile.fileUrl}`}
                   alt={selectedFile.name}
                   className="w-full max-h-[80vh] object-contain rounded-md"
                   width={200}
@@ -354,7 +358,7 @@ const GoogleDriveClone = () => {
               </button>
 
               <button
-                onClick={() => handleDeleteClick(selectedFile._id)}
+                onClick={() => handleDeleteClick(selectedFile.id)}
                 className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 transition duration-200  mr-2"
               >
                 Delete

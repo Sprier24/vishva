@@ -60,7 +60,6 @@ export const invoiceSchema = z.object({
 const generateUniqueId = () => {
     return Math.random().toString(36).substring(2) + Date.now().toString(36);
 };
-
 const columns = [
     { name: "Company Name", uid: "companyName", sortable: true },
     { name: "Client / Customer Name", uid: "customerName", sortable: true },
@@ -74,18 +73,14 @@ const columns = [
     { name: "Before GST", uid: "totalWithoutGst", sortable: true },
     { name: "GST Rate", uid: "gstRate", sortable: true },
     { name: "After GST", uid: "totalWithGst", sortable: true },
-    {
-        name: "Invoice Date",
-        uid: "date",
-        sortable: true,
-        render: (row: Invoice) => (row.date)
-    },
+    { name: "Invoice Date", uid: "date", sortable: true },
+    { name: "Status", uid: "status", sortable: true },
     { name: "Paid Amount", uid: "paidAmount", sortable: true },
     { name: "Remaining Amount", uid: "remainingAmount", sortable: true },
+    { name: "Actions", uid: "actions", sortable: false },
 ];
 
-const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "contactNumber", "emailAddress", "address", "gstNumber", "productName", "amount", "discount", "gstRate", "status", "date", "endDate", "totalWithoutGst", "totalWithGst", "paidAmount", "remainingAmount"];
-
+const INITIAL_VISIBLE_COLUMNS = ["companyName", "customerName", "contactNumber", "emailAddress", "address", "gstNumber", "productName", "amount", "discount", "totalWithoutGst", "gstRate", "totalWithGst", "date", "status", "paidAmount", "remainingAmount"];
 const formSchema = invoiceSchema;
 
 export default function InvoiceTable() {
@@ -94,51 +89,53 @@ export default function InvoiceTable() {
     const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-    const fetchInvoices = React.useCallback(async () => {
-        try {
-            const response = await axios.get(
-                "http://localhost:8000/api/v1/invoice/getUnpaidInvoices"
-            );
-            let invoicesData;
-            if (typeof response.data === 'object' && 'data' in response.data) {
-                invoicesData = response.data.data;
-            } else if (Array.isArray(response.data)) {
-                invoicesData = response.data;
-            } else {
-                console.error('Unexpected response format:', response.data);
-                throw new Error('Invalid response format');
-            }
+ const fetchInvoices = React.useCallback(async () => {
+  try {
+    const response = await fetch("/api/unpaidinvoice");
 
-            if (!Array.isArray(invoicesData)) {
-                invoicesData = [];
-            }
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-            const sortedInvoices = [...invoicesData].sort((a, b) =>
-                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
+    const responseData = await response.json();
 
-            const invoicesWithKeys = sortedInvoices.map((invoice: Invoice) => ({
-                ...invoice,
-                key: invoice._id || generateUniqueId()
-            }));
+    console.log("Full API Response:", {
+      status: response.status,
+      data: responseData,
+      type: typeof responseData,
+      hasData: "data" in responseData,
+    });
 
-            setInvoices(invoicesWithKeys);
-            setError(null);
-        } catch (error) {
-            console.error("Error fetching invoices:", error);
-            if (axios.isAxiosError(error)) {
-                setError(`Failed to fetch invoices: ${error.response?.data?.message || error.message}`);
-            } else {
-                setError("Failed to fetch invoice.");
-            }
-            setInvoices([]);
-        }
-    }, []);
+    const invoicesData = Array.isArray(responseData.data) ? responseData.data : [];
 
-    useEffect(() => {
-        fetchInvoices();
-    }, [fetchInvoices]);
+    const sortedInvoices = [...invoicesData].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
+    const invoicesWithKeys = sortedInvoices.map((invoice: any) => ({
+      ...invoice,
+      key: invoice.id || generateUniqueId(),
+    }));
+
+
+    setInvoices(invoicesWithKeys);
+    setError(null);
+  } catch (error: any) {
+    console.error("Error fetching invoices:", error);
+    setError(
+      error instanceof Error
+        ? `Failed to fetch invoices: ${error.message}`
+        : "Failed to fetch invoice."
+    );
+    setInvoices([]);
+  }
+}, []);
+
+ 
+ useEffect(() => {
+   fetchInvoices();
+ }, [fetchInvoices]);
+ 
     const [filterValue, setFilterValue] = useState("");
     const [visibleColumns, setVisibleColumns] = useState(new Set(INITIAL_VISIBLE_COLUMNS));
     const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -312,51 +309,62 @@ export default function InvoiceTable() {
         }
     }
 
-    const renderCell = React.useCallback((invoice: Invoice, columnKey: string) => {
-        const cellValue = invoice[columnKey as keyof Invoice];
+   const renderCell = React.useCallback((invoice: Invoice, columnKey: string) => {
+    const cellValue = invoice[columnKey as keyof Invoice];
 
-        switch (columnKey) {
-            case "actions":
-                return (
-                    <div className="relative flex items-center gap-2">
-                        <Tooltip>
-                            <span
-                                className="text-lg text-default-400 cursor-pointer active:opacity-50"
-                                onClick={() => handleEditClick(invoice)}
-                            >
-                                <Edit className="h-4 w-4" />
-                            </span>
-                        </Tooltip>
-                        <Tooltip color="danger">
-                            <span
-                                className="text-lg text-danger cursor-pointer active:opacity-50"
-                                onClick={() => handleDeleteClick(invoice)}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </span>
-                        </Tooltip>
-                    </div>
-                );
-            case "contactNumber":
-            case "emailAddress":
-            case "address":
-                return cellValue ? cellValue : "N/A";
-            case "date": {
-                if (!cellValue) return "N/A";
+    switch (columnKey) {
+        case "actions":
+            return (
+                <div className="relative flex items-center gap-2">
+                    <Tooltip>
+                        <span
+                            className="text-lg text-default-400 cursor-pointer active:opacity-50"
+                            onClick={() => handleEditClick(invoice)}
+                        >
+                            <Edit className="h-4 w-4" />
+                        </span>
+                    </Tooltip>
+                    <Tooltip color="danger">
+                        <span
+                            className="text-lg text-danger cursor-pointer active:opacity-50"
+                            onClick={() => handleDeleteClick(invoice)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </span>
+                    </Tooltip>
+                </div>
+            );
+        case "contactNumber":
+        case "emailAddress":
+        case "address":
+        case "gstNumber":
+            return cellValue ? cellValue : "N/A";
+        case "date": {
+            if (!cellValue) return "N/A";
 
-                const date = new Date(cellValue);
-                if (isNaN(date.getTime())) return "Invalid Date";
+            const date = new Date(cellValue);
+            if (isNaN(date.getTime())) return "Invalid Date";
 
-                const day = String(date.getDate()).padStart(2, "0");
-                const month = String(date.getMonth() + 1).padStart(2, "0");
-                const year = date.getFullYear();
+            const day = String(date.getDate()).padStart(2, "0");
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const year = date.getFullYear();
 
-                return `${day}/${month}/${year}`;
-            }
-            default:
-                return cellValue;
+            return `${day}/${month}/${year}`;
         }
-    }, [handleEditClick, handleDeleteClick]);
+        case "amount":
+        case "discount":
+        case "totalWithoutGst":
+        case "gstRate":
+        case "totalWithGst":
+        case "paidAmount":
+        case "remainingAmount":
+            return typeof cellValue === 'number' ? cellValue.toFixed(2) : cellValue;
+        case "status":
+            return cellValue || "N/A";
+        default:
+            return cellValue;
+    }
+}, [handleEditClick, handleDeleteClick]);
 
     const onNextPage = React.useCallback(() => {
         if (page < pages) {

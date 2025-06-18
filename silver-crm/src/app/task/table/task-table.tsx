@@ -24,7 +24,7 @@ interface Task {
     endDate: string;
     status: string;
     priority: string;
-    assigned: string;
+    assignedTo: string;
     notes: string;
     createdAt: string;
 }
@@ -53,7 +53,7 @@ const columns: Column[] = [
     { name: "Subject", uid: "subject", sortable: true, width: "120px" },
     { name: "Related To", uid: "relatedTo", sortable: true, width: "120px" },
     { name: "Name", uid: "name", sortable: true, width: "120px" },
-    { name: "Assigned By", uid: "assigned", sortable: true, width: "150px" },
+    { name: "Assigned By", uid: "assignedTo", sortable: true, width: "150px" },
     { name: "Task Notes", uid: "notes", sortable: true, width: "100px" },
     {
         name: "Task Date",
@@ -74,13 +74,13 @@ const columns: Column[] = [
     { name: "Action", uid: "actions", sortable: true, width: "100px" },
 ];
 
-const INITIAL_VISIBLE_COLUMNS = ["subject", "name", "assigned", "relatedTo", "date", "endDate", "status", "priority", "notes", "actions"];
+const INITIAL_VISIBLE_COLUMNS = ["subject", "name", "assignedTo", "relatedTo", "date", "endDate", "status", "priority", "notes", "actions"];
 
 const taskSchema = z.object({
     subject: z.string().nonempty({ message: "Required" }),
     relatedTo: z.string().nonempty({ message: "Required" }),
     name: z.string().nonempty({ message: "Required" }),
-    assigned: z.string().nonempty({ message: "Required" }),
+    assignedTo: z.string().nonempty({ message: "Required" }),
     date: z.date().optional(),
     endDate: z.date().optional(),
     status: z.enum(["Pending", "Resolved", "InProgress"]),
@@ -170,7 +170,7 @@ export default function TaskTable() {
         defaultValues: {
             name: "",
             subject: "",
-            assigned: "",
+            assignedTo: "",
             relatedTo: "",
             date: new Date(),
             endDate: undefined,
@@ -196,7 +196,7 @@ export default function TaskTable() {
                     subject: task.subject,
                     relatedTo: task.relatedTo,
                     name: task.name,
-                    assigned: task.assigned,
+                    assigned: task.assignedTo,
                     notes: task.notes,
                     date: task.date,
                     endDate: task.endDate,
@@ -239,7 +239,7 @@ export default function TaskTable() {
         form.reset({
             name: task.name,
             subject: task.subject,
-            assigned: task.assigned,
+            assignedTo: task.assignedTo,
             relatedTo: task.relatedTo,
             date: task.date ? new Date(task.date) : undefined,
             endDate: task.endDate ? new Date(task.endDate) : undefined,
@@ -573,7 +573,7 @@ export default function TaskTable() {
                                 />
                                 <FormField
                                     control={form.control}
-                                    name="assigned"
+                                    name="assignedTo"
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Assigned By</FormLabel>

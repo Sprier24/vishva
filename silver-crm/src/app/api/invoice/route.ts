@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@libsql/client";
-import { v4 as uuidv4 } from "uuid"; // for unique ID generation
+import { v4 as uuidv4 } from "uuid"; 
 
 const client = createClient({
     url: process.env.TURSO_CONNECTION_URL!,

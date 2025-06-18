@@ -62,40 +62,49 @@ const EmailInput: React.FC = () => {
     };
 
     const sendEmail = async () => {
-        setIsSending(true);
-        const formData = new FormData();
-        formData.append("to", to);
-        formData.append("subject", subject);
-        formData.append("message", messageRef.current?.innerHTML.trim() || "");
-        attachments.forEach((file) => formData.append("attachments[]", file));
+  setIsSending(true);
+  const formData = new FormData();
+  formData.append("to", to);
+  formData.append("subject", subject);
+  formData.append("message", messageRef.current?.innerHTML.trim() || "");
+  attachments.forEach((file) => formData.append("attachments", file)); // Changed from attachments[] to attachments
 
-        try {
-            const response = await fetch('http://localhost:8000/api/v1/complaint/sendEmailComplaint', {
-                method: 'POST',
-                body: formData,
-            });
-            if (!response.ok) throw new Error("Failed to send email");
-            toast({
-                title: "Email Submitted",
-                description: "The email has been sent successfully",
-            });
-            setTo("");
-            setSubject("");
-            setAttachments([]);
-            if (messageRef.current) messageRef.current.innerHTML = "";
-        } catch (error) {
-            console.error("Error sending email:", error);
-            toast({
-                title: "Error",
-                description: error instanceof Error ? error.message : "There was an error sending the email",
-                variant: "destructive",
-            });
-        } finally {
-            setIsSending(false);
-            setConfirmModalOpen(false);
-        }
-    };
+  try {
+    // Send to your Next.js API route instead of direct backend
+    const response = await fetch('/api/emailsend', {
+      method: 'POST',
+      body: formData,
+    });
 
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to send email");
+    }
+
+    toast({
+      title: "Email Submitted",
+      description: "The email has been sent successfully",
+    });
+
+    // Reset form
+    setTo("");
+    setSubject("");
+    setAttachments([]);
+    if (messageRef.current) messageRef.current.innerHTML = "";
+
+  } catch (error) {
+    console.error("Error sending email:", error);
+    toast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "There was an error sending the email",
+      variant: "destructive",
+    });
+  } finally {
+    setIsSending(false);
+    setConfirmModalOpen(false);
+  }
+};
     const applyFormatting = (command: string, value?: string) => {
         document.execCommand(command, false, value || "");
     };

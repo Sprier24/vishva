@@ -16,7 +16,7 @@ const taskSchema = z.object({
   subject: z.string().nonempty({ message: "Required" }),
   relatedTo: z.string().nonempty({ message: "Required" }),
   name: z.string().nonempty({ message: "Required" }),
-  assigned: z.string().nonempty({ message: "Required" }),
+  assignedTo: z.string().nonempty({ message: "Required" }),
   date: z.date().optional(),
   endDate: z.date().optional(),
   status: z.enum(["Pending", "Resolved", "InProgress"]),
@@ -33,7 +33,7 @@ export default function Task() {
       subject: "",
       relatedTo: "",
       name: "",
-      assigned: "",
+      assignedTo: "",
       date: new Date(),
       endDate: undefined,
       status: "Pending",
@@ -118,7 +118,7 @@ export default function Task() {
           />
           <FormField
             control={form.control}
-            name="assigned"
+            name="assignedTo"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Assigned By</FormLabel>

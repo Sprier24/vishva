@@ -91,7 +91,7 @@
     id: text("id").primaryKey(),
     subject: text("subject"),
     name: text("name"),
-    relatedTo: text("related_to"), // Will store "Owner", "Account", "Complaint", etc.
+    relatedTo: text("related_to"), 
     date: text("date"),
     endDate: text("end_date"),
     status: text("status")
@@ -100,8 +100,9 @@
     priority: text("priority")
       .$type<"High" | "Medium" | "Low">()
       .default("Medium"),
-    assignedTo: text("assigned_to"), // User ID of the assigned user
-      createdAt: text("created_at").default(new Date().toISOString()),
+    assignedTo: text("assigned_to"), 
+    notes: text("notes").default(""),
+    createdAt: text("created_at").default(new Date().toISOString()),
       updatedAt: text("updated_at").default(new Date().toISOString())
       });
 
@@ -205,4 +206,27 @@ export const scheduledevents = sqliteTable("scheduledevents", {
 
   createdAt: text("created_at").default(new Date().toISOString()),
   updatedAt: text("updated_at").default(new Date().toISOString()),
+});
+
+
+export const document = sqliteTable('documents', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  type: text('type').notNull(), // "folder" or "file"
+  fileUrl: text('file_url'),    // Optional
+  fileType: text('file_type'),  // Optional
+  parentId: integer('parent_id').references(((): any => document.id), {
+    onDelete: 'set null',
+  }),
+});
+
+export const emailLogs = sqliteTable("email_logs", {
+  id: text("id").primaryKey(),
+  recipient: text("recipient").notNull(),
+  sender: text("sender").notNull(),
+  subject: text("subject"),
+  status: text("status").$type<"sent" | "failed" | "delivered" | "opened">().notNull(),
+  error: text("error"),
+  sentAt: text("sent_at").default(new Date().toISOString()),
+  openedAt: text("opened_at"),
 });
