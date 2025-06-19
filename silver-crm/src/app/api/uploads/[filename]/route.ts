@@ -5,25 +5,42 @@ import path from 'path';
 import { existsSync } from 'fs';
 import mime from 'mime-types';
 
-export async function GET(request: NextRequest, { params }: { params: { filename: string } }) {
-  try {
-    const filePath = path.join(process.cwd(), 'app', 'api', 'uploads', params.filename);
-    
-    if (!existsSync(filePath)) {
-      return new NextResponse('File not found', { status: 404 });
-    }
+export async function GET(
+  req: NextRequest,
+  context: { params: { filename: string } }
+) {
+  const filename = context.params.filename; // ✅ Await context first
+  const filePath = path.join(process.cwd(), 'src', 'app', 'api', 'uploads', filename);
 
+  try {
     const fileBuffer = await fs.readFile(filePath);
-    const mimeType = mime.lookup(filePath) || 'application/octet-stream';
+    const ext = path.extname(filename).toLowerCase();
+
+    const mimeTypes: Record<string, string> = {
+      ".png": "image/png",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".gif": "image/gif",
+      ".pdf": "application/pdf",
+      ".mp4": "video/mp4",
+      ".txt": "text/plain",
+      ".doc": "application/msword",
+      ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    };
+
+    const contentType = mimeTypes[ext] || "application/octet-stream";
 
     return new NextResponse(fileBuffer, {
+      status: 200,
       headers: {
-        'Content-Type': mimeType,
-        'Cache-Control': 'public, max-age=31536000, immutable'
-      }
+        "Content-Type": contentType,
+        "Content-Disposition": `inline; filename="${filename}"`,
+      },
     });
-  } catch (error) {
-    console.error('File serve error:', error);
-    return new NextResponse('Internal server error', { status: 500 });
+  } catch (err) {
+    return NextResponse.json(
+      { success: false, message: "File not found" },
+      { status: 404 }
+    );
   }
 }

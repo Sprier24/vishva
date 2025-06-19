@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create upload directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), 'app', 'api', 'uploads');
+    const uploadDir = path.join(process.cwd(), 'src', 'app', 'api', 'uploads');
     if (!existsSync(uploadDir)) {
       await fs.mkdir(uploadDir, { recursive: true });
     }

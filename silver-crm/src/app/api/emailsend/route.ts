@@ -1,14 +1,14 @@
+// app/api/emailsend/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
 import { createClient } from '@libsql/client';
+import nodemailer from 'nodemailer';
+import { v4 as uuidv4 } from 'uuid';
 
-// Initialize Turso client
 const tursoClient = createClient({
   url: process.env.TURSO_CONNECTION_URL!,
   authToken: process.env.TURSO_AUTH_TOKEN!,
 });
 
-// Email transporter setup
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -20,19 +20,19 @@ const transporter = nodemailer.createTransport({
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const to = formData.get('to') as string;
-  const subject = formData.get('subject') as string || "(No Subject)";
-  const message = formData.get('message') as string || "(No Message)";
+  const subject = formData.get('subject') as string;
+  const message = formData.get('message') as string;
   const files = formData.getAll('files') as File[];
 
   if (!to) {
     return NextResponse.json(
-      { success: false, message: "Recipient email (to) is required" },
+      { success: false, message: "Recipient email is required" },
       { status: 400 }
     );
   }
 
   try {
-    // Process attachments if any
+    // Process attachments
     const attachments = await Promise.all(
       files.map(async (file) => {
         const buffer = await file.arrayBuffer();
@@ -44,23 +44,30 @@ export async function POST(req: NextRequest) {
     );
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_USER, // Using env variable as sender
       to,
-      subject,
-      html: message,
+      subject: subject || "(No Subject)",
+      html: message || "(No Message)",
       attachments,
     };
 
     // Send email
     const info = await transporter.sendMail(mailOptions);
+    const emailId = uuidv4();
 
-    // Log to Turso without requiring schema
+    // Log to Turso - INCLUDING SENDER
     await tursoClient.execute({
       sql: `
-        INSERT INTO email_logs (recipient, subject, status, sent_at)
-        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO email_logs (id, sender, recipient, subject, status, sent_at)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `,
-      args: [to, subject, 'sent'],
+      args: [
+        emailId,
+        process.env.EMAIL_USER ?? '',
+        to,
+        subject,
+        'sent'
+      ],
     });
 
     return NextResponse.json({
@@ -70,13 +77,22 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error: any) {
-    // Log failure to Turso
+    const errorId = uuidv4();
+    
+    // Log failure - INCLUDING SENDER
     await tursoClient.execute({
       sql: `
-        INSERT INTO email_logs (recipient, subject, status, error, sent_at)
-        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        INSERT INTO email_logs (id, sender, recipient, subject, status, error, sent_at)
+        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `,
-      args: [to, subject, 'failed', error.message],
+      args: [
+        errorId,
+        process.env.EMAIL_USER, // Sender from env
+        to,
+        subject,
+        'failed',
+        error.message
+      ],
     });
 
     return NextResponse.json(

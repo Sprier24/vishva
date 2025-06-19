@@ -67,7 +67,7 @@ const EmailInput: React.FC = () => {
   formData.append("to", to);
   formData.append("subject", subject);
   formData.append("message", messageRef.current?.innerHTML.trim() || "");
-  attachments.forEach((file) => formData.append("attachments", file)); // Changed from attachments[] to attachments
+attachments.forEach((file) => formData.append("files", file)); // ✅ key must be "files"
 
   try {
     // Send to your Next.js API route instead of direct backend

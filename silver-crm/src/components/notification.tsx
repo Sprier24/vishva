@@ -21,9 +21,8 @@ const Notification = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-        const response = await fetch(
-          "http://localhost:8000/api/v1/notification/getAllNotifications"
-        );
+       const response = await fetch("/api/notification");
+
         const data = await response.json();
         if (data.success) {
           const storedStarred = JSON.parse(

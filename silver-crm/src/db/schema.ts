@@ -1,5 +1,6 @@
   // app/lib/db/schema.ts
   import { endOfDay } from "date-fns";
+  import { sql } from 'drizzle-orm';
   import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
   import { assign } from "nodemailer/lib/shared";
 
@@ -229,4 +230,16 @@ export const emailLogs = sqliteTable("email_logs", {
   error: text("error"),
   sentAt: text("sent_at").default(new Date().toISOString()),
   openedAt: text("opened_at"),
+});
+
+
+export const notifications = sqliteTable('notifications', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  type: text('type'), // 'calendar' or other types
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`),
+  scheduledAt: text('scheduled_at'), // The date when notification should trigger
+  relatedEventId: text('related_event_id').references(() => calendar.id), // Links to calendar event
+  isSent: integer('is_sent', { mode: 'boolean' }).default(false), // Track if sent
 });
