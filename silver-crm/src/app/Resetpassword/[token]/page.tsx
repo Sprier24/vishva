@@ -20,46 +20,50 @@ export default function ResetPassword() {
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
   const [passwordMessage, setPasswordMessage] = useState<string>("");
 
+  
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-        toast({
-            title: "Error",
-            description: "Passwords do not match.",
-            variant: "destructive",
-        });       return;
+      toast({
+        title: "Error",
+        description: "Passwords do not match.",
+        variant: "destructive",
+      });
+      return;
     }
 
     if (!isPasswordStrong(password)) {
-        toast({
-            title: "Error",
-            description: "Passwords do not match.",
-            variant: "destructive",
-        });       return;
+      toast({
+        title: "Error",
+        description: "Password is not strong enough.",
+        variant: "destructive",
+      });
+      return;
     }
 
     setIsSubmitting(true);
+
     try {
-      const response = await axios.post(
-        `http://localhost:8000/api/v1/user/reset-password/${token}`,
-        { password }
-      );
+      const response = await axios.post(`/api/resetpassword/${token}`, {
+        password,
+      });
 
       if (response.data.success) {
         setPasswordReset(true);
       } else {
         toast({
-            title: "Error",
-            description: "Passwords do not match.",
-            variant: "destructive",
-        });       }
-    } catch {
-        toast({
-            title: "Error",
-            description: "Passwords do not match.",
-            variant: "destructive",
-        }); 
+          title: "Error",
+          description: response.data.message || "Something went wrong.",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Server error.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }

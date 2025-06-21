@@ -21,9 +21,14 @@ const Notification = () => {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
-       const response = await fetch("/api/notification");
+        // Get current IST date
+        const now = new Date();
+        const istNow = new Date(now.getTime() + (5 * 60 + 30) * 60000); // UTC + 5:30
+        const istDateOnly = istNow.toISOString().split("T")[0]; // "YYYY-MM-DD"
 
+        const response = await fetch(`/api/notification?date=${istDateOnly}`);
         const data = await response.json();
+        
         if (data.success) {
           const storedStarred = JSON.parse(
             localStorage.getItem("starredNotifications") || "{}"
@@ -55,7 +60,7 @@ const Notification = () => {
   const handleDelete = async (id: string) => {
     try {
       const response = await fetch(
-        `http://localhost:8000/api/v1/notification/deleteNotification/${id}`,
+        `/api/notification?id=${id}`,
         {
           method: "DELETE",
         }
@@ -75,7 +80,7 @@ const Notification = () => {
   const clearAllNotifications = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/v1/notification/deleteAllNotifications",
+        "/api/notification?deleteAll=true",
         {
           method: "DELETE",
         }

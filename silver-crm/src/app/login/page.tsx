@@ -93,39 +93,39 @@
       }
     };
 
-    const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      setIsSubmitting(true);
+   const handleForgotPasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({
+        title: "Please enter your email address",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const response = await fetch("/api/forgotpassword", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      setEmailSent(true);
+      toast({
+        title: "Success",
+        description: data.message,
+      });
+    } catch (error: any) {
+      console.error("Forgot password error", error);
+      setEmailSent(true);
+      toast({
+        title: "If an account exists with this email, you'll receive a password reset link.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-      try {
-        const response = await axios.post(
-          "http://localhost:8000/api/v1/user/forgot-password",
-          { email }
-        );
-
-        if (response.data.success) {
-          setEmailSent(true); 
-        } else {
-          toast({
-            title: "Error",
-            description: response.data.message || "Failed to send reset email.",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        const message =
-          axios.isAxiosError(error) && error.response?.data?.message
-            ? error.response.data.message
-            : "There was an error submitting the request.";
-        toast({
-          title: "Error",
-          description: message,
-          variant: "destructive",
-        });
-      } finally {
-        setIsSubmitting(false);
-      }
-    };
 
   const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
